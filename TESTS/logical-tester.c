@@ -19,15 +19,15 @@ int main(int argc, char**argv)
 	int memfd;
 	int dumpfd;
 
-	phys_handle phy;
-	union phys_type_data phy_data;
+	physical_handle phy;
+	union physical_type_data phy_data;
 	logical_handle log;
 
 	int pagedir_pageno;
 	addr_t pn;
 
 	// create and associate a physical source to /dev/mem
-	phy = phys_new_handle();
+	phy = physical_new_handle();
 	if(!phy) {
 		printf("physical handle is null\n");
 		return -2;
@@ -41,8 +41,8 @@ int main(int argc, char**argv)
 
 	phy_data.filedescriptor.fd = memfd;
 
-	if(phys_handle_associate(phy, phys_filedescriptor, &phy_data, 4096)) {
-		printf("phys_handle_associate() failed\n");
+	if(physical_handle_associate(phy, physical_filedescriptor, &phy_data, 4096)) {
+		printf("physical_handle_associate() failed\n");
 		return -4;
 	}
 
@@ -54,8 +54,8 @@ int main(int argc, char**argv)
 		return -5;
 	}
 
-#define PAGEDIR 0x063a0
-#define LOGICAL 0xbfa919e0
+#define PAGEDIR 0x28bd1
+#define LOGICAL 0xbfa5c180
 
 	if(!logical_is_pagedir_fast(log, PAGEDIR)) {
 		printf("is not a pagedir\n");
@@ -75,6 +75,8 @@ int main(int argc, char**argv)
 	} else
 		printf("*log is 0x%08x\n", foo);
 
+	getchar();
+
 	printf("trying to overwrite...\n");
 	foo = 0xdeadbeef;
 	int bar;
@@ -86,7 +88,7 @@ int main(int argc, char**argv)
 	printf("rel log handle..\n"); fflush(stdout);
 	logical_handle_release(log);
 	printf("rel phy handle..\n"); fflush(stdout);
-	phys_handle_release(phy);
+	physical_handle_release(phy);
 	
 	// exit 
 	close(dumpfd);

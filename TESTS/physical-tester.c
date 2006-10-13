@@ -15,8 +15,8 @@
 int main()
 {
 	int memfd;
-	phys_handle phy;
-	union phys_type_data phy_data;
+	physical_handle phy;
+	union physical_type_data phy_data;
 
 	int dumpfd;
 
@@ -25,7 +25,7 @@ int main()
 
 	// create and associate a physical source to /dev/mem
 	printf("init (pagebuf=%p\n",pagebuf); fflush(stdout);
-	phy = phys_new_handle();
+	phy = physical_new_handle();
 	if(!phy) {
 		printf("physical handle is null\n");
 		return -1;
@@ -39,8 +39,8 @@ int main()
 	phy_data.filedescriptor.fd = memfd;
 
 	printf("associating physical source with fd%d (pagebuf=%p)\n", memfd, pagebuf); fflush(stdout);
-	if(phys_handle_associate(phy, phys_filedescriptor, &phy_data, 4096)) {
-		printf("phys_handle_associate() failed\n");
+	if(physical_handle_associate(phy, physical_filedescriptor, &phy_data, 4096)) {
+		printf("physical_handle_associate() failed\n");
 		return -3;
 	}
 
@@ -55,8 +55,7 @@ int main()
 	printf("now really dumping (pagebuf=%p)\n", pagebuf); fflush(stdout);
 	for(pn = 0; pn < 10; pn++) {
 		printf("\ndumping page %llu (read to %p)\n", pn, pagebuf);
-		//if(phys_read_page(phy, pn, pagebuf)) {
-		if(phys_read(phy, 4096 * pn, pagebuf, 4096)) {
+		if(physical_read(phy, 4096 * pn, pagebuf, 4096)) {
 			printf("failed to read page %llu\n", pn);
 		}
 		if(4096 != write(dumpfd, pagebuf, 4096)) {
