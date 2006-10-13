@@ -9,12 +9,11 @@
 
 #include <physical.h>
 
-
-
-
-int main()
+int main(int argc, char**argv)
 {
+#ifdef PHYSICAL_DEV_MEM
 	int memfd;
+#endif
 	physical_handle phy;
 	union physical_type_data phy_data;
 
@@ -30,6 +29,10 @@ int main()
 		printf("physical handle is null\n");
 		return -1;
 	}
+
+#define PHYSICAL_FIREWIRE
+
+#ifdef PHYSICAL_DEV_MEM
 	memfd = open("/dev/mem", O_RDONLY | O_LARGEFILE);
 	if(memfd < 0) {
 		printf("failed to open /dev/mem\n");
@@ -37,35 +40,54 @@ int main()
 	}
 
 	phy_data.filedescriptor.fd = memfd;
-
-	printf("associating physical source with fd%d (pagebuf=%p)\n", memfd, pagebuf); fflush(stdout);
+	printf("associating physical source with fd%d\n", memfd); fflush(stdout);
 	if(physical_handle_associate(phy, physical_filedescriptor, &phy_data, 4096)) {
 		printf("physical_handle_associate() failed\n");
 		return -3;
 	}
+#endif
+#ifdef PHYSICAL_FIREWIRE
+	phy_data.ieee1394.raw1394handle = raw1394_new_handle();
+	if(raw1394_set_port(phy_data.ieee1394.raw1394handle, 0)) {
+		printf("raw1394 failed to set port\n");
+		return -4;
+	}
+	phy_data.ieee1394.raw1394target = atoi(argv[1]);
+	printf("using target %d\n", phy_data.ieee1394.raw1394target);
+	printf("associating physical source with raw1394%d\n"); fflush(stdout);
+	if(physical_handle_associate(phy, physical_ieee1394, &phy_data, 4096)) {
+		printf("physical_handle_associate() failed\n");
+		return -3;
+	}
+#endif
 
-	printf("dumping (pagebuf=%p)\n", pagebuf); fflush(stdout);
 	// read some data from 0x0...0x010000 (10 pages)
 	dumpfd = open("pagedump", O_WRONLY|O_CREAT, 0600);
 	if(dumpfd < 0) {
 		printf("failed to open pagedump\n");
-		return -4;
+		return -5;
 	}
 
-	printf("now really dumping (pagebuf=%p)\n", pagebuf); fflush(stdout);
 	for(pn = 0; pn < 10; pn++) {
 		printf("\ndumping page %llu (read to %p)\n", pn, pagebuf);
 		if(physical_read(phy, 4096 * pn, pagebuf, 4096)) {
 			printf("failed to read page %llu\n", pn);
+//			continue;
 		}
 		if(4096 != write(dumpfd, pagebuf, 4096)) {
 			printf("failed to write page %llu\n", pn);
 		}
 	}
+
 	
 	// exit 
 	close(dumpfd);
+#ifdef PHYSICAL_DEV_MEM
 	close(memfd);
+#endif
+#ifdef PHYSICAL_FIREWIRE
+	raw1394_destroy_handle(phy_data.ieee1394.raw1394handle);
+#endif
 	return 0;
 }
 
