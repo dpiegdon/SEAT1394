@@ -12,8 +12,8 @@ uninstall:	headers-uninstall libphysical-uninstall liblogical-uninstall
 clean:		libphysical-clean liblogical-clean
 
 headers-install:
-	mkdir -p $(PREFIX)/include/
-	cp -R include/ia32 $(PREFIX)/include/
+	mkdir -p $(PREFIX)/include/ia32
+	cp include/ia32/* $(PREFIX)/include/ia32/
 
 headers-uninstall:
 	-rm -R $(PREFIX)/include/ia32
