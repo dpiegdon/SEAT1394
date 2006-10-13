@@ -33,7 +33,8 @@ int physical_ieee1394_read(struct physical_handle_data* h, addr_t adr, void* buf
 
 	while(len > 0) {
 		tr = MIN(len, BLOCKSIZE);
-		err = raw1394_read(RAWHANDLE, TARGET, adr, tr, (quadlet_t*)buf + r);
+		/// argh pointer arithmetic... careful with this quadlet_t ...
+		err = raw1394_read(RAWHANDLE, TARGET, adr, tr, (quadlet_t*)((char*)buf + r));
 		if(err)
 			return err;
 		len -= tr;
@@ -51,7 +52,8 @@ int physical_ieee1394_write(struct physical_handle_data* h, addr_t adr, void* bu
 
 	while(len > 0) {
 		tw = MIN(len, BLOCKSIZE);
-		err = raw1394_write(RAWHANDLE, TARGET, adr, tw, (quadlet_t*)buf + w);
+		/// argh pointer arithmetic... careful with this quadlet_t ...
+		err = raw1394_write(RAWHANDLE, TARGET, adr, tw, (quadlet_t*)((char*)buf + w));
 		if(err)
 			return err;
 		len -= tw;
