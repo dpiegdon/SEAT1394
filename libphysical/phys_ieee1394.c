@@ -29,7 +29,7 @@ int physical_ieee1394_read(struct physical_handle_data* h, addr_t adr, void* buf
 {
 	int err;
 	size_t r = 0;		// how much was read so far
-	size_t tr;		// how much is to be read
+	size_t tr;		// how much is to read
 
 	while(len > 0) {
 		tr = MIN(len, BLOCKSIZE);
@@ -46,8 +46,8 @@ int physical_ieee1394_read(struct physical_handle_data* h, addr_t adr, void* buf
 int physical_ieee1394_write(struct physical_handle_data* h, addr_t adr, void* buf, size_t len)
 {
 	int err;
-	size_t w = 0;		// how much was read so far
-	size_t tw;		// how much is to be read
+	size_t w = 0;		// how much was written so far
+	size_t tw;		// how much is to write
 
 	while(len > 0) {
 		tw = MIN(len, BLOCKSIZE);

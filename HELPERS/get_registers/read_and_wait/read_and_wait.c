@@ -120,7 +120,7 @@ int main()
 			// open dumpfile
 			dumpfile = fopen("dump/pagedir", "w");
 			if(!dumpfile) {
-				printf("failed to create \"pagedir-dump\". missing permissions?\naborting.\n");
+				printf("failed to create \"dump/pagedir\". missing permissions?\naborting.\n");
 				return 0;
 			}
 			// write buffer to dumpfile

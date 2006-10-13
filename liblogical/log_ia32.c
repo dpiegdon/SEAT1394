@@ -100,6 +100,7 @@ int log_ia32_is_pagedir_fast(struct logical_handle_data* h, addr_t physical_page
 float log_ia32_is_pagedir_probability(struct logical_handle_data* h, void* page)
 {
 	return (
+			// MAX(...)
 			pagedirtest_prob_linux3G1G(h, page)
 	       );
 }
