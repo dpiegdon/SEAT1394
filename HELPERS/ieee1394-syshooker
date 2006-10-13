@@ -1,0 +1,76 @@
+
+=========================================================================
+
+problem: all threads in one page... this page in cache?
+
+-> disable cache first!
+
+=========================================================================
+
+first, find possible int80-entry-points (syscall-entrypoint), then try
+to hook them (1-4). if this works, create a mutex which singles out one
+thread. use this thread from there one, others still stalled. this thread
+is called worker.
+
+worker writes stuff like gdtr, idtr et al, so we can read it. then worker
+allocs a page with kmalloc (magically found the adress of kmalloc... FIXME)
+tells us the address of the page, then stalls in another endless-loop.
+we find the page (bridgehead) (via now known physical->logical mapping)
+and write there:
+
+two endless-loops. let worker hit first eloop, all other threads second
+eloop. restore int80-entry-point, let non-worker-threads hit restored
+handler.
+
+put some code to bridgehead that installs a better rootkit that can
+communicate with us. in its init, let it hook some function. let worker
+run that code and then let worker jump back to int80-handler.
+
+fin.
+
+
+
+
+1) write:
+
+	int80_entry:
+++		jmp (relative) int80_entry;
+	.align 64 bit
+	pcount: (relative to int80 entry)
+++		dd 0;
+
+2) write:
+
+	int80_entry:
+		jmp (relative) int80_entry;
+	.align 64 bit
+	pcount: (relative to int80 entry)
+		dd 0;
+	entry_pcount:	
+++		push eax...edx
+++		push ds
+++		push cs
+++		call (relative) get_my_addr;
+++	get_my_addr:
+++		pop ds
+++		pop edx
+++		add edx,pcount
+++		inc edx
+++	loop_pcount:
+++		jmp (relative) loop_pcount
+
+3) write:
+
+	int80_entry:
+++		jmp (relative) entry_pcount
+	.align 64 bit
+	pcount: (relative to int80 entry)
+		dd 0;
+	entry_pcount:	
+		...
+
+4) wait 1 sec, check if pcount changed.
+if not, revoke changes and try next one
+if so, continue with 5.
+
+
