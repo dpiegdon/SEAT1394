@@ -9,6 +9,8 @@
 
 #include <physical.h>
 
+#define PHYSICAL_FIREWIRE
+
 int main(int argc, char**argv)
 {
 #ifdef PHYSICAL_DEV_MEM
@@ -29,8 +31,6 @@ int main(int argc, char**argv)
 		printf("physical handle is null\n");
 		return -1;
 	}
-
-#define PHYSICAL_FIREWIRE
 
 #ifdef PHYSICAL_DEV_MEM
 	memfd = open("/dev/mem", O_RDONLY | O_LARGEFILE);

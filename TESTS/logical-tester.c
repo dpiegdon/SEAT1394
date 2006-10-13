@@ -16,7 +16,9 @@ char pagedir[4096];
 
 int main(int argc, char**argv)
 {
+#ifdef PHYSICAL_DEV_MEM
 	int memfd;
+#endif
 	int dumpfd;
 
 	physical_handle phy;
@@ -32,6 +34,7 @@ int main(int argc, char**argv)
 		printf("physical handle is null\n");
 		return -2;
 	}
+#ifdef PHYSICAL_DEV_MEM
 	memfd = open("/dev/mem", O_RDWR | O_LARGEFILE);
 //	memfd = open("/home/datenhalde/fwire/2/memdump", O_RDWR | O_LARGEFILE | O_SYNC);
 	if(memfd < 0) {
@@ -40,11 +43,14 @@ int main(int argc, char**argv)
 	}
 
 	phy_data.filedescriptor.fd = memfd;
-
 	if(physical_handle_associate(phy, physical_filedescriptor, &phy_data, 4096)) {
 		printf("physical_handle_associate() failed\n");
 		return -4;
 	}
+#endif
+#ifdef PHYSICAL_FIREWIRE
+	// XXX
+#endif
 
 	printf("new log handle..\n"); fflush(stdout);
 	log = logical_new_handle();
@@ -92,7 +98,12 @@ int main(int argc, char**argv)
 	
 	// exit 
 	close(dumpfd);
+#ifdef PHYSICAL_DEV_MEM
 	close(memfd);
+#endif
+#ifdef PHYSICAL_FIREWIRE
+	raw1394_destroy_handle(phy_data.ieee1394.raw1394handle);
+#endif
 	return 0;
 }
 
