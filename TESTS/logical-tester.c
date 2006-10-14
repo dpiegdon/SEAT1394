@@ -13,6 +13,7 @@
 
 char pagedir[4096];
 
+#define PHYSICAL_DEV_MEM
 
 int main(int argc, char**argv)
 {
@@ -35,7 +36,7 @@ int main(int argc, char**argv)
 		return -2;
 	}
 #ifdef PHYSICAL_DEV_MEM
-	memfd = open("/dev/mem", O_RDWR | O_LARGEFILE);
+	memfd = open("foo/foo", O_RDWR | O_LARGEFILE);
 //	memfd = open("/home/datenhalde/fwire/2/memdump", O_RDWR | O_LARGEFILE | O_SYNC);
 	if(memfd < 0) {
 		printf("failed to open /dev/mem\n");
@@ -81,6 +82,7 @@ int main(int argc, char**argv)
 	} else
 		printf("*log is 0x%08x\n", foo);
 
+	printf("press a key and i'll try to write\n");
 	getchar();
 
 	printf("trying to overwrite...\n");
