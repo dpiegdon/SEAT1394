@@ -56,7 +56,7 @@ static float pagedirtest_prob_linux3G1G(struct logical_handle_data* h, void* pag
 }
 
 // TODO:
-//	Linux2G2G
+//	Linux2G2G		(__PAGE_OFFSET = 0x80000000 ?)
 //	Windows (XP, ...)
 //	(Free,Open,Net)-BSD
 //	...
