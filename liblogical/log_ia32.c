@@ -4,6 +4,7 @@
 
 #include <ia32/ia32_paging.h>
 #include <physical.h>
+#include <endian_swap.h>
 
 #include "logical.h"
 
@@ -23,6 +24,9 @@ static int pagedirtest_fast_linux3G1G(struct logical_handle_data* h, addr_t phys
 	// but check this possibility, too (?)
 	// if not, this is not a linux-PDE with __PAGE_OFFSET 0xc0000000 (that is a linux with 3G/1G memlayout)
 	physical_read(h->phy, physical_pageno * h->phy->pagesize + 0x300*sizeof(union pagedir_entry), &pde, sizeof(pde));
+#ifdef __BIG_ENDIAN__
+	pde.raw = endian_swap32(pde.raw);
+#endif
 	if(pde.simple.P) {
 		if(pde.simple.PS) {
 			// 4M-page: this entry should be global, superuser (U_S == 0) and the phys page located at 0x0
@@ -163,6 +167,12 @@ int log_ia32_set_new_pagedirectory(struct logical_handle_data* h, void* pagedir)
 	// copy all pagetables to buffer
 	for(pn=0; pn<1024; pn++) {
 		pde = PDE(pn);
+#ifdef __BIG_ENDIAN__
+		// correct byte-order on the fly
+		pde->raw = endian_swap32(pde->raw);
+		// and once and for all.
+		PDE(pn)->raw = pde->raw;
+#endif
 		if( (pde->simple.P == 1) && (pde->simple.PS == 0) ) {
 			// pagedir entry is present and a pointer to a pagetable,
 			// it points to a pagetable. cache this one, too.
@@ -177,6 +187,17 @@ int log_ia32_set_new_pagedirectory(struct logical_handle_data* h, void* pagedir)
 				// free all loaded PTs and return an error
 
 				return errno;
+			} else {
+#ifdef __BIG_ENDIAN__
+				int ptc;
+				uint32_t* pte;
+				// correct byte-order on the fly in all pagetables
+				pte = h->data.ia32.pagetable_dir[pn];
+				for(ptc = 0; ptc < 1024; ptc++) {
+					*pte = endian_swap32(*pte);
+					pte++;
+				}
+#endif
 			}
 		}
 	}

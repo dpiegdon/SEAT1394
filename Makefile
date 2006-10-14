@@ -14,9 +14,11 @@ clean:		libphysical-clean liblogical-clean
 headers-install:
 	mkdir -p $(PREFIX)/include/ia32
 	cp include/ia32/* $(PREFIX)/include/ia32/
+	cp include/endian_swap.h $(PREFIX)/include/
 
 headers-uninstall:
 	-rm -R $(PREFIX)/include/ia32
+	-rm $(PREFIX)/include/endian_swap.h
 
 
 libphysical-install:

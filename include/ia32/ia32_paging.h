@@ -2,6 +2,8 @@
 #ifndef __IA32_PAGING_H__
 # define __IA32_PAGING_H__
 
+#include <stdint.h>
+
 struct pagedir_simple {
 	unsigned int	P:1;				// present (1: present in physical memory)
 	unsigned int	reserved1:6;			// don't touch
@@ -50,6 +52,7 @@ union pagedir_entry {
 	struct pagedir_simple simple;
 	struct pagedir_4k_entry table;
 	struct pagedir_4M_entry page;
+	uint32_t raw;
 };
 
 
