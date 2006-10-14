@@ -2,6 +2,10 @@
 #ifndef __IA32_SEGMENT_H__
 # define __IA32_SEGMENT_H__
 
+#ifndef __BIG_ENDIAN__
+# error ia32_segment.h not corrected for endianness, yet
+#endif
+
 struct segment_selector {
 	unsigned int	RPL:2;				// requested privilege level
 	unsigned int	TI:1;				// table indicator: 0 = GDT, 1 = LDT

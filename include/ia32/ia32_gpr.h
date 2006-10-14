@@ -2,6 +2,10 @@
 #ifndef __IA32_GPR_H__
 # define __IA32_GPR_H__
 
+#ifndef __BIG_ENDIAN__
+# error ia32_gpr.h not corrected for endianness, yet
+#endif
+
 struct eflags {
 	unsigned int	CF:1;				// (carry flag)
 	unsigned int	reserved4:1;			// set to 1

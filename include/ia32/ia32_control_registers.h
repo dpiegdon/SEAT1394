@@ -2,6 +2,10 @@
 #ifndef __IA32_CONTROL_REGISTERS_H__
 # define __IA32_CONTROL_REGISTERS_H__
 
+#ifndef __BIG_ENDIAN__
+# error ia32_control_registers.h not corrected for endianness, yet
+#endif
+
 struct cr0 {
 	unsigned int	PE:1;				// protection enable
 	unsigned int	MP:1;				// monitor coprocessor (FPU)
