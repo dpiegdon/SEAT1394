@@ -2,7 +2,7 @@
 #ifndef __IA32_SEGMENT_H__
 # define __IA32_SEGMENT_H__
 
-#ifndef __BIG_ENDIAN__
+#ifdef __BIG_ENDIAN__
 # error ia32_segment.h not corrected for endianness, yet
 #endif
 

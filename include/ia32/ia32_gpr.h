@@ -2,7 +2,7 @@
 #ifndef __IA32_GPR_H__
 # define __IA32_GPR_H__
 
-#ifndef __BIG_ENDIAN__
+#ifdef __BIG_ENDIAN__
 # error ia32_gpr.h not corrected for endianness, yet
 #endif
 
