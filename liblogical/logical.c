@@ -70,11 +70,12 @@ int logical_handle_release(logical_handle h)
 	return 0;
 }
 
-// for all logical adressing, we need a pagedirectory with information, how to address
-// set new pagedir will use a pagedir provided in a buffer.
+// for all logical adressing, we need a pagedirectory with information, how to address.
+// set_new_pagedir will use a pagedir provided in a buffer.
 // depending on the architecture it may load secondary and tertiary information from the
 // physical source.
-// the data in pagedir is not touched and not used after logical_set_new_pagedirectory().
+// the data in pagedir is not touched and not used after logical_set_new_pagedirectory(),
+// all needed data is internally buffered.
 int logical_set_new_pagedirectory(logical_handle h, void* pagedir)
 {
 	if(h && (h->arch != arch_none)) {
@@ -83,9 +84,8 @@ int logical_set_new_pagedirectory(logical_handle h, void* pagedir)
 		return -EBADR;
 }
 
-// load_new_pagedir will load a page from the physical source and use this
-// the pagedir is copied into a buffer and this is used until the next association with
-// a new pagedir.
+// load_new_pagedir will load a page from the physical source and use this page as the
+// new pagedir via set_new_pagedirectory.
 int logical_load_new_pagedir(logical_handle h, addr_t pagedir_pageno)
 {
 	void* pagedir;
@@ -108,7 +108,8 @@ int logical_load_new_pagedir(logical_handle h, addr_t pagedir_pageno)
 		return -EBADR;
 }
 
-// gives a quick guess, if (1) the _physical_ page is a page-directory or not (0)
+// gives a quick guess, if (1) the _physical_ page is a page-directory on this
+// architecture or not (0)
 // < 0 on error
 int logical_is_pagedir_fast(logical_handle h, addr_t physical_pageno)
 {

@@ -2,6 +2,15 @@
 #ifndef __ENDIAN_SWAP_H__
 # define __ENDIAN_SWAP_H__
 
+// endian_swapXX will convert from big to little endianess
+// and also from little to big endianess.
+//
+// needed, because htons() et al only do something, if
+// host-byteoder != network-byteorder. but if we
+// somehow get data from a different byteordered system
+// (e.g. via physical mem), we need to change it, even
+// if htons does not do anything... :(
+
 inline uint64_t endian_swap64(uint64_t val)
 {
 	uint64_t sval;
