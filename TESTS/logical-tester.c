@@ -61,8 +61,8 @@ int main(int argc, char**argv)
 		return -5;
 	}
 
-#define PAGEDIR 0x28bd1
-#define LOGICAL 0xbfa5c180
+#define PAGEDIR 0x2b6a2
+#define LOGICAL 0xbfc06330
 
 	if(!logical_is_pagedir_fast(log, PAGEDIR)) {
 		printf("is not a pagedir\n");
