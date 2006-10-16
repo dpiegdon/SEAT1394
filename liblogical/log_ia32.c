@@ -7,6 +7,7 @@
 #include <endian_swap.h>
 
 #include "logical.h"
+#include "simple_ncd.h"
 
 #define PDE(number) (	(union pagedir_entry*)				\
 				(h->data.ia32.pagedir) + (number)	\

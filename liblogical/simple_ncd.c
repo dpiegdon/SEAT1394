@@ -7,7 +7,7 @@
 #define MIN(a, b)  (((a) < (b)) ? (a) : (b))
 #define MAX(a, b)  (((a) > (b)) ? (a) : (b))
 
-// simple_ncd will calculate the NCD between x,y
+// compute simple NCD between blob x and blob y
 float simple_ncd(void* x, size_t len_x, void* y, size_t len_y)
 {
 	void* xy;
