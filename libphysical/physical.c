@@ -7,6 +7,7 @@
 #include "physical.h"
 #include "phys_fd.h"
 #include "phys_ieee1394.h"
+#include "phys_gdb.h"
 
 // request a new handle. returns NULL on error
 physical_handle physical_new_handle()
@@ -69,6 +70,20 @@ int physical_handle_associate(physical_handle h, enum physical_type type, union 
 
 			if(physical_ieee1394_init(h)) {
 				h->type = physical_none;
+				return -EINVAL;
+			}
+			break;
+		case physical_gdb:
+			h->type		= physical_gdb;
+
+			h->finish	= physical_gdb_finish;
+			h->read		= physical_gdb_read;
+			h->write	= physical_gdb_write;
+			h->read_page	= physical_gdb_read_page;
+			h->write_page	= physical_gdb_write_page;
+
+			if(physical_gdb_init(h)) {
+				h->type = physical_gdb;
 				return -EINVAL;
 			}
 			break;

@@ -15,8 +15,9 @@ typedef uint64_t addr_t;
 enum physical_type {
 	physical_none		= 0,	// internal only
 	physical_filedescriptor,	// access phys mem via a given FD. all files should be opened with O_LARGEFILE to allow 64bit-addressing!
-	physical_ieee1394		// access phys mem via ieee1394 (firewire), using libraw1394
-// TODO	physical_qemu_gdb		// access phys mem in a qemu-emulator via the GDB-remote-stub of qemu
+	physical_ieee1394,		// access phys mem via ieee1394 (firewire), using libraw1394
+	physical_gdb			// access phys mem via the gdb serial protocol
+					// typically this will not be useful, only in combination with a VM like qemu that supports gdb
 // TODO physical_qemu_savedvm		// access phys mem in a saved vm-status-file of qemu
 // TODO physical_suspended		// access phys mem in a suspend-to-disk-image
 };
@@ -34,10 +35,14 @@ struct physical_type_data_ieee1394 {
 					// via raw1394_set_port().)
 	nodeid_t	raw1394target;	// target on the firewire bus
 };
+struct physical_type_data_gdb {
+	int fd;				// FD of connected gdb (e.g. open a tcp-socket to a gdb)
+};
 union physical_type_data {
 	struct physical_type_data_none			none;
 	struct physical_type_data_filedescriptor	filedescriptor;
 	struct physical_type_data_ieee1394		ieee1394;
+	struct physical_type_data_gdb			gdb;
 };
 
 
