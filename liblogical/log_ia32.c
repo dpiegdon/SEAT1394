@@ -57,7 +57,6 @@ static float pagedirtest_prob_linux3G1G(struct logical_handle_data* h, void* pag
 	// for bzip2: blocksize, workfactor, bzverbosity
 	// 	defaults may be used when omitted
 	ncd = simple_ncd(page, h->phy->pagesize, log_ia32_samplepagedir_linux3G1G, 4096);
-	printf("ncd %f ; ", ncd);
 
 	if(ncd > 1.)
 		ncd = 1.;
