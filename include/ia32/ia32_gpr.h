@@ -2,7 +2,12 @@
 #ifndef __IA32_GPR_H__
 # define __IA32_GPR_H__
 
-#include <endian.h>
+#ifndef __KERNEL__
+# include <endian.h>
+#else
+# undef __BIG_ENDIAN__
+# define __LITTLE_ENDIAN__
+#endif
 
 // be advised: though here are some endian-corrections, on BIG-endian you will still have
 // to swap all bytes. you may use endian_swap32();
