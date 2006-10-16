@@ -4,6 +4,9 @@
 
 #include "phys_gdb.h"
 
+// protocol definition:
+// http://www1.jct.ac.il/cc-res/online-doc/gdb/gdb_109.html
+
 int physical_gdb_init(struct physical_handle_data* h)
 {
 	// this stub is not ready, yet.
