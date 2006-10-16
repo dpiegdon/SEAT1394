@@ -26,9 +26,6 @@ int main(int argc, char**argv)
 	union physical_type_data phy_data;
 	logical_handle log;
 
-	int pagedir_pageno;
-	addr_t pn;
-
 	// create and associate a physical source to /dev/mem
 	phy = physical_new_handle();
 	if(!phy) {
@@ -36,7 +33,7 @@ int main(int argc, char**argv)
 		return -2;
 	}
 #ifdef PHYSICAL_DEV_MEM
-	memfd = open("foo/foo", O_RDWR | O_LARGEFILE);
+	memfd = open("/dev/mem", O_RDONLY | O_LARGEFILE);
 //	memfd = open("/home/datenhalde/fwire/2/memdump", O_RDWR | O_LARGEFILE | O_SYNC);
 	if(memfd < 0) {
 		printf("failed to open /dev/mem\n");
@@ -52,7 +49,7 @@ int main(int argc, char**argv)
 #ifdef PHYSICAL_FIREWIRE
 	// XXX
 #endif
-
+	// associate logical
 	printf("new log handle..\n"); fflush(stdout);
 	log = logical_new_handle();
 	printf("assoc log handle..\n"); fflush(stdout);
@@ -61,38 +58,25 @@ int main(int argc, char**argv)
 		return -5;
 	}
 
-#define PAGEDIR 0x2b6a2
-#define LOGICAL 0xbfc06330
+	// FUNSTUFF begin
 
-	if(!logical_is_pagedir_fast(log, PAGEDIR)) {
-		printf("is not a pagedir\n");
-		return -6;
+	addr_t pn;
+	char page[4096];
+	float prob;
+
+	for( pn = 0; pn < 0x60000; pn++ ) {
+//		if(logical_is_pagedir_fast(log, pn)) {
+			// load page
+			physical_read_page(phy, pn, page);
+			prob = logical_is_pagedir_probability(log, page);
+			printf("page %llu prob: %f \n", pn, prob);
+//		}
 	}
 
-	printf("loading pagedir at page %p\n", PAGEDIR);
-	if(logical_load_new_pagedir(log, PAGEDIR)) {
-		printf("failed.\n");
-		return -7;
-	}
-	printf("ok\n");
 
-	uint32_t foo = 0x30303030;
-	if(logical_read(log, LOGICAL, &foo, sizeof(foo))) {
-		printf("*log fails to log_read\n");
-	} else
-		printf("*log is 0x%08x\n", foo);
+	// FUNSTUFF end
 
-	printf("press a key and i'll try to write\n");
-	getchar();
-
-	printf("trying to overwrite...\n");
-	foo = 0xdeadbeef;
-	int bar;
-	if(bar = logical_write(log, LOGICAL, &foo, sizeof(foo))) {
-		printf("overwrite failed: %d (%s)\n",bar, strerror(errno));
-		
-	}
-
+	// release handles
 	printf("rel log handle..\n"); fflush(stdout);
 	logical_handle_release(log);
 	printf("rel phy handle..\n"); fflush(stdout);

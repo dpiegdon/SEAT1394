@@ -8,6 +8,7 @@
 
 #include "logical.h"
 #include "simple_ncd.h"
+#include "log_ia32_sample_pagedirs.h"
 
 #define PDE(number) (	(union pagedir_entry*)				\
 				(h->data.ia32.pagedir) + (number)	\
@@ -50,10 +51,17 @@ static int pagedirtest_fast_linux3G1G(struct logical_handle_data* h, addr_t phys
 
 static float pagedirtest_prob_linux3G1G(struct logical_handle_data* h, void* page)
 {
+	float ncd = 2;
+	float prob;
 	// test NCD against sample page
 	// for bzip2: blocksize, workfactor, bzverbosity
 	// 	defaults may be used when omitted
-	return .0;
+	ncd = simple_ncd(page, h->phy->pagesize, log_ia32_samplepagedir_linux3G1G, 4096);
+	printf("ncd %f ; ", ncd);
+
+	if(ncd > 1.)
+		ncd = 1.;
+	return 1. - ncd;
 }
 
 // TODO:
