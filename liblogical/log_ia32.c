@@ -52,7 +52,6 @@ static int pagedirtest_fast_linux3G1G(struct logical_handle_data* h, addr_t phys
 static float pagedirtest_prob_linux3G1G(struct logical_handle_data* h, void* page)
 {
 	float ncd = 2;
-	float prob;
 	// test NCD against sample page
 	// for bzip2: blocksize, workfactor, bzverbosity
 	// 	defaults may be used when omitted

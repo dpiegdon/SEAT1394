@@ -1,0 +1,10 @@
+
+PHYSICAL:
+ - gdb-physical
+
+LOGICAL
+- better pagedir-sample for ia32-linux3G1G
+
+TESTER:
+ - process identifier (load stackpointer and check argv[0])
+
