@@ -10,7 +10,7 @@ OBJECTS = $(patsubst %.c,%.o,$(shell echo *.c))
 HEADERS = $(shell echo *.h)
 
 CFLAGS += -O9 -fPIC -finline-functions  -ffast-math  -funroll-all-loops -Wall -Wpointer-arith -D_REENTRANT -I${PREFIX}/include
-LDFLAGS+= -shared -lphysical -L$(PREFIX)/lib
+LDFLAGS+= -shared -lphysical -L$(PREFIX)/lib -lbz2
 
 all:	liblogical.so
 	-
