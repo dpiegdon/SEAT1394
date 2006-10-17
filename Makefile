@@ -1,15 +1,15 @@
 
 PREFIX ?= $(HOME)
 
-.PHONY : all clean install uninstall headers-install libphysical-installliblogical-install
+.PHONY : all clean install uninstall headers-install libphysical-installliblinear-install
 
 all:		install
 	
-install:	headers-install libphysical-install liblogical-install
+install:	headers-install libphysical-install liblinear-install
 
-uninstall:	headers-uninstall libphysical-uninstall liblogical-uninstall
+uninstall:	headers-uninstall libphysical-uninstall liblinear-uninstall
 
-clean:		libphysical-clean liblogical-clean
+clean:		libphysical-clean liblinear-clean
 
 headers-install:
 	mkdir -p $(PREFIX)/include/ia32
@@ -31,11 +31,11 @@ libphysical-clean:
 	make -C libphysical clean
 
 
-liblogical-install:
-	make -C liblogical install
+liblinear-install:
+	make -C liblinear install
 
-liblogical-uninstall:
-	make -C liblogical uninstall
+liblinear-uninstall:
+	make -C liblinear uninstall
 
-liblogical-clean:
-	make -C liblogical clean
+liblinear-clean:
+	make -C liblinear clean

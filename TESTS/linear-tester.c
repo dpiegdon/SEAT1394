@@ -9,7 +9,7 @@
 #include <errno.h>
 
 #include <physical.h>
-#include <logical.h>
+#include <linear.h>
 
 char pagedir[4096];
 
@@ -24,7 +24,7 @@ int main(int argc, char**argv)
 
 	physical_handle phy;
 	union physical_type_data phy_data;
-	logical_handle log;
+	linear_handle log;
 
 	// create and associate a physical source to /dev/mem
 	phy = physical_new_handle();
@@ -49,11 +49,11 @@ int main(int argc, char**argv)
 #ifdef PHYSICAL_FIREWIRE
 	// XXX
 #endif
-	// associate logical
+	// associate linear
 	printf("new log handle..\n"); fflush(stdout);
-	log = logical_new_handle();
+	log = linear_new_handle();
 	printf("assoc log handle..\n"); fflush(stdout);
-	if(logical_handle_associate(log, phy, arch_ia32)) {
+	if(linear_handle_associate(log, phy, arch_ia32)) {
 		printf("failed to associate log ia32!\n");
 		return -5;
 	}
@@ -65,10 +65,10 @@ int main(int argc, char**argv)
 	float prob;
 
 	for( pn = 0; pn < 0x60000; pn++ ) {
-//		if(logical_is_pagedir_fast(log, pn)) {
+//		if(linear_is_pagedir_fast(log, pn)) {
 			// load page
 			physical_read_page(phy, pn, page);
-			prob = logical_is_pagedir_probability(log, page);
+			prob = linear_is_pagedir_probability(log, page);
 			printf("page %llu prob: %f \n", pn, prob);
 //		}
 	}
@@ -78,7 +78,7 @@ int main(int argc, char**argv)
 
 	// release handles
 	printf("rel log handle..\n"); fflush(stdout);
-	logical_handle_release(log);
+	linear_handle_release(log);
 	printf("rel phy handle..\n"); fflush(stdout);
 	physical_handle_release(phy);
 	
