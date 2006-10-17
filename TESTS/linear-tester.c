@@ -14,8 +14,9 @@
 char pagedir[4096];
 
 #define PHYSICAL_DEV_MEM
-#define MEMSOURCE "/dev/mem"
+//#define MEMSOURCE "/dev/mem"
 //#define MEMSOURCE "/home/datenhalde/memdump"
+#define MEMSOURCE "qemu.memdump"
 
 void dump_page(uint32_t pn, char* page)
 {
@@ -26,7 +27,7 @@ void dump_page(uint32_t pn, char* page)
 
 	addr = pn * 4096;
 	for(i = 0; i<4096; i+=16) {
-		printf("page 0x%06x, addr 0x%08x: ", pn, addr);
+		printf("page 0x%05x, addr 0x%08x: ", pn, addr+i);
 		for(j = 0; j < 16; j++) {
 			printf("%02hhx ", (page+i)[j]);
 			if((j+1)%4 == 0 && j)
@@ -37,7 +38,7 @@ void dump_page(uint32_t pn, char* page)
 			c = (page+i)[j];
 			if(c < 0x20)
 				c = '.';
-			if(c == 0x7f)
+			if(c >= 0x7f)
 				c = '.';
 			putchar(c);
 //			if((j+1)%4 == 0 && j)
@@ -55,14 +56,19 @@ void print_linear(linear_handle h)
 	char* page;
 	page = malloc(4096);
 
-	pn = 0;
+	//pn = 0;
+	pn = 0xbfc00;
 
-	while(pn < (4*1024*1024)) {
+	//while(pn < (4*1024*1024)) {
+	while(pn < 0xc0000) {
 		if(linear_to_physical(h, pn*4096, &padr))
-			printf("UNMAPPED PAGE 0x%06x\n", (uint32_t)pn);
+			printf("UNMAPPED PAGE 0x%05x\n", (uint32_t)pn);
 		else {
-			printf("page 0x%06x maps to 0x%08x\n", (uint32_t)pn, (uint32_t)padr);
-			dump_page((uint32_t)pn, page);
+			printf("page 0x%05x maps to 0x%08x\n", (uint32_t)pn, (uint32_t)padr);
+			if(linear_read_page(h, pn, page))
+				printf("UNREADABLE PAGE\n");
+			else
+				dump_page((uint32_t)pn, page);
 		}
 		pn++;
 	}
@@ -95,7 +101,7 @@ void print_stack(linear_handle h)
 		printf("seek_upper linear address 0x%08x maps to 0x%08x\n", (uint32_t)pn*4096, (uint32_t)padr);
 		e = linear_read_page(h, pn, page);
 	};
-	printf("found upper stack-bound at page 0x%06x\n", (uint32_t)pn);
+	printf("found upper stack-bound at page 0x%05x\n", (uint32_t)pn);
 	upper = pn+1;
 	while(e != -EFAULT) {
 		pn--;
@@ -103,7 +109,7 @@ void print_stack(linear_handle h)
 		e = linear_read_page(h, pn, page);
 //		printf("%d\n", e);
 	};
-	printf("found upper stack-bound at page 0x%06x\n", (uint32_t)pn);
+	printf("found upper stack-bound at page 0x%05x\n", (uint32_t)pn);
 	// now we are at top-of-stack
 	// so dump it
 	while(pn<upper) {
@@ -164,23 +170,29 @@ int main(/*int argc, char**argv*/)
 	addr_t pn;
 	char page[4096];
 	float prob;
+	addr_t padr;
 
 	// search all pages for pagedirs
 	// then, for each found, print stack of process
+	// page 0x60000: 1.5GB physical
 	for( pn = 0; pn < 0x60000; pn++ ) {
 		if(linear_is_pagedir_fast(lin, pn)) {
 			// load page
 			physical_read_page(phy, pn, page);
 			prob = linear_is_pagedir_probability(lin, page);
-			printf("page %llu prob: %f \n", pn, prob);
-			if(prob > 0.3) {
+			printf("page 0x%05x prob: %f \n", (uint32_t)pn, prob);
+			if(prob > 0.1) {
+				printf("pagedir:\n");
+				//dump_page(pn, page);
 				if(linear_set_new_pagedirectory(lin, page)) {
 					printf("loading pagedir failed\n");
 					continue;
 				}
+				//linear_to_physical(lin, 0xc0000000, &padr);
+				//printf("0xC0000000 -> 0x%08x\n", (uint32_t)padr);
 				//print_stack(lin);
 				print_linear(lin);
-				return 0;
+				//return 0;
 			}
 		}
 	}
