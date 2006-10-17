@@ -140,13 +140,24 @@ union physical_page_mapping {
 		unsigned int adr:32;
 	};
 	struct {
+#ifndef __BIG_ENDIAN__
 		unsigned int page_offset:12;
 		unsigned int pte_entry:10;
 		unsigned int pde_entry:10;
+#else
+		unsigned int pde_entry:10;
+		unsigned int pte_entry:10;
+		unsigned int page_offset:12;
+#endif
 	} pte_mapping;
 	struct {
+#ifndef __BIG_ENDIAN__
 		unsigned int page_offset:22;
 		unsigned int pde_entry:10;
+#else
+		unsigned int pde_entry:10;
+		unsigned int page_offset:22;
+#endif
 	} pde_mapping;
 } __attribute__((__packed__));
 
