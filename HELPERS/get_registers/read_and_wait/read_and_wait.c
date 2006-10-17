@@ -166,7 +166,7 @@ int main()
 						fclose(dumpfile);
 
 						printf("\t\t\t\tSTORED tab%08x\n", i * 1024 * 4);
-/*
+/**/
 						// now parse this pagetable, as well.
 						for( j = 0; j < 1024; j++ ) {
 							// if page is present, show it.
@@ -187,7 +187,7 @@ int main()
 								      );
 							}
 						}
-*/
+/**/
 					} else {
 						printf("PDE %4x:   4M-page, phys %08x, PAT:%s, avail:0x%3x, %s, %s, %s, PCD:%s, PWT:%s, %s, R/W:%s, logical adr %08x\n",
 							i,

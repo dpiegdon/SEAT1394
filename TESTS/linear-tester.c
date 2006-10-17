@@ -15,6 +15,54 @@ char pagedir[4096];
 
 #define PHYSICAL_DEV_MEM
 
+void dump_page(uint32_t pn, char* page)
+{
+	uint32_t addr;
+
+	addr = pn * 4096;
+	for(i = 0; i<4095/32; i+=32) {
+		printf("page 0x%06x, addr 0x%08x: %2x %2x %2x %2x  %2x %2x %2x %2x  %2x %2x %2x %2x  %2x %2x %2x %2x  |  %c%c%c%c %c%c%c%c %c%c%c%c %c%c%c%c\n"
+				pn, addr,
+/// XXX
+		      );
+	}
+
+}
+
+
+void print_stack(linear_handle h)
+{
+	char page[4096];
+	addr_t pn;
+	int e;
+
+	printf("\tstack of this process:\n");
+
+	// seek from 0xC0000000 backwards, until the stack-bottom is found
+	// (there is always some space between 0xc0000000 and the real stack
+	// that is located somewhere 0xBFxxxxxx
+	pn = ( 0xc0000000 / h->phy->pagesize );
+	e = -EFAULT;
+	while(e == -EFAULT) {
+		pn--;
+		e = linear_read_page(h, pn, page);
+	};
+	while(e != -EFAULT) {
+		pn--;
+		e = linear_read_page(h, pn, page);
+	};
+	// now we are at top-of-stack
+	// so dump it
+	while(1) {
+		if(-EFAULT == linear_read_page(h, pn, page))
+			break;
+		dump_page(pn, page);
+		pn++;
+	}
+
+}
+
+
 int main(int argc, char**argv)
 {
 #ifdef PHYSICAL_DEV_MEM
@@ -64,13 +112,18 @@ int main(int argc, char**argv)
 	char page[4096];
 	float prob;
 
+	// search all pages for pagedirs
+	// then, for each found, print stack of process
 	for( pn = 0; pn < 0x60000; pn++ ) {
-//		if(linear_is_pagedir_fast(log, pn)) {
+		if(linear_is_pagedir_fast(log, pn)) {
 			// load page
 			physical_read_page(phy, pn, page);
 			prob = linear_is_pagedir_probability(log, page);
 			printf("page %llu prob: %f \n", pn, prob);
-//		}
+			if(prob > 0.3) {
+				print_stack(lin);
+			}
+		}
 	}
 
 
