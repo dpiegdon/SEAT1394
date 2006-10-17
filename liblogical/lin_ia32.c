@@ -6,9 +6,9 @@
 #include <physical.h>
 #include <endian_swap.h>
 
-#include "logical.h"
+#include "linear.h"
 #include "simple_ncd.h"
-#include "log_ia32_sample_pagedirs.h"
+#include "lin_ia32_sample_pagedirs.h"
 
 #define PDE(number) (	(union pagedir_entry*)				\
 				(h->data.ia32.pagedir) + (number)	\
@@ -17,11 +17,11 @@
 ////////////////////////////////////////////////////////////////////////////////
 // functions to check for signatures of a pagedir
 
-static int pagedirtest_fast_linux3G1G(struct logical_handle_data* h, addr_t physical_pageno)
+static int pagedirtest_fast_linux3G1G(struct linear_handle_data* h, addr_t physical_pageno)
 {
 	union pagedir_entry pde;
 
-	// on ia32-linux with a __PAGE_OFFSET of 0xc0000000, the logical adr 0xc0000000 will resolve to phys 0x0.
+	// on ia32-linux with a __PAGE_OFFSET of 0xc0000000, the linear adr 0xc0000000 will resolve to phys 0x0.
 	// check this. 0xc0000000 is PDE#0x300. should be a 4M-page and not a pointer to a pagetable.
 	// but check this possibility, too (?)
 	// if not, this is not a linux-PDE with __PAGE_OFFSET 0xc0000000 (that is a linux with 3G/1G memlayout)
@@ -49,13 +49,13 @@ static int pagedirtest_fast_linux3G1G(struct logical_handle_data* h, addr_t phys
 	return 0;
 }
 
-static float pagedirtest_prob_linux3G1G(struct logical_handle_data* h, void* page)
+static float pagedirtest_prob_linux3G1G(struct linear_handle_data* h, void* page)
 {
 	float ncd = 2;
 	// test NCD against sample page
 	// for bzip2: blocksize, workfactor, bzverbosity
 	// 	defaults may be used when omitted
-	ncd = simple_ncd(page, h->phy->pagesize, log_ia32_samplepagedir_linux3G1G, 4096);
+	ncd = simple_ncd(page, h->phy->pagesize, lin_ia32_samplepagedir_linux3G1G, 4096);
 
 	if(ncd > 1.)
 		ncd = 1.;
@@ -69,9 +69,9 @@ static float pagedirtest_prob_linux3G1G(struct logical_handle_data* h, void* pag
 //	...
 
 ////////////////////////////////////////////////////////////////////////////////
-// logical interface
+// linear interface
 
-int log_ia32_init(struct logical_handle_data* h)
+int lin_ia32_init(struct linear_handle_data* h)
 {
 	int pn;
 
@@ -88,7 +88,7 @@ int log_ia32_init(struct logical_handle_data* h)
 	return 0;
 }
 
-int log_ia32_finish(struct logical_handle_data* h)
+int lin_ia32_finish(struct linear_handle_data* h)
 {
 	int pn;
 
@@ -101,14 +101,14 @@ int log_ia32_finish(struct logical_handle_data* h)
 	return 0;
 }
 
-int log_ia32_is_pagedir_fast(struct logical_handle_data* h, addr_t physical_pageno)
+int lin_ia32_is_pagedir_fast(struct linear_handle_data* h, addr_t physical_pageno)
 {
 	return (
 			pagedirtest_fast_linux3G1G(h, physical_pageno)
 	       );
 }
 
-float log_ia32_is_pagedir_probability(struct logical_handle_data* h, void* page)
+float lin_ia32_is_pagedir_probability(struct linear_handle_data* h, void* page)
 {
 	return (
 			// MAX(...)
@@ -116,7 +116,7 @@ float log_ia32_is_pagedir_probability(struct logical_handle_data* h, void* page)
 	       );
 }
 
-int log_ia32_logical_to_physical(struct logical_handle_data* h, addr_t log_adr, addr_t* physical_adr)
+int lin_ia32_linear_to_physical(struct linear_handle_data* h, addr_t lin_adr, addr_t* physical_adr)
 {
 	union pagedir_entry *pde;
 	struct pagetable_entry *pt;
@@ -125,7 +125,7 @@ int log_ia32_logical_to_physical(struct logical_handle_data* h, addr_t log_adr, 
 
 	// physical address space can be no more than 4GB
 	// (FIXME: there are physical workarounds like PAE and PSE to increase to 16GB)
-	padr.adr = (log_adr & 0xffffffff);
+	padr.adr = (lin_adr & 0xffffffff);
 
 	// get matching PDE
 	pde = PDE(padr.pde_mapping.pde_entry);
@@ -154,7 +154,7 @@ int log_ia32_logical_to_physical(struct logical_handle_data* h, addr_t log_adr, 
 	}
 }
 
-int log_ia32_set_new_pagedirectory(struct logical_handle_data* h, void* pagedir)
+int lin_ia32_set_new_pagedirectory(struct linear_handle_data* h, void* pagedir)
 {
 	int pn;					// table entry number
 	union pagedir_entry	*pde;

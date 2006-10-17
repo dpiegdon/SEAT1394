@@ -12,27 +12,27 @@ HEADERS = $(shell echo *.h)
 CFLAGS += -O9 -fPIC -finline-functions  -ffast-math  -funroll-all-loops -Wall -Wpointer-arith -D_REENTRANT -I${PREFIX}/include
 LDFLAGS+= -shared -lphysical -L$(PREFIX)/lib -lbz2
 
-all:	liblogical.so
+all:	liblinear.so
 	-
 
 clean:
 	-$(RM) $(OBJECTS)
-	-$(RM) liblogical.so
+	-$(RM) liblinear.so
 
 install: all
-	strip liblogical.so
+	strip liblinear.so
 	mkdir -p ${PREFIX}/lib/
 	mkdir -p ${PREFIX}/include/
-	install -m 0555 liblogical.so ${PREFIX}/lib/
-	install -m 0444 logical.h ${PREFIX}/include/
+	install -m 0555 liblinear.so ${PREFIX}/lib/
+	install -m 0444 linear.h ${PREFIX}/include/
 
 uninstall:
-	$(RM) ${PREFIX}/lib/liblogical.so
-	$(RM) ${PREFIX}/include/logical.h
+	$(RM) ${PREFIX}/lib/liblinear.so
+	$(RM) ${PREFIX}/include/linear.h
 	-$(RMDIR) $(HOME)/lib/
 	-$(RMDIR) $(HOME)/include/
 
 $(OBJECTS): $(HEADERS) Makefile
 
-liblogical.so: $(OBJECTS)
+liblinear.so: $(OBJECTS)
 	$(CC) $(LDFLAGS) $(OBJECTS) -o $@
