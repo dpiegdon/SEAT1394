@@ -1,0 +1,1 @@
+/usr/src/linux/arch/i386/kernel/syscall_table.S
