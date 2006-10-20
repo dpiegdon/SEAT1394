@@ -62,6 +62,18 @@ void get_registers_getdata(char* dst)
 	__asm__("mov %%ss, %%ax\n"
 		: "=a" (v));
 	(*(struct register_dump*)dst).ss = v;
+
+	(*(struct register_dump*)dst).gdtr = -1;
+	__asm__("sgdt %0"
+		: "=m" ( (*(struct register_dump*)dst).gdtr ));
+
+	(*(struct register_dump*)dst).ldtr = -1;
+	__asm__("sldt %0"
+		: "=m" ( (*(struct register_dump*)dst).ldtr ));
+
+	(*(struct register_dump*)dst).idtr = -1;
+	__asm__("sidt %0"
+		: "=m" ( (*(struct register_dump*)dst).idtr ));
 }
 
 int get_registers_proc_read(char* page, char** start, off_t offset, int count, int* eof, void* data)

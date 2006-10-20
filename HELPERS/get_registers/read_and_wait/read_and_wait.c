@@ -38,8 +38,12 @@ int main()
 		"\tES:  %04x i:%c%04d, rpl:%2d \t\t |\t0x00cf92000000ffff        /* 0x68 kernel 4GB data at 0x00000000 */\n"
 		"\tFS:  %04x i:%c%04d, rpl:%2d \t\t |\t0x00cffa000000ffff        /* 0x73 user 4GB code at 0x00000000 */\n"
 		"\tGS:  %04x i:%c%04d, rpl:%2d \t\t |\t0x00cff2000000ffff        /* 0x7b user 4GB data at 0x00000000 */\n"
-		"\tSS:  %04x i:%c%04d, rpl:%2d \t\t |\t0x0000000000000000        /* 0x33 TLS entry 1 */\n"
- 
+		"\tSS:  %04x i:%c%04d, rpl:%2d \t\t |\t0x0000000000000000        /* 0x33 TLS entry 1 */\n\n"
+ 		
+		"\tGDTR: 0x%016llx\n"
+		"\tLDTR: 0x%016llx\n"
+		"\tIDTR: 0x%016llx\n"
+
 		"\n\n",
 		regs.dump.cr0,
 		regs.dump.cr3,
@@ -55,7 +59,11 @@ int main()
 		regs.dump.es, regs.parsed.es.TI ? 'l' : 'g', regs.parsed.es.index, regs.parsed.es.RPL,
 		regs.dump.fs, regs.parsed.fs.TI ? 'l' : 'g', regs.parsed.fs.index, regs.parsed.fs.RPL,
 		regs.dump.gs, regs.parsed.gs.TI ? 'l' : 'g', regs.parsed.gs.index, regs.parsed.gs.RPL,
-		regs.dump.ss, regs.parsed.ss.TI ? 'l' : 'g', regs.parsed.ss.index, regs.parsed.ss.RPL
+		regs.dump.ss, regs.parsed.ss.TI ? 'l' : 'g', regs.parsed.ss.index, regs.parsed.ss.RPL,
+
+		regs.parsed.gdtr,
+		regs.parsed.ldtr,
+		regs.parsed.idtr
 		);
 
 

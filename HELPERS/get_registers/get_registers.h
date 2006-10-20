@@ -21,6 +21,10 @@ struct register_dump {
 	uint16_t fs;
 	uint16_t gs;
 	uint16_t ss;
+
+	uint64_t gdtr;
+	uint64_t ldtr;
+	uint64_t idtr;
 } __attribute__ ((__packed__));
 
 struct register_parsed {
@@ -39,6 +43,10 @@ struct register_parsed {
 	struct segment_selector fs;
 	struct segment_selector gs;
 	struct segment_selector ss;
+
+	uint64_t gdtr;
+	uint64_t ldtr;
+	uint64_t idtr;
 } __attribute__ ((__packed__));
 
 union registers {
