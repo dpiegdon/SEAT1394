@@ -56,6 +56,7 @@ struct physical_type_data_ieee1394 {
 };
 struct physical_type_data_gdb {
 	int fd;				// FD of connected gdb (e.g. open a tcp-socket to a gdb)
+					// has to be opened O_NONBLOCK !
 };
 union physical_type_data {
 	struct physical_type_data_none			none;
