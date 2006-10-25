@@ -19,7 +19,7 @@
 
 static char buffer[BUFFERSIZE];
 
-int csr_read_to_file(int port, char* filename)
+int configrom_read_to_file(int port, char* filename)
 {
 	raw1394handle_t h;				// handle to access raw1394
 	size_t romsize;
@@ -61,7 +61,7 @@ int csr_read_to_file(int port, char* filename)
 	return 0;
 }
 
-int csr_write_from_file(int port, char* filename)
+int configrom_write_from_file(int port, char* filename)
 {
 	raw1394handle_t h;				// handle to access raw1394
 	size_t romsize;
@@ -113,7 +113,7 @@ int csr_write_from_file(int port, char* filename)
 
 }
 
-int csr_dump(int port, nodeid_t target, char* filename)
+int configrom_dump(int port, nodeid_t target, char* filename)
 {
 	raw1394handle_t h;				// handle to access raw1394
 	uint64_t config_adr;
@@ -130,7 +130,7 @@ int csr_dump(int port, nodeid_t target, char* filename)
 		return -1;
 	}
 	
-#define CHUNKSIZE 128
+#define CHUNKSIZE 4
 
 	// read CSR_CONFIG_ROM ... CSR_CONFIG_ROM_END from target
 	
@@ -141,7 +141,7 @@ printf("dumping %d chunks a %d bytes\n", ((CSR_CONFIG_ROM_END - CSR_CONFIG_ROM) 
 //printf("dumping adr 0x%llx, size %x to %p\n", config_adr, CHUNKSIZE, buffer_adr);
 
 		p = raw1394_read(h, target + NODE_OFFSET, config_adr, CHUNKSIZE, (quadlet_t*) buffer_adr);
-		if(p) {
+		if(p < 0) {
 			printf("failed to read target %d (0x%04x) at CSR offset 0x%04x\n", target, target + NODE_OFFSET, config_adr);
 		}
 	}
@@ -170,6 +170,10 @@ int ieee1394scan()
 	nodeid_t somenode;
 	int p;
 	int i;
+	int t;
+	uint64_t guid;
+	uint32_t high;
+	uint32_t low;
 
 	h = raw1394_new_handle();
 	if(!h) {
@@ -181,18 +185,27 @@ int ieee1394scan()
 	printf("got %d ieee1394 ports:\n", p);
 	// print info on all ports
 	for(i=0; i<p; i++) {
+		p = raw1394_set_port(h, i);
+		if(p < 0)
+			printf("failed to set port %d\n", i);
+		self = raw1394_get_local_id(h);
+		somenode = raw1394_get_irm_id(h);
+
 		printf("\tport %2d: \"%s\", %d nodes\n",
 				i, pinf[i].name, pinf[i].nodes);
+
+		for(t = 1; t <= pinf[i].nodes; t++) {
+			// read GUID of this node
+			raw1394_read(h, NODE_OFFSET + t, CSR_REGISTER_BASE + CSR_CONFIG_ROM + 0x0c, 4, &high);
+			raw1394_read(h, NODE_OFFSET + t, CSR_REGISTER_BASE + CSR_CONFIG_ROM + 0x0c, 4, &low);
+			guid = (((uint64_t)high) << 32) | low;
+			printf("\t\tnode %d (0x%04x): GUID: %016llX%s%s\n", t, t+NODE_OFFSET, guid,
+					(self - NODE_OFFSET) == t ? " (self)" : "",
+					(somenode - NODE_OFFSET) == t ? " (CSR)" : "");
+		}
 	}
 
 	return 0;
-
-	// per port:
-	printf("\nnodes:\n");
-	self = raw1394_get_local_id(h);
-	printf("self   is %d\n", (u_int16_t)self);
-	somenode = raw1394_get_irm_id(h);
-	printf("ISM    is %d\n", (u_int16_t)somenode);
 }
 
 
@@ -283,21 +296,21 @@ int main(int argc, char**argv)
 				printf("error: -r does not use -t and requires -p and -f\n");
 				return -1;
 			}
-			return csr_read_to_file(port, filename);
+			return configrom_read_to_file(port, filename);
 			break;
 		case COMMAND_WRITE:
 			if( (port == -1) || (target) || (!filename) ) {
 				printf("error: -w does not use -t and requires -p and -f\n");
 				return -1;
 			}
-			return csr_write_from_file(port, filename);
+			return configrom_write_from_file(port, filename);
 			break;
 		case COMMAND_DUMP:
 			if( (port == -1) || (!target) || (!filename)) {
 				printf("error: -w requires -p and -t and -f\n");
 				return -1;
 			}
-			return csr_dump(port, target, filename);
+			return configrom_dump(port, target, filename);
 			break;
 		case COMMAND_SCAN:
 			if( (port != -1) || (target) || (filename)) {

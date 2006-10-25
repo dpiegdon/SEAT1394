@@ -30,7 +30,8 @@
 
 #define RAWHANDLE (h->data.ieee1394.raw1394handle)
 #define TARGET    (h->data.ieee1394.raw1394target)
-#define BLOCKSIZE 1024
+//#define BLOCKSIZE 1024
+#define BLOCKSIZE 4
 
 int physical_ieee1394_init(struct physical_handle_data* h)
 {

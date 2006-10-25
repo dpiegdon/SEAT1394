@@ -98,7 +98,7 @@ static int gdb_receive_payload(struct physical_handle_data* h)
 
 int physical_gdb_init(struct physical_handle_data* h)
 {
-	// this stub is not ready, yet.
+	// XXX this stub is not ready, yet.
 	return -1;
 }
 
