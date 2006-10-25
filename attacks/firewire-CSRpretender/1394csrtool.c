@@ -142,7 +142,7 @@ printf("dumping %d chunks a %d bytes\n", ((CSR_CONFIG_ROM_END - CSR_CONFIG_ROM) 
 
 		p = raw1394_read(h, target + NODE_OFFSET, config_adr, CHUNKSIZE, (quadlet_t*) buffer_adr);
 		if(p) {
-			printf("failed to read target %d (0x%04x) at rom offset 0x%04x\n", target, target + NODE_OFFSET, config_adr);
+			printf("failed to read target %d (0x%04x) at CSR offset 0x%04x\n", target, target + NODE_OFFSET, config_adr);
 		}
 	}
 	printf("read config rom of port %d, target %d (0x%04x)\n", port, target, target + NODE_OFFSET);
