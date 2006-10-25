@@ -32,7 +32,9 @@
 
 char pagedir[4096];
 
-#define PHYSICAL_DEV_MEM
+//#define PHYSICAL_DEV_MEM
+#define PHYSICAL_FIREWIRE
+#define NODE_OFFSET     0xffbf
 //#define MEMSOURCE "/dev/mem"
 //#define MEMSOURCE "/home/datenhalde/memdump"
 #define MEMSOURCE "qemu.memdump"
@@ -75,8 +77,8 @@ void print_linear(linear_handle h)
 	char* page;
 	page = malloc(4096);
 
-	//pn = 0;
-	pn = 0xbfc00;
+	pn = 0;
+	//pn = 0xbf000;
 
 	//while(pn < (4*1024*1024)) {
 	while(pn < 0xc0000) {
@@ -142,7 +144,11 @@ void print_stack(linear_handle h)
 }
 
 
-int main(/*int argc, char**argv*/)
+int main(
+#ifdef PHYSICAL_FIREWIRE
+		int argc, char**argv
+#endif
+	)
 {
 #ifdef PHYSICAL_DEV_MEM
 	int memfd;
@@ -173,7 +179,18 @@ int main(/*int argc, char**argv*/)
 	}
 #endif
 #ifdef PHYSICAL_FIREWIRE
-	// XXX
+	phy_data.ieee1394.raw1394handle = raw1394_new_handle();
+	if(raw1394_set_port(phy_data.ieee1394.raw1394handle, 0)) {
+		printf("raw1394 failed to set port\n");
+		return -4;
+	}
+	phy_data.ieee1394.raw1394target = atoi(argv[1]) + NODE_OFFSET;
+	printf("using target %d\n", phy_data.ieee1394.raw1394target - NODE_OFFSET);
+	printf("associating physical source with raw1394\n"); fflush(stdout);
+	if(physical_handle_associate(phy, physical_ieee1394, &phy_data, 4096)) {
+		printf("physical_handle_associate() failed\n");
+		return -3;
+	}
 #endif
 	// associate linear
 	printf("new lin handle..\n"); fflush(stdout);
@@ -194,7 +211,7 @@ int main(/*int argc, char**argv*/)
 	// search all pages for pagedirs
 	// then, for each found, print stack of process
 	// page 0x60000: 1.5GB physical
-	for( pn = 0; pn < 0x60000; pn++ ) {
+	for( pn = 0; pn < 0x80000; pn++ ) {
 		if(linear_is_pagedir_fast(lin, pn)) {
 			// load page
 			physical_read_page(phy, pn, page);
@@ -202,7 +219,7 @@ int main(/*int argc, char**argv*/)
 			printf("page 0x%05x prob: %f \n", (uint32_t)pn, prob);
 			if(prob > 0.1) {
 				printf("pagedir:\n");
-				//dump_page(pn, page);
+				dump_page(pn, page);
 				if(linear_set_new_pagedirectory(lin, page)) {
 					printf("loading pagedir failed\n");
 					continue;

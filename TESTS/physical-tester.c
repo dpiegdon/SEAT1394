@@ -29,6 +29,7 @@
 #include <physical.h>
 
 #define PHYSICAL_FIREWIRE
+#define NODE_OFFSET     0xffbf
 
 int main(int argc, char**argv)
 {
@@ -71,9 +72,9 @@ int main(int argc, char**argv)
 		printf("raw1394 failed to set port\n");
 		return -4;
 	}
-	phy_data.ieee1394.raw1394target = atoi(argv[1]);
-	printf("using target %d\n", phy_data.ieee1394.raw1394target);
-	printf("associating physical source with raw1394%d\n"); fflush(stdout);
+	phy_data.ieee1394.raw1394target = atoi(argv[1]) + NODE_OFFSET;
+	printf("using target %d\n", phy_data.ieee1394.raw1394target - NODE_OFFSET);
+	printf("associating physical source with raw1394\n"); fflush(stdout);
 	if(physical_handle_associate(phy, physical_ieee1394, &phy_data, 4096)) {
 		printf("physical_handle_associate() failed\n");
 		return -3;
