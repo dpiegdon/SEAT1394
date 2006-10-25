@@ -134,10 +134,11 @@ int csr_dump(int port, nodeid_t target, char* filename)
 
 	// read CSR_CONFIG_ROM ... CSR_CONFIG_ROM_END from target
 	
-	for(r = 0; r < ((CSR_CONFIG_ROM - CSR_CONFIG_ROM_END) / CHUNKSIZE); r++) {
-		config_adr = CSR_CONFIG_ROM + CHUNKSIZE * r;
+printf("dumping %d chunks a %d bytes\n", ((CSR_CONFIG_ROM_END - CSR_CONFIG_ROM) / CHUNKSIZE), CHUNKSIZE);
+	for(r = 0; r < ((CSR_CONFIG_ROM_END - CSR_CONFIG_ROM) / CHUNKSIZE); r++) {
+		config_adr = CSR_REGISTER_BASE + CSR_CONFIG_ROM + CHUNKSIZE * r;
 		buffer_adr = buffer + CHUNKSIZE * r;
-printf("dumping adr 0x%llx, size %x to %p\n", config_adr, CHUNKSIZE, buffer_adr);
+//printf("dumping adr 0x%llx, size %x to %p\n", config_adr, CHUNKSIZE, buffer_adr);
 
 		p = raw1394_read(h, target + NODE_OFFSET, config_adr, CHUNKSIZE, (quadlet_t*) buffer_adr);
 		if(p) {
@@ -152,7 +153,7 @@ printf("dumping adr 0x%llx, size %x to %p\n", config_adr, CHUNKSIZE, buffer_adr)
 		printf("failed to open dump \"%s\"\n", filename);
 		return -1;
 	}
-	if(romsize != write(fd, buffer, CONFIGROMSIZE)) {
+	if(CONFIGROMSIZE != write(fd, buffer, CONFIGROMSIZE)) {
 		close(fd);
 		printf("failed to write to dump \"%s\"\n", filename);
 		return -1;
