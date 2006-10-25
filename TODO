@@ -2,9 +2,18 @@
 PHYSICAL:
  - gdb-physical
 
-LOGICAL
+LOGICAL:
 - better pagedir-sample for ia32-linux3G1G
 
-TESTER:
- - process identifier (load stackpointer and check argv[0])
+1394:
+- problem mit laptop beseitigen
+- csrtool fertig machen (besonders bus-scanner)
+
+GDB:
+- alles...
+
+ATTACKS:
+- userspace
+- kernelspace
+- eigenes OS reinhauen (?)
 
