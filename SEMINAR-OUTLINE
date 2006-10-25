@@ -8,11 +8,11 @@ no.	title											progress code:		progress text:
 
 2	physical addressed/plain memory sources: libphysical					 60%			  0%
 2.1	generic problems: caching, swapped memory, ...						  -			  0%
-2.2	firewire										 70%			  0%
+2.2	firewire										 80%			  0%
 2.2.1	physical security, attack with embedded devices like ipod				  -			  0%
-2.2.2	problems with firewire: windows DMA, ...; solutions: config rom copying, ...		 33%			  0%
+2.2.2	problems with firewire: windows DMA, ...; solutions: config rom copying, ...		 66%			  0%
 2.3	filedescriptor: /dev/mem, dumps								 75%			  0%
-2.3.1	problems with /dev/mem (in linux 3G1G): custom mapping?					  0%			  0%
+2.3.1	problems with /dev/mem (in linux 3G1G): custom mapping?					  -			  0%
 2.4	other possible sources: qemu, suspend-to-disk images, ...				 25%			  0%
 
 3	problem of physical->linear mapping, paging: liblinear					 95%			  0%

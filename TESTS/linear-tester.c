@@ -77,8 +77,8 @@ void print_linear(linear_handle h)
 	char* page;
 	page = malloc(4096);
 
-	pn = 0;
-	//pn = 0xbf000;
+	//pn = 0;
+	pn = 0xbf000;
 
 	//while(pn < (4*1024*1024)) {
 	while(pn < 0xc0000) {
@@ -212,12 +212,14 @@ int main(
 	// then, for each found, print stack of process
 	// page 0x60000: 1.5GB physical
 	for( pn = 0; pn < 0x80000; pn++ ) {
+		if(!(pn % 0x100))
+			printf("page 0x%05x\n", (uint32_t)pn);
 		if(linear_is_pagedir_fast(lin, pn)) {
 			// load page
 			physical_read_page(phy, pn, page);
 			prob = linear_is_pagedir_probability(lin, page);
 			printf("page 0x%05x prob: %f \n", (uint32_t)pn, prob);
-			if(prob > 0.1) {
+			if(prob > 0.15) {
 				printf("pagedir:\n");
 				dump_page(pn, page);
 				if(linear_set_new_pagedirectory(lin, page)) {
