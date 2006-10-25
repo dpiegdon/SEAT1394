@@ -1,32 +1,35 @@
 seminar paper outline:
 
-no.	title												progress code:			progress text:
+no.	title											progress code:		progress text:
 
-0	TOC												-				0
+0	TOC											  -			  33% :-)
 
-1	Abstract: physical addressed/plain memory hacking						-				0
+1	abstract: physical addressed/plain memory hacking					  -			  0%
 
-2	physical addressed/plain memory sources								60%				0
-2.1	firewire											70%				0
-2.1.1	problems with firewire: windows DMA, ...; solutions: config rom copying, ...			25%				0
-2.2	FD: /dev/mem, dumps										75%				0
-2.2.1	problems with firewire (in linux 3G1G): custom mapping?						 0%				0
-2.3	qemu, suspend-to-disk images and other possibly sources						25%				0
+2	physical addressed/plain memory sources							 60%			  0%
+2.1	firewire										 70%			  0%
+2.1.1	problems with firewire: windows DMA, ...; solutions: config rom copying, ...		 25%			  0%
+2.2	filedescriptor: /dev/mem, dumps								 75%			  0%
+2.2.1	problems with firewire (in linux 3G1G): custom mapping?					  0%			  0%
+2.3	qemu, suspend-to-disk images and other possibe sources					 25%			  0%
 
-3	problem of physical->linear mapping, paging							95%				0
-3.1	finding pagedirectories										75%				0
-3.1.1	OS and arch-dependency, typical address layout							70%				0
-3.1.2	matching via stistics: NCD (nearest compression distance)					95%				0
-3.2	example-implementation: liblinear with ia32 backend						95%				0
+3	problem of physical->linear mapping, paging						 95%			  0%
+3.1	finding pagedirectories									 75%			  0%
+3.1.1	OS and arch-dependency, typical address layout						 70%			  0%
+3.1.2	matching via stistics: NCD (nearest compression distance)				 95%			  0%
+3.2	example-implementation: liblinear with ia32 backend					 95%			  0%
 
-4	possible attack-vectors										 5%				0
-4.1	userspace											10%				0
-4.2	kernelspace											 3%				0
-4.3	total ownage [?] (overwrite whole system with my own system)					 0%				0
+4	possible attack-vectors									  5%			  0%
+4.1	userspace										 10%			  0%
+      * more to come
+4.2	kernelspace										  3%			  0%
+      * more to come
+4.3	total ownage [?] (overwrite whole system with my own system)				  0%			  0%
 
-5	conclusion											-				0
+5	conclusion										  -			  0%
+5.1	(?) short: attacks from embedded devices (like ipod et al)				  0%			  0%
 
-6	acknowledgements										-				0
+6	acknowledgements									  -			  0%
 
-7	references											-				0
+7	references										  -			  0%
 
