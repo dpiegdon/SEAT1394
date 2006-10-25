@@ -13,7 +13,7 @@
 #include <libraw1394/csr.h>
 
 #define MAX_PORTS	100
-#define NODE_OFFSET	0xffbf
+#define NODE_OFFSET	0xffc0
 #define BUFFERSIZE	8192
 #define CONFIGROMSIZE	1024
 
@@ -194,7 +194,7 @@ int ieee1394scan()
 		printf("\tport %2d: \"%s\", %d nodes\n",
 				i, pinf[i].name, pinf[i].nodes);
 
-		for(t = 1; t <= pinf[i].nodes; t++) {
+		for(t = 0; t < pinf[i].nodes; t++) {
 			// read GUID of this node
 			raw1394_read(h, NODE_OFFSET + t, CSR_REGISTER_BASE + CSR_CONFIG_ROM + 0x0c, 4, &high);
 			raw1394_read(h, NODE_OFFSET + t, CSR_REGISTER_BASE + CSR_CONFIG_ROM + 0x0c, 4, &low);

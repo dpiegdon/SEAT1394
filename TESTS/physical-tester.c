@@ -29,7 +29,7 @@
 #include <physical.h>
 
 #define PHYSICAL_FIREWIRE
-#define NODE_OFFSET     0xffbf
+#define NODE_OFFSET     0xffc0
 
 int main(int argc, char**argv)
 {

@@ -34,7 +34,7 @@ char pagedir[4096];
 
 //#define PHYSICAL_DEV_MEM
 #define PHYSICAL_FIREWIRE
-#define NODE_OFFSET     0xffbf
+#define NODE_OFFSET     0xffc0
 //#define MEMSOURCE "/dev/mem"
 //#define MEMSOURCE "/home/datenhalde/memdump"
 #define MEMSOURCE "qemu.memdump"
