@@ -70,7 +70,7 @@ int main(int argc, char**argv)
 	// read something from target
 	printf("\ntrying to read:\n");
 	{
-#define BLOCKSIZE 1024
+#define BLOCKSIZE 4
 		char* iobuf[BLOCKSIZE];
 		nodeaddr_t adr = 0;
 		size_t length = BLOCKSIZE;
