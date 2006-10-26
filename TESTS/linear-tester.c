@@ -97,6 +97,37 @@ void print_linear(linear_handle h)
 	free(page);
 }
 
+void print_argv(linear_handle h)
+{
+	addr_t pn;
+	addr_t padr;
+	char* page;
+	page = malloc(4096);
+	int valid_page = 0;
+
+	//pn = 0;
+	pn = 0xbffff;
+
+	while(!valid_page && pn >= 0xbf000) {
+		if(linear_to_physical(h, pn*4096, &padr)) {
+			// page is not mapped
+		} else {
+			// found stack bottom
+			valid_page = 1;
+
+			printf("page 0x%05x maps to 0x%08x\n", (uint32_t)pn, (uint32_t)padr);
+			if(linear_read_page(h, pn, page))
+				printf("UNREADABLE PAGE\n");
+			else
+				dump_page((uint32_t)pn, page);
+		}
+		pn++;
+	}
+
+	free(page);
+
+}
+
 void print_stack(linear_handle h)
 {
 	static char* page;
@@ -179,6 +210,10 @@ int main(
 	}
 #endif
 #ifdef PHYSICAL_FIREWIRE
+	if(argc != 2) {
+		printf("please give targets nodeid\n");
+		return -1;
+	}
 	phy_data.ieee1394.raw1394handle = raw1394_new_handle();
 	if(raw1394_set_port(phy_data.ieee1394.raw1394handle, 0)) {
 		printf("raw1394 failed to set port\n");
@@ -206,7 +241,6 @@ int main(
 	addr_t pn;
 	char page[4096];
 	float prob;
-	addr_t padr;
 
 	// search all pages for pagedirs
 	// then, for each found, print stack of process
@@ -226,10 +260,9 @@ int main(
 					printf("loading pagedir failed\n");
 					continue;
 				}
-				//linear_to_physical(lin, 0xc0000000, &padr);
-				//printf("0xC0000000 -> 0x%08x\n", (uint32_t)padr);
 				//print_stack(lin);
-				print_linear(lin);
+				//print_linear(lin);
+				print_argv(lin);
 				//return 0;
 			}
 		}
