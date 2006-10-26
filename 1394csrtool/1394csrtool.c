@@ -12,6 +12,9 @@
 #include <libraw1394/raw1394.h>
 #include <libraw1394/csr.h>
 
+#include <endian.h>
+#include "../include/endian_swap.h"
+
 #define MAX_PORTS	100
 #define NODE_OFFSET	0xffc0
 #define BUFFERSIZE	8192
@@ -196,9 +199,14 @@ int ieee1394scan()
 
 		for(t = 0; t < pinf[i].nodes; t++) {
 			// read GUID of this node
-			raw1394_read(h, NODE_OFFSET + t, CSR_REGISTER_BASE + CSR_CONFIG_ROM + 0x0c, 4, &high);
 			raw1394_read(h, NODE_OFFSET + t, CSR_REGISTER_BASE + CSR_CONFIG_ROM + 0x0c, 4, &low);
+			raw1394_read(h, NODE_OFFSET + t, CSR_REGISTER_BASE + CSR_CONFIG_ROM + 0x10, 4, &high);
+			
 			guid = (((uint64_t)high) << 32) | low;
+#ifndef __BIG_ENDIAN__
+			guid = endian_swap64(guid);
+#endif
+
 			printf("\t\tnode %d (0x%04x): GUID: %016llX%s%s\n", t, t+NODE_OFFSET, guid,
 					(self - NODE_OFFSET) == t ? " (self)" : "",
 					(somenode - NODE_OFFSET) == t ? " (CSR)" : "");
@@ -213,7 +221,7 @@ int ieee1394scan()
 
 void usage(char* progname)
 {
-	printf("%s < -r | -w | -d | -s > [-p <port> -t <target> -f <filename>]\n"
+	printf("%s < -r | -w | -d | -s > [-p <port>] [-t <target>] [-f <filename>]\n"
 	       "\t -r : read  own config rom of -p <port> to -f <filename>\n"
 	       "\t -w : write own config rom of -p <port> from -f <filename>\n"
 	       "\t -d : dump config rom of -p <port> -t <target> to -f <filename>\n"
@@ -307,7 +315,7 @@ int main(int argc, char**argv)
 			break;
 		case COMMAND_DUMP:
 			if( (port == -1) || (!target) || (!filename)) {
-				printf("error: -w requires -p and -t and -f\n");
+				printf("error: -d requires -p and -t and -f\n");
 				return -1;
 			}
 			return configrom_dump(port, target, filename);
