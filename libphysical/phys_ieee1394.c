@@ -21,6 +21,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include <errno.h>
+
 #include <libraw1394/raw1394.h>
 #include <libraw1394/csr.h>
 
@@ -30,8 +32,9 @@
 
 #define RAWHANDLE (h->data.ieee1394.raw1394handle)
 #define TARGET    (h->data.ieee1394.raw1394target)
-//#define BLOCKSIZE 1024
-#define BLOCKSIZE 4
+
+// blocksize is auto-adjusted down to 4 in case of errors
+static size_t blocksize = 1024;
 
 int physical_ieee1394_init(struct physical_handle_data* h)
 {
@@ -52,13 +55,21 @@ int physical_ieee1394_read(struct physical_handle_data* h, addr_t adr, void* buf
 	size_t tr;		// how much is to read
 
 	while(len > 0) {
-		tr = MIN(len, BLOCKSIZE);
+		tr = MIN(len, blocksize);
 		/// argh pointer arithmetic... careful with this quadlet_t ...
 		err = raw1394_read(RAWHANDLE, TARGET, adr + r, tr, (quadlet_t*)((char*)buf + r));
-		if(err)
-			return err;
-		len -= tr;
-		r += tr;
+		if(err < 0) {
+			// auto-adjust blocksize to specific machine
+			if(blocksize > 4) {
+				blocksize = blocksize >> 2;
+//				printf("adjusted blocksize to %d\n", blocksize);
+			} else {
+				return err;
+			}
+		} else {
+			len -= tr;
+			r += tr;
+		}
 	}
 
 	return 0;
@@ -71,13 +82,21 @@ int physical_ieee1394_write(struct physical_handle_data* h, addr_t adr, void* bu
 	size_t tw;		// how much is to write
 
 	while(len > 0) {
-		tw = MIN(len, BLOCKSIZE);
+		tw = MIN(len, blocksize);
 		/// argh pointer arithmetic... careful with this quadlet_t ...
 		err = raw1394_write(RAWHANDLE, TARGET, adr + w, tw, (quadlet_t*)((char*)buf + w));
-		if(err)
-			return err;
-		len -= tw;
-		w += tw;
+		if(err < 0) {
+			// auto-adjust blocksize to specific machine
+			if(blocksize > 4) {
+				blocksize = blocksize >> 2;
+//				printf("adjusted blocksize to %d\n", blocksize);
+			} else {
+				return err;
+			}
+		} else {
+			len -= tw;
+			w += tw;
+		}
 	}
 
 	return 0;
