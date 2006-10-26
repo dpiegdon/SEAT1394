@@ -184,7 +184,6 @@ int main(
 #ifdef PHYSICAL_DEV_MEM
 	int memfd;
 #endif
-	int dumpfd;
 
 	physical_handle phy;
 	union physical_type_data phy_data;
@@ -278,7 +277,6 @@ int main(
 	physical_handle_release(phy);
 	
 	// exit 
-	close(dumpfd);
 #ifdef PHYSICAL_DEV_MEM
 	close(memfd);
 #endif
