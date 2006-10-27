@@ -115,13 +115,23 @@ void print_argv(linear_handle h)
 			// found stack bottom
 			valid_page = 1;
 
-			printf("page 0x%05x maps to 0x%08x\n", (uint32_t)pn, (uint32_t)padr);
+			printf("\t\tpage 0x%05x maps to 0x%08x", (uint32_t)pn, (uint32_t)padr);
 			if(linear_read_page(h, pn, page))
 				printf("UNREADABLE PAGE\n");
-			else
-				dump_page((uint32_t)pn, page);
+			else {
+				char* p = page + 4096 - 1;
+
+				//dump_page((uint32_t)pn, page);
+
+				while(*p == 0)
+					p--;
+				while(*p != 0)
+					p--;
+				p++;
+				printf("\t\tprocess: %s\n", p);
+			}
 		}
-		pn++;
+		pn--;
 	}
 
 	free(page);
@@ -245,16 +255,16 @@ int main(
 	// then, for each found, print stack of process
 	// page 0x60000: 1.5GB physical
 	for( pn = 0; pn < 0x80000; pn++ ) {
-		if(!(pn % 0x100))
-			printf("page 0x%05x\n", (uint32_t)pn);
+//		if(!(pn % 0x100))
+//			printf("page 0x%05x\n", (uint32_t)pn);
 		if(linear_is_pagedir_fast(lin, pn)) {
 			// load page
 			physical_read_page(phy, pn, page);
 			prob = linear_is_pagedir_probability(lin, page);
-			printf("page 0x%05x prob: %f \n", (uint32_t)pn, prob);
+			printf("\npage 0x%05x prob: %f", (uint32_t)pn, prob);
 			if(prob > 0.15) {
-				printf("pagedir:\n");
-				dump_page(pn, page);
+				//printf("pagedir:\n");
+				//dump_page(pn, page);
 				if(linear_set_new_pagedirectory(lin, page)) {
 					printf("loading pagedir failed\n");
 					continue;
