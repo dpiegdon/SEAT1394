@@ -202,9 +202,11 @@ int ieee1394scan()
 			raw1394_read(h, NODE_OFFSET + t, CSR_REGISTER_BASE + CSR_CONFIG_ROM + 0x0c, 4, &low);
 			raw1394_read(h, NODE_OFFSET + t, CSR_REGISTER_BASE + CSR_CONFIG_ROM + 0x10, 4, &high);
 			
-			guid = (((uint64_t)high) << 32) | low;
 #ifndef __BIG_ENDIAN__
+			guid = (((uint64_t)high) << 32) | low;
 			guid = endian_swap64(guid);
+#else
+			guid = (((uint64_t)low) << 32) | high;
 #endif
 
 			printf("\t\tnode %d (0x%04x): GUID: %016llX%s%s\n", t, t+NODE_OFFSET, guid,
