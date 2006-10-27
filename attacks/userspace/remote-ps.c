@@ -51,9 +51,9 @@ void print_argv(linear_handle h)
 			// found stack bottom
 			valid_page = 1;
 
-			printf("\t\tpage 0x%05x maps to 0x%08x", (uint32_t)pn, (uint32_t)padr);
+			printf("  |  lin. page 0x%05x -> phys. page 0x%05x", (uint32_t)pn, (uint32_t)padr >> 12);
 			if(linear_read_page(h, pn, page))
-				printf("UNREADABLE PAGE\n");
+				printf("UNREADABLE PAGE");
 			else {
 				char* p = page + 4096 - 1;
 
@@ -62,7 +62,7 @@ void print_argv(linear_handle h)
 				while(*p != 0)
 					p--;
 				p++;
-				printf("\t\tprocess: %s\n", p);
+				printf("  |  process: %s", p);
 			}
 		}
 		pn--;
@@ -118,17 +118,17 @@ int main(int argc, char**argv)
 			// load page
 			physical_read_page(phy, pn, page);
 			prob = linear_is_pagedir_probability(lin, page);
-			printf("\npage 0x%05x prob: %f", (uint32_t)pn, prob);
+			if(prob > 0.01)
+				printf("page 0x%05x prob: %0.3f", (uint32_t)pn, prob);
 			if(prob > 0.15) {
 				if(linear_set_new_pagedirectory(lin, page)) {
-					printf("loading pagedir failed\n");
+					printf("\nloading pagedir failed\n");
 					continue;
 				}
-				//print_stack(lin);
-				//print_linear(lin);
 				print_argv(lin);
-				//return 0;
 			}
+			if(prob > 0.01)
+				printf("\n");
 		}
 	}
 
