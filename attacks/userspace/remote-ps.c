@@ -57,6 +57,7 @@ void print_argv(linear_handle h)
 			else {
 				char* p = page + 4096 - 1;
 
+				// in stack: seek process name
 				while(*p == 0)
 					p--;
 				while(*p != 0)
@@ -118,17 +119,15 @@ int main(int argc, char**argv)
 			// load page
 			physical_read_page(phy, pn, page);
 			prob = linear_is_pagedir_probability(lin, page);
-			if(prob > 0.01)
+			if(prob > 0.01) {
 				printf("page 0x%05x prob: %0.3f", (uint32_t)pn, prob);
-			if(prob > 0.15) {
 				if(linear_set_new_pagedirectory(lin, page)) {
 					printf("\nloading pagedir failed\n");
 					continue;
 				}
 				print_argv(lin);
-			}
-			if(prob > 0.01)
 				printf("\n");
+			}
 		}
 	}
 
