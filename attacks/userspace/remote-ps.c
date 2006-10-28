@@ -34,7 +34,7 @@ char pagedir[4096];
 
 #define NODE_OFFSET     0xffc0
 
-void print_argv(linear_handle h)
+void print_process_name(linear_handle h)
 {
 	addr_t pn;
 	addr_t padr;
@@ -125,7 +125,7 @@ int main(int argc, char**argv)
 					printf("\nloading pagedir failed\n");
 					continue;
 				}
-				print_argv(lin);
+				print_process_name(lin);
 				printf("\n");
 			}
 		}
