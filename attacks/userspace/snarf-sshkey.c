@@ -246,6 +246,23 @@ void check_ssh_agent(linear_handle lin) {
 				// the executable is mapped somewhere after 0x08000000, so
 				// we will just start there. 0x08800000 should never be hit.
 				pn = 0x08000;
+				/* { // XXX TEST: dump the typical HEAP range
+					char page[4096];
+					addr_t padr;
+
+					while(pn < 0x08800) {
+						if(linear_to_physical(lin, pn*4096, &padr))
+							printf("UNMAPPED PAGE 0x%05x\n", (uint32_t)pn);
+						else {
+							printf("page 0x%05x maps to 0x%08x\n", (uint32_t)pn, (uint32_t)padr);
+							if(linear_read_page(lin, pn, page))
+								printf("UNREADABLE PAGE\n");
+							else
+								dump_page((uint32_t)pn, page);
+						}
+						pn++;
+					}
+				} */
 				// btw. we are searching this string because it will be the
 				// comment-field of the identity-struct of the ssh-agent
 				// for more info, please see ssh-agent.c of openssh
