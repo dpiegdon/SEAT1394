@@ -18,6 +18,9 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+// libcomplearn (http://complearn.org/) is great, but far too complex for this.
+// so here my own minimalistic approach
+
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
