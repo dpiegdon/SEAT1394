@@ -236,15 +236,22 @@ void check_ssh_agent(linear_handle lin) {
 			home = resolve_env(lin, "HOME");
 			if(home) {
 				char identity_path[1024];
+				addr_t pn;
+
 				snprintf(identity_path, 1024, "%s/.ssh/", home);
 				free(home);
 				printf("\tidentity path would be \"%s\"\n", identity_path);
 				// now lets seek for this string. it will be located somewhere
 				// on the heap, right behind the executable.
 				// the executable is mapped somewhere after 0x08000000, so
-				// we will just start there. 0x08200000 should never be hit.
+				// we will just start there. 0x08800000 should never be hit.
 				pn = 0x08000;
+				// btw. we are searching this string because it will be the
+				// comment-field of the identity-struct of the ssh-agent
+				// for more info, please see ssh-agent.c of openssh
+
 				// XXX INSERT MAGIC HERE
+				printf("\t" "\x1b[1;32m" "INSERT MAGIC HERE" "\x1b[0m" "\n");
 			}
 			printf("\x1b[1;31m" "end" "\x1b[0m" "\n");
 		}
