@@ -635,6 +635,10 @@ int main(int argc, char**argv)
 	// then, for each found, print process name
 	// we only need to check first phys. GB
 	for( pn = 0; pn < 0x40000; pn++ ) {
+		if((pn%0x100) == 0) {
+			printf("page 0x%05llx\r", pn);
+			fflush(stdout);
+		}
 		if(linear_is_pagedir_fast(lin, pn)) {
 			// load page
 			physical_read_page(phy, pn, page);
@@ -643,7 +647,7 @@ int main(int argc, char**argv)
 				char* pname;
 
 				// set the pagedir
-				printf("page 0x%05x prob: %0.3f", (uint32_t)pn, prob);
+				printf("page 0x%05llx prob: %0.3f", pn, prob);
 				if(linear_set_new_pagedirectory(lin, page)) {
 					printf("\nloading pagedir failed\n");
 					continue;

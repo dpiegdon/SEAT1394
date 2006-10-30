@@ -119,12 +119,16 @@ int main(int argc, char**argv)
 	// search all pages for pagedirs
 	// then, for each found, print process name
 	for( pn = 0; pn < 0x80000; pn++ ) {
+		if((pn%0x100) == 0) {
+			printf("page 0x%05llx\r", pn);
+			fflush(stdout);
+		}
 		if(linear_is_pagedir_fast(lin, pn)) {
 			// load page
 			physical_read_page(phy, pn, page);
 			prob = linear_is_pagedir_probability(lin, page);
 			if(prob > 0.01) {
-				printf("page 0x%05x prob: %0.3f", (uint32_t)pn, prob);
+				printf("page 0x%05llx prob: %0.3f", pn, prob);
 				if(linear_set_new_pagedirectory(lin, page)) {
 					printf("\nloading pagedir failed\n");
 					continue;
