@@ -1,9 +1,7 @@
 
-.PHONY: all clean sshdeps
+.PHONY: all clean
 
 all:	remote-ps snarf-sshkey
-
-sshdeps: openssh/openbsd-compat/libopenbsd-compat.a openssh/libssh.a openssh/entropy.o
 
 openssh/openbsd-compat/libopenbsd-compat.a:
 	make -C openssh/openbsd-compat/ libopenbsd-compat.a
@@ -17,9 +15,11 @@ openssh/entropy.o: openssh/entropy.c
 remote-ps: remote-ps.c
 	gcc remote-ps.c -Wall -W -lphysical -llinear -L/home/lostrace/lib -I/home/lostrace/include -o remote-ps
 
-snarf-sshkey: sshdeps snarf-sshkey.o
-	gcc snarf-sshkey.o openssh/entropy.o -lm -lresolv -lcrypto -lcrypt -lutil -lz -lnsl   -lssh -lopenbsd-compat   -lphysical -llinear \
-		-L ./openssh/ -L ./openssh/openbsd-compat/ -L${HOME}/lib -o snarf-sshkey
+snarf-sshkey: openssh/openbsd-compat/libopenbsd-compat.a openssh/libssh.a openssh/entropy.o snarf-sshkey.o
+	gcc snarf-sshkey.o openssh/entropy.o									\
+		-lm -lresolv -lcrypto -lcrypt -lutil -lz -lnsl   -lssh -lopenbsd-compat   -lphysical -llinear	\
+		-L ./openssh/ -L ./openssh/openbsd-compat/ -L${HOME}/lib					\
+		-o snarf-sshkey
 
 snarf-sshkey.o: snarf-sshkey.c ssh-authfile.h
 	gcc snarf-sshkey.c -Wall -W -I/home/lostrace/include -c -o snarf-sshkey.o

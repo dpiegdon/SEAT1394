@@ -1,14 +1,33 @@
-remote-ps.c
-	this will only work on ia32 linux with a 3G userspace 1G kernelspace memory layout
 
-	will try to find all processes on a given system that is connected via firewire.
-	give the target number as argument. to find this number (0...CSR), use e.g. 1394csrtool.
+=======================================================================
+
+all these programs will only work, if the target system is an IA32
+linux with a 3G1G addresslayout: 3G userspace, 1G kernelspace:
+	kernelconfig: 
+		!CONFIG_HIGHMEM64G (not tested)
+		one of:
+			* CONFIG_NOHIGHMEM (will work, not required)
+			* CONFIG_HIGHMEM4G (will work, not required)
+		CONFIG_VMSPLIT_3G (must have)
+		thus CONFIG_PAGE_OFFSET = 0xC0000000
+		thus PAGE_OFFSET = 0xC0000000
+
+this is a typical config for ia32 desktop, laptop and most server
+systems. kernel-2.6.18.1 has been tested. kernel-2.4 has NOT been
+tested but should work. other 2.6 kernels should work, as well.
+
+=======================================================================
+
+remote-ps.c
+	will try to find all processes on a given system that is
+	connected via firewire. give the target number as argument. to
+	find this number (0...CSR), use e.g. 1394csrtool.
+
 
 snarf-sshkey.c, ssh-authfile.h
-	this will only work on ia32 linux with a 3G userspace 1G kernelspace memory layout
-
-	this will search for ssh-agent processes and dump all keys it can find in a immediately
-	usable format (!). again, give target number of machine on firewirebus as argument. to
+	this will search for ssh-agent processes and dump all private
+	keys it can find in an immediately usable format (!). again,
+	give target number of machine on firewirebus as argument. to
 	find target number (0...CSR), use e.g. 1394csrtool.
 
 	to compile this, you will need a current openssh-version:
@@ -21,3 +40,6 @@ snarf-sshkey.c, ssh-authfile.h
 		make
 
 	this should do.
+
+=======================================================================
+

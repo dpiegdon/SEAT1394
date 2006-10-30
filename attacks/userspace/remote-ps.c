@@ -92,6 +92,10 @@ int main(int argc, char**argv)
 		return -1;
 	}
 	phy_data.ieee1394.raw1394handle = raw1394_new_handle();
+        if(!phy_data.ieee1394.raw1394handle) {
+                printf("failed to open raw1394\n");
+                return -1;
+        }
 	if(raw1394_set_port(phy_data.ieee1394.raw1394handle, 0)) {
 		printf("raw1394 failed to set port\n");
 		return -4;
