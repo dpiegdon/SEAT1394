@@ -347,8 +347,8 @@ void save_key(linear_handle lin, char* key_comment, Key* key)
 	sprintf(filename, "key %016llx %s %s", guid, username, comment_field);
 
 	// dump
-	printf("\x1b[1;32m" "dumping key \"%s\" to file \"%s\"" "\x1b[0m" "\n", comment_field, filename);
-	//key_save_private(key, filename, NULL, comment_field);
+	printf("\x1b[1;34m" "dumping key \"%s\" to file \"%s\"" "\x1b[0m" "\n", comment_field, filename);
+	key_save_private(key, filename, NULL, comment_field);
 
 	free(comment_field);
 	free(filename);
