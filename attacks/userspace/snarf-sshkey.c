@@ -251,6 +251,8 @@ int steal_dsa_key(linear_handle lin, Key* key)
 
 	key->dsa = calloc(1,sizeof(DSA));
 
+//	DSA_generate_key( key->dsa );
+
 	if(   linear_read(lin, p   , &(key->dsa->pad), 4)
 	   || linear_read(lin, p+4 , &(key->dsa->version), 4)
 	   || linear_read(lin, p+8 , &(key->dsa->write_params), 4)
@@ -264,6 +266,7 @@ int steal_dsa_key(linear_handle lin, Key* key)
 		key->dsa = NULL;
 		return 0;
 	}
+	key->dsa->references = 1;
 	// don't care for the rest
 	//  p+36  method_mont_p (?)
 	//  p+40  references (?)
@@ -349,7 +352,7 @@ void save_key(linear_handle lin, char* key_comment, Key* key)
 
 	// dump
 	printf("\x1b[1;34m" "dumping key \"%s\" to file \"%s\"" "\x1b[0m" "\n", comment_field, filename);
-	key_save_private(key, filename, NULL, comment_field);
+	key_save_private(key, filename, "", comment_field);
 
 	free(comment_field);
 	free(filename);
