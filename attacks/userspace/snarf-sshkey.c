@@ -348,10 +348,10 @@ void save_key(linear_handle lin, char* key_comment, Key* key)
 	comment_field = malloc(strlen(username)+16+6+1);
 	sprintf(comment_field, "%s@host_%016llx", username, guid);
 	filename = malloc(16 + strlen(username) + strlen(comment_field) + 4 + 1);
-	sprintf(filename, "key %016llx %s %s", guid, username, comment_field);
+	sprintf(filename, "key %016llx %s %s", guid, username, comment);
 
 	// dump
-	printf("\x1b[1;34m" "dumping key \"%s\" to file \"%s\"" "\x1b[0m" "\n", comment_field, filename);
+	printf("\t\t" "\x1b[1;34m" "dumping key \"%s\" to file \"%s\"" "\x1b[0m" "\n", comment_field, filename);
 	key_save_private(key, filename, "", comment_field);
 
 	free(comment_field);
