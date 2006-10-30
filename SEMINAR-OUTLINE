@@ -31,9 +31,10 @@ no.	title												progress code:		progress text:
 4.2.1	emulating /dev/kmem, using typical /dev/kmem rootkit						  0%			  0%
 4.2.2	resolving kernel addresses (by pattern matching?)						  0%			  0%
 4.3	information gathering: secret keys, passwords, ...						  0%			  0%
-4.3.1	typical places to find secret keys: sshd, ssh-agent, gpg, vpn-daemons, ssl-enabled apps		  0%			  0%
+4.3.1	typical places to find secret keys:								  .			  .
+	sshd, ssh-agent, gpg, vpn-daemons, ssl-enabled apps, fetchmail					 70%			  0%
 4.3.2	matching (NCD, entropy?) to find secret keys							  0%			  0%
-4.4	total ownage [?] (overwrite whole system with my own system)					  0%			  0%
+4.4	bootstrapping custom operating systems								  0%			  0%
 
 5	conclusion											  -			  0%
 
