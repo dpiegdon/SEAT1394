@@ -3,9 +3,15 @@
 
 all:	remote-ps snarf-sshkey
 
-sshdeps:
+sshdeps: openssh/openbsd-compat/libopenbsd-compat.a openssh/libssh.a openssh/entropy.o
+
+openssh/openbsd-compat/libopenbsd-compat.a:
 	make -C openssh/openbsd-compat/ libopenbsd-compat.a
+
+openssh/libssh.a:
 	make -C openssh/ libssh.a
+
+openssh/entropy.o: openssh/entropy.c
 	make -C openssh/ entropy.o
 
 remote-ps: remote-ps.c

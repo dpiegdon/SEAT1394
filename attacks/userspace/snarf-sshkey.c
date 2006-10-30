@@ -285,7 +285,7 @@ int steal_rsa_key(linear_handle lin, Key* key)
 	key->rsa->flags = endian_swap32(key->rsa->flags);
 #endif
 
-	printf("\t\t\tRSA: pad:%d version:%d flags:%d data: %p %p %p %p %p  %p %p %p\n",
+	printf("\t\t\tRSA: pad:%d version:%ld flags:%d data: %p %p %p %p %p  %p %p %p\n",
 		key->rsa->pad, key->rsa->version, key->rsa->flags, key->rsa->n, key->rsa->e, key->rsa->d, key->rsa->p, key->rsa->q,   key->rsa->dmp1, key->rsa->dmq1, key->rsa->iqmp);
 
 	key->rsa->n = fix_bignum(lin, key->rsa->n);
@@ -416,10 +416,11 @@ void save_key(linear_handle lin, char* key_comment, Key* key)
 		key_comment++;
 		p++;
 	}
+	*p = 0;
 	
 	comment_field = malloc(strlen(username)+16+6+1);
 	sprintf(comment_field, "%s@host_%016llx", username, guid);
-	filename = malloc(16 + strlen(username) + strlen(comment_field) + 4 + 1);
+	filename = malloc(16 + strlen(username) + strlen(comment_field) + 6 + 1);
 	sprintf(filename, "key %016llx %s %s", guid, username, comment);
 
 	// dump
