@@ -2,10 +2,22 @@ remote-ps.c
 	this will only work on ia32 linux with a 3G userspace 1G kernelspace memory layout
 
 	will try to find all processes on a given system that is connected via firewire.
-	give the target number as argument. to find this number (0...CSR), use ieee1394csrtool.
+	give the target number as argument. to find this number (0...CSR), use e.g. 1394csrtool.
+
 snarf-sshkey.c, ssh-authfile.h
 	this will only work on ia32 linux with a 3G userspace 1G kernelspace memory layout
 
 	this will search for ssh-agent processes and dump all keys it can find in a immediately
-	usable format (!)
+	usable format (!). again, give target number of machine on firewirebus as argument. to
+	find target number (0...CSR), use e.g. 1394csrtool.
 
+	to compile this, you will need a current openssh-version:
+	in this directory, do:
+		tar zxf openssh-X.Y.tar.gz
+		ln -s openssh-X.Y openssh
+		cd openssh
+		./configure
+		cd ..
+		make
+
+	this should do.
