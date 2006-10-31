@@ -2,18 +2,5 @@
 PHYSICAL:
  - gdb-physical
 
-LOGICAL:
-- better pagedir-sample for ia32-linux3G1G
-
-1394:
-- problem mit laptop beseitigen
-- csrtool fertig machen (besonders bus-scanner)
-
-GDB:
-- alles...
-
-ATTACKS:
-- userspace
-- kernelspace
-- eigenes OS reinhauen (?)
+kernelspace stack @ 0xf72c9f44
 
