@@ -69,8 +69,10 @@ int main(int argc, char**argv)
 
 	// dump the memory
 	for( pn = 0; pn < 0xfffff; pn++ ) {
-		if(!(pn % 0x100))
-			printf("page 0x%05x\n", (uint32_t)pn);
+		if(!(pn % 0x100)) {
+			printf("page 0x%05x\r", (uint32_t)pn);
+			fflush(stdout);
+		}
 		if(physical_read_page(phy, pn, page)) {
 			printf("failed to read page 0x%05x\n", (uint32_t)pn);
 			break;

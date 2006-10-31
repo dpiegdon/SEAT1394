@@ -78,10 +78,10 @@ void print_linear(linear_handle h)
 	page = malloc(4096);
 
 	//pn = 0;
-	pn = 0xbf000;
+	pn = 0xf7000;
 
 	//while(pn < (4*1024*1024)) {
-	while(pn < 0xc0000) {
+	while(pn < 0x100000) {
 		if(linear_to_physical(h, pn*4096, &padr))
 			printf("UNMAPPED PAGE 0x%05x\n", (uint32_t)pn);
 		else {
@@ -96,94 +96,6 @@ void print_linear(linear_handle h)
 
 	free(page);
 }
-
-void print_argv(linear_handle h)
-{
-	addr_t pn;
-	addr_t padr;
-	char* page;
-	page = malloc(4096);
-	int valid_page = 0;
-
-	//pn = 0;
-	pn = 0xbffff;
-
-	while(!valid_page && pn >= 0xbf000) {
-		if(linear_to_physical(h, pn*4096, &padr)) {
-			// page is not mapped
-		} else {
-			// found stack bottom
-			valid_page = 1;
-
-			printf("\t\tpage 0x%05x maps to 0x%08x", (uint32_t)pn, (uint32_t)padr);
-			if(linear_read_page(h, pn, page))
-				printf("UNREADABLE PAGE\n");
-			else {
-				char* p = page + 4096 - 1;
-
-				//dump_page((uint32_t)pn, page);
-
-				while(*p == 0)
-					p--;
-				while(*p != 0)
-					p--;
-				p++;
-				printf("\t\tprocess: %s\n", p);
-			}
-		}
-		pn--;
-	}
-
-	free(page);
-
-}
-
-void print_stack(linear_handle h)
-{
-	static char* page;
-	addr_t pn;
-	int e;
-	addr_t upper;
-	addr_t padr;
-
-	page = malloc(4096);
-
-	printf("\tstack of this process:\n");
-
-	// seek from 0xC0000000 backwards, until the stack-bottom is found
-	// (there is always some space between 0xc0000000 and the real stack
-	// that is located somewhere 0xBFxxxxxx
-	pn = ( 0xc0000000 / h->phy->pagesize );
-
-	e = -EFAULT;
-	while(e == -EFAULT) {
-		pn--;
-		if(linear_to_physical(h, pn*4096, &padr))
-			printf("faulty:\n");
-		printf("seek_upper linear address 0x%08x maps to 0x%08x\n", (uint32_t)pn*4096, (uint32_t)padr);
-		e = linear_read_page(h, pn, page);
-	};
-	printf("found upper stack-bound at page 0x%05x\n", (uint32_t)pn);
-	upper = pn+1;
-	while(e != -EFAULT) {
-		pn--;
-//		printf("seek_lower linear address 0x%08x\n", (uint32_t)pn*4096);
-		e = linear_read_page(h, pn, page);
-//		printf("%d\n", e);
-	};
-	printf("found upper stack-bound at page 0x%05x\n", (uint32_t)pn);
-	// now we are at top-of-stack
-	// so dump it
-	while(pn<upper) {
-		if(!linear_read_page(h, pn, page)) {
-			printf("dump page %x to %x\n", (uint32_t)pn, (uint32_t)upper);
-			dump_page(pn, page);
-		}
-		pn++;
-	}
-	free(page);
-}
-
 
 int main(
 #ifdef PHYSICAL_FIREWIRE
@@ -269,9 +181,7 @@ int main(
 					printf("loading pagedir failed\n");
 					continue;
 				}
-				//print_stack(lin);
-				//print_linear(lin);
-				print_argv(lin);
+				print_linear(lin);
 				//return 0;
 			}
 		}
