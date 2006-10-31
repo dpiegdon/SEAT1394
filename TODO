@@ -1,6 +1,33 @@
 
+
+ATTACK:
+	kernelspace:
+		[kernelspace stack @ 0xf72c9f44]
+
+	userspace:
+		processes to overwrite:
+			agetty
+				contra: stalled in read() :(
+				pro: sh forked from agetty considered harmless
+				pro: won't be missed, as it respawns if gone
+			gpm
+				contra: sh forked from gpm considered harmfull
+				pro: mostly not needed
+			cron
+				pro: sh forked from agetty considered mostly harmless
+				contra: lost cron may be missed sooner or later
+			inetd / xinetd
+				contra: sh forked from inetd considered harmfull
+				contra: lost inetd may be missed sooner or later
+			portmap
+				contra: sh forked from portmap considered harmfull
+				contra: lost portmap may be missed sooner or later
+			syslog
+				contra: sh forked from syslog considered harmfull
+				contra: lost syslog will be missed
+			
+
 PHYSICAL:
  - gdb-physical
 
-kernelspace stack @ 0xf72c9f44
 
