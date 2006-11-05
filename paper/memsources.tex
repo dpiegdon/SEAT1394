@@ -1,0 +1,257 @@
+% vim: tw=80 ai fdl=99 fo+=a
+%
+% $Id$
+%
+
+\section{Physical addressed memory sources: \texttt{libphysical}}
+
+Typically, processes and users are never granted access to physically addressed
+memory, as this addressing mode normally circumvents any protection methods.
+Only a running operating system may use physical addressing to prepare address
+spaces for each running process, manage these, access special memory of
+extension cards and alike, or even only for bootstrapping, as linux does. But
+there are several ways of obtaining access to physical addressed memory. As
+stated, physical addressing will circumvent protection mechanisms, why access to
+it will require system administrator rights or physical access to the hardware
+of the underlying system.
+
+To have a simple, generic interface for all kinds of physical memory sources, I
+implemented a simple interface, where backends for new memory sources may be
+plugged in. This backend is called \texttt{libphysical} and provides so far
+backends for IEEE1394 and filedescriptors.
+
+Modern computer hardware provides many protection- and memory management
+mechanisms in hardware. This includes hardware to provide a virtual address
+space for each process, protection mechanisms to restrict a process to only its
+own resources, paging to extend memory to harddisks and fragment available
+memory, caching to access frequently used memory faster, and more. Obviously,
+all these features are architecture and operating-system dependent. An
+interested reader may read documentation on system programming to obtain further
+information.
+
+Assume a process with its virtual address space $A$ and its corresponding set
+of pages $P$. For each page $p \in P: p$ is either a real, physical memory page
+that is mapped into the virtual address space, possibly cached in the CPU's
+cache; or $p$ is a not mapped page that is swapped to a slower media, like a
+harddisk; depending on the operating system, $p$ may be a mapped buffer; or $p$
+may be a not mapped page. Swapped pages will and mapped pages may be loaded
+only on demand, as access to a non-mapped page by a process will generate a
+pagefault and the operating system then may map the demanded page.  Access to
+completely unmapped pages will, via this mechanism, create the well-known
+segmentation fault.
+
+When one obtains access to physically addressed memory, that is a set $M$ of
+pages, each page $p \in M$ may be a page of memory of a random process, a buffer
+page of a process, a page used by the operating system (kernel code, kernel
+data, kernel stack, IO buffer, ...), an unused page or a page used to give the
+CPU information on how to handle virtuall addresses, as this is done in
+hardware.  The latter pages will be called address translation tables. For more
+information on these, see section \ref{address_translation}.
+
+\subsection{Generic problems: swapping, multiple accessors, caching, address
+translation}
+
+As stated, virtual pages of a process may be swapped, buffers may only be
+created on demand, and pages may be cached in other memory.
+
+As physical memory only gives access to pages that are mapped from this
+physical memory, we will be unable to access swapped pages and buffers that
+have not been mapped. There is no simple solution to access this data; it is
+required to call special operating system routines to do this; but as access to
+physical memory does not include access to the CPU by itself, and these
+routines may be different from operating system to operating system, there is
+no simple solution.
+
+Depending on the method used to access the memory, a parallel accessor may be
+using the same memory at the same time. E.g. when using firewire to read a page
+of a currently running task, this task may access, thus read or write this page
+at the same time. Which one ``wins'', depends mostly on luck (actually timing,
+but we have no way of knowing, when the systems CPU accesses this page). Also,
+reading and writing at the same time may be impossible via the given method;
+thus many atomic commands used for process syncronisation, like ``test and
+set'', will not exist.  Caching may also prevent these.
+
+If a page is cached in another, faster memory, a copy of it will typically
+reside in physical memory. In most cases we will not know if a page is cached
+or not; on ia32 however the address translation tables contain a flag for each
+page telling the CPU if it may be cached or not. Depending on the way of access
+used to access the memory, it may circumvent the cache or not have access to it
+at all. When thus accessing a page, changes made by a task running in parallel
+may not be visibly to us immediately and changes made by us may be invisible to
+a parallel task or even overwritten by the cache at any time. Special care
+needs to be taken to minimize this risk. When writing to pages, only choose
+pages that are not cached or unlikely to be cached at the time of write; when
+reading pages, always keep in mind that the data may change at any time or may
+have changed, yet.
+
+As stated above, on systems using paging, physical memory will mostly be a
+concatenation of random pages, each one either used by a random process or the
+operating system. A minor part of these pages will be address translation
+tables, telling the CPU how the virtual address space of different processes
+looks like. Where these pages are is only known to the operating system and the
+CPU. For a detailed discussion, see \ref{address_translation}.
+
+
+
+\subsection{IEEE1394}
+
+IEEE1394, also known as firewire (Apple) or iLink (Sony), is an extension bus
+available on many modern computer systems and devices.  In opposite to USB,
+which is a serial periphal bus, firewire is a highspeed serial expansion bus
+with features like guaranteed bandwith (which is of interest for many real-time
+applications, mostly media crunching), DMA and the ability to connect multiple
+nodes with one firewire-bus. The concept of bus master and bus slaves, as known
+from USB, is only virtual. Typically when plugging together a firewire bus, a
+node is randomly selected to be the master and manages this bus. Most of these
+nodes have the ability to be bus master.
+
+DMA (Direct Memory Access) is implemented in hardware by the OHCI chipset; it
+is used to release the CPU from plain I/O. Mechanisms of preventing unwanted
+access exist, but many drivers to not activate these methods by default. In the
+case of windows, the operating system can be fooled into giving us DMA (see
+section \ref{windows-dma}).
+
+Up to 64 devices may be plugged into one bus. Each one will choose a bus-unique
+node ID $[0..63]$; the bus master will have the highest node ID. All node IDs
+will be sequential, starting with 0. Access to memory of a node will require a
+10 bit field for the bus ID, a 6 bit field for the node ID and a 48 bit address
+field.  On linux, \texttt{libraw1394} provides an easy and portable interface to
+do this. Ideally, the full physical memory is accessible via the 48 bit address
+field; around \texttt{0xFFFF F000 0000}, several control state registers (CSRs)
+are located, which may provide information about the given target node.
+
+For more information on the underlying hardware or protocols, please refer to
+\cite{OHCIspecs:2000} or e.g. \cite{fwire_sys_arch:2222} or the
+\texttt{libraw1394} documentation.
+
+
+
+\subsubsection{Physical security, attacks with embedded devices like iPod}
+
+Designing protection schemes of security systems should always include physical
+security, even if the object of interest is a pure virtual one (like a secret
+key). In this case, physical security, i.e. the restriction of access to the
+underlying hardware of a running computer system, is often weak.
+
+In general, a professional attacker will most likely choose the weakest link of
+security for his attacks. If he finds that going straigth to the computer and
+stealing it, or plugging an embedded device like the iPod into it is easier than
+other known attacks, he will try.
+
+Typical physical attacks on computer systems are:
+
+\begin{itemize}
+	\item booting custom operating system
+	\item opening the case and attacking the hardware directly
+	\item stealing the whole system or its harddisks \item installing
+	cameras, microphones and keyloggers \item installing specially crafted
+	PCMCIA cards \end{itemize}
+
+Firewire does not require to boot a custom operating system, to open the case,
+steal parts of the hardware, install any hardware or specially crafted hardware.
+Access via firewire is as easy as plugging in a random firewire device, like the
+iPod, letting it do its job and unplugging it.
+
+Imagine an IT professional, visiting a conference, stands with his laptop at a
+table.  Imagine an attacker coming from the other side of the table, so that the
+attackers hands are invisible to the owner due to the laptops screen. And now
+imagine the attacker owns an iPod running linux and the laptop has a firewire
+port at its back.
+
+
+
+\subsubsection{Problems with Firewire, solutions}
+
+Using \texttt{libraw1394}, it is possible to read different blocksizes of data
+via firewire.  It seems like different hardware does allow bigger blocks to be
+read at different addresses. 4 byte blocks should always work; 1024 byte blocks
+may be read with some hardware, if the address resolves to the physical memory.
+Control state registers are likely to be readable only in 4 byte blocks.
+
+\label{windows-dma} Windows XP does use OHCI features to implement protection
+mechanisms to prevent random devices from reading any memory location.  Adam
+Boileau,``TMASKY'' and others have shown \cite{rux2k6firewire:2006} that, by
+pretending to be a device like an iPod, which ``deserves'' DMA, it is possible
+to fool Windows into giving an attacker DMA.  This attack is as simple as
+reading an iPod's config rom from its CSR and using \texttt{libraw1394}'s
+\texttt{raw1394\_update\_config\_rom()} to use the copy.  Adam Boileau has
+implemented a simple script to do this. I have writting my own program in C
+using \texttt{libraw1394}, which is located in \texttt{1394csrtools/}
+
+
+
+\subsection{Filedescriptor: /dev/mem, memory dumps}
+
+Another source for physical memory may be given to an attacker via a
+filedescriptor. This filedescriptor may refer do a memory dump or the linux
+\texttt{/dev/mem} device. In case of a plain memorydump, many of the mentioned
+problems lapse: no caching will be performed, no concurrent process will change
+the dumped data. In the case of a filedescriptor refering to \texttt{/dev/mem},
+other accessors will exist, as \texttt{/dev/mem} is refering to the systems
+memory; caching on the other hand should not be a problem, as we are not
+circumventing any caching system (like the CPU), but directly using it.
+
+\subsubsection{Problems with /dev/mem, solutions}
+
+\texttt{/dev/mem} on linux has one other, major problem: on 32 bit systems, the
+virtual address space is $2^{32}$ Bytes big, i.e. 4GiB. The virtual address
+space of a typical linux process is divided into one userspace-part, where code,
+libraries and stack are mapped, and one kernelspace-part, where the complete
+kernel, data structures and the kernel-stack of this process are located. The
+userspace thread will never be able to access the kernelspace pages; but when
+the userspace process calls a system call, the CPU will jump into a different
+protection level and execute the syscall entry code, which is part of the
+kernel. At this time the kernel runs in the same virtual address space, just at
+a different protection level. Default kernel configs divide the 4GiB virtual
+address space into a 3GiB userspace-part (\texttt{0x0000 0000} - {0xbfff ffff})
+and a 1GiB kernelspace-part (\texttt{0xc000 0000 - 0xffff ffff}). Different
+kernel config options (\texttt{CONFIG\_VMSPLIT\_3G},
+\texttt{CONFIG\_PAGE\_OFFSET}) can change the split ratio, but the splitting is
+a basic requirement for linux to work. In the upper kernelspace-part, the lower
+physical memory will be fully mapped (up to about 970MiB), the kernel will - in
+this case - be located at roughly \texttt{0xC100 0000}, i.e. at the physical
+address \texttt{0x0100 0000}. During kernel configuration, these 970MiB are
+called ``precious lowmem'', because it is the only memory accessible by the
+kernel in a simple manner. When allocating kernelspace structures, the kernel
+will normally only use this lowmem, this includes all address translation tables
+(on ia32, these are: pagedirectories, pagetables, local- and global descriptor
+tables)\label{linuxATTinlowmem}. The \texttt{/dev/mem} driver will access this
+lowmem, when a userspace process utilizes it. But if the process tries to read
+more than the mapped lowmem, \texttt{/dev/mem} will fail to return this, as it
+is not mapped in the process.  Thus, when using \texttt{/dev/mem}, only approx.
+the lower 970GiB physical RAM will be accessible.
+
+It may be possible to work around this restriction: as stated, all address
+translation tables are located in the accessible memory. A process could try to
+find its own pagetable and manipulate it to map other regions of physical memory
+into its userspace section; then, no further access to \texttt{/dev/mem} would
+be required. As the reader will see in \ref{findingATT}, identifying processes
+in linux can mostly be as easy as looking at the upper userspace stack page.
+Research on a system with 1.5GiB RAM has shown, that most of these pages will be
+in the unmapped area, thus many of the processes will not be identifyable by
+this method. To make its own pagedirectory identifiable from the other ones, a
+process may e.g. map a random file at a typically never used address (e.g.
+\texttt{0x6000 0000}, make sure the mapping was successful, access this file (to
+prevent a missing mapping-on-demand) and then search the signature in all found
+pagedirectories. When found, it may map this pagedirectory at a special location
+and directly manipulate it. It should be taken care of the problem, that a
+manipulated pagedirectory will only be reloaded into the CPU after a
+re-scheduling of the process, but a simple \texttt{usleep()} should suffice. The
+author is not sure, under which circumstances the linux kernel does manipulate a
+process's pagedirectory; but obvious things like mapping new regions or
+unmapping mapped regions by system calls should be avoided, as the system may
+overwrite the manipulated pagetable with a new, adjusted one.
+
+
+
+\subsection{Other sources}
+
+The ideas of this paper should be easily adoptable to all memory sources giving
+access to physically addressable memory, this may e.g. include suspend-2-disk
+images or virtual machines that have an interface to access the virtual machines
+memory.  \texttt{qemu} is such a virtual machine, providing a \texttt{gdb}
+remote stub to attach a debugger.
+
+To use a new physical source with the methods introduced in the later sections,
+it is only required to write a new backend for \texttt{libphysical}.
+

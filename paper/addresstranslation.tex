@@ -1,0 +1,33 @@
+% vim: tw=80 ai fdl=99 fo+=a
+%
+% $Id$
+%
+
+\section{Address translations, linear address space, process address space}
+\label{address_translation}
+
+...
+
+On IA32 this information is located in the registers CR3 (control register),
+LDTR (local descriptor table register) and GDTR (global descriptor table
+register). These tables are then used in a 2-level address translation: The
+logical address used by a process, consisting of a segment selector and a
+segment offset, is translated via the global and local descriptor tables
+
+...
+
+
+
+\subsection{Finding address translation tables}
+\label{findingATT}
+
+\subsubsection{OS and architecture dependencies; typical address space layout}
+
+\subsubsection{Matching via statisticts: NCD (nearest compression distance)}
+
+
+
+\subsection{Example implementation: ia32 backend for \texttt{liblinear}}
+
+
+
