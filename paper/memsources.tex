@@ -17,10 +17,10 @@ of the underlying system.
 
 To have a simple, generic interface for all kinds of physical memory sources, I
 implemented a simple interface, where backends for new memory sources may be
-plugged in. This backend is called \texttt{libphysical} and provides so far
+plugged in. This interface is called \texttt{libphysical} and includes so far
 backends for IEEE1394 and filedescriptors.
 
-Modern computer hardware provides many protection- and memory management
+Modern computer hardware provides many protection- and memorymanagement
 mechanisms in hardware. This includes hardware to provide a virtual address
 space for each process, protection mechanisms to restrict a process to only its
 own resources, paging to extend memory to harddisks and fragment available
@@ -180,7 +180,7 @@ using \texttt{libraw1394}, which is located in \texttt{1394csrtools/}
 
 
 
-\subsection{Filedescriptor: /dev/mem, memory dumps}
+\subsection{Filedescriptor: \texttt{/dev/mem}, memory dumps}
 
 Another source for physical memory may be given to an attacker via a
 filedescriptor. This filedescriptor may refer do a memory dump or the linux
@@ -191,7 +191,7 @@ other accessors will exist, as \texttt{/dev/mem} is refering to the systems
 memory; caching on the other hand should not be a problem, as we are not
 circumventing any caching system (like the CPU), but directly using it.
 
-\subsubsection{Problems with /dev/mem, solutions}
+\subsubsection{Problems with \texttt{/dev/mem}, solutions}
 
 \texttt{/dev/mem} on linux has one other, major problem: on 32 bit systems, the
 virtual address space is $2^{32}$ Bytes big, i.e. 4GiB. The virtual address
