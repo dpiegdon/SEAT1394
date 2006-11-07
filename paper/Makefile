@@ -42,7 +42,7 @@ autoupdate: paper.pdf autowindow
 	tgif -print -epsi $<
 
 #paper.pdf: ${TGIF_FIGURES} ${TEXTS} ${BIBS}
-paper.pdf: ${TEXTS}
+paper.pdf: ${TEXTS} ${BIBS}
 	latex paper.tex
 	bibtex paper
 	latex paper.tex
