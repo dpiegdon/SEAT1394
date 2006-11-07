@@ -58,8 +58,18 @@ the segments\footnote{This initialization is done in
 \texttt{linux/arch/i386/kernel/head.S}, GDTs are defined at symbols
 \texttt{boot\_gdt\_table} and \texttt{cpu\_gdt\_table}}.
 
-linux and paging...
+The IA32 architecture divides the 4GiB virtual address space into 1024
+4MiB-frames. This splitting is defined by the \emph{pagedirectory}. Each entry
+of a pagedirectory is 4 Bytes long, thus the pagedirectory is $4*1024 = 4096$
+Bytes long. Each of these \emph{pagedirectory entries} (PDEs), if present (its
+\texttt{PRESENT}-flag is set), can either refer to a 4MiB physical page or a
+pagetable dividing this virtual 4MiB frame further into 4KiB frames. A
+\emph{pagetable} is consisting of 1024 4-byte \emph{pagetable entries} (PTEs),
+each responsible for a 4KiB frame.
 
+...
+
+REQ: PDE vs. PAE ; no HIGHMEM-64G (?)
 
 \subsection{Finding address translation tables}
 \label{findingATT}
