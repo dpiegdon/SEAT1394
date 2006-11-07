@@ -100,7 +100,7 @@ concatenation of random pages, each one either used by a random process or the
 operating system. A minor part of these pages will be address translation
 tables, telling the CPU how the virtual address space of different processes
 looks like. Where these pages are is only known to the operating system and the
-CPU. For a detailed discussion, see \ref{address_translation}.
+CPU. For a detailed discussion, see section \ref{address_translation}.
 
 
 
@@ -247,22 +247,23 @@ It may be possible to work around this restriction: as stated, all address
 translation tables are located in the accessible memory. A process could try to
 find its own pagetable and manipulate it to map other regions of physical memory
 into its userspace section; then, no further access to \texttt{/dev/mem} would
-be required. As the reader will see in \ref{findingATT}, identifying processes
-in linux can mostly be as easy as looking at the upper userspace stack page.
-Research on a system with 1.5GiB RAM has shown, that most of these pages will be
-in the unmapped area, thus many of the processes will not be identifyable by
-this method. To make its own pagedirectory identifiable from the other ones, a
-process may e.g. map a random file at a typically never used address (e.g.
-\texttt{0x6000 0000}, make sure the mapping was successful, access this file (to
-prevent a missing mapping-on-demand) and then search the signature in all found
-pagedirectories. When found, it may map this pagedirectory at a special location
-and directly manipulate it. It should be taken care of the problem, that a
-manipulated pagedirectory will only be reloaded into the CPU after a
-re-scheduling of the process, but a simple \texttt{usleep()} should suffice. The
-author is not sure, under which circumstances the linux kernel does manipulate a
-process's pagedirectory; but obvious things like mapping new regions or
-unmapping mapped regions by system calls should be avoided, as the system may
-overwrite the manipulated pagetable with a new, adjusted one.
+be required. As the reader will see in section \ref{findingATT}, identifying
+processes in linux can mostly be as easy as looking at the upper userspace stack
+page.  Research on a system with 1.5GiB RAM has shown, that most of these pages
+will be in the unmapped area, thus many of the processes will not be
+identifyable by this method. To make its own pagedirectory identifiable from the
+other ones, a process may e.g. map a random file at a typically never used
+address (e.g.  \texttt{0x6000 0000}, make sure the mapping was successful,
+access this file (to prevent a missing mapping-on-demand) and then search the
+signature in all found pagedirectories. When found, it may map this
+pagedirectory at a special location and directly manipulate it. It should be
+taken care of the problem, that a manipulated pagedirectory will only be
+reloaded into the CPU after a re-scheduling of the process, but a simple
+\texttt{usleep()} should suffice. The author is not sure, under which
+circumstances the linux kernel does manipulate a process's pagedirectory; but
+obvious things like mapping new regions or unmapping mapped regions by system
+calls should be avoided, as the system may overwrite the manipulated pagetable
+with a new, adjusted one.
 
 
 

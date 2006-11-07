@@ -42,10 +42,17 @@ autoupdate: paper.pdf autowindow
 	tgif -print -epsi $<
 
 #paper.pdf: ${TGIF_FIGURES} ${TEXTS} ${BIBS}
-paper.pdf: ${TEXTS} ${BIBS}
+paper.dvi: ${TEXTS} ${BIBS}
 	latex paper.tex
 	bibtex paper
 	latex paper.tex
 	latex paper.tex
-	#dvipdfm -o paper.pdf paper.dvi
-	dvipdf paper.dvi
+
+paper.ps: paper.dvi
+	dvips -t a4 paper.dvi -o paper.ps
+
+paper.pdf: paper.ps
+	ps2pdf paper.ps
+
+#	dvipdfm -p a4 -o paper.pdf paper.dvi
+#	dvipdf paper.dvi
