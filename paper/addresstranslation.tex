@@ -6,16 +6,59 @@
 \section{Address translations, linear address space, process address space}
 \label{address_translation}
 
-...
+All multitasking environment that fulfill current requirements have to provide
+virtual address spaces for each running process or thread. For performance and
+security reason, this address translation from a process virtual address to an
+address valid in physical memory, this is normally performed in hardware.  These
+mechanisms can e.g. include segmentation and paging.
 
-On IA32 this information is located in the registers CR3 (control register),
-LDTR (local descriptor table register) and GDTR (global descriptor table
-register). These tables are then used in a 2-level address translation: The
-logical address used by a process, consisting of a segment selector and a
-segment offset, is translated via the global and local descriptor tables
+A normal process's memory is dividable into several blocks or \emph{segments}:
+the \emph{code segment} contains all the code that may be run; the \emph{data
+segment} contains all the static data that is known at compile time; the
+\emph{heap} contains all structures that are allocated during runtime via
+\texttt{malloc} or alike; the \emph{stack segment} contains the stack and local
+variables. On some architectures, it is possible to assign segment descriptors,
+reffering to defined memory regions, to segment registers. This assignment will
+influence the further behaviour of addressing: all addressing will from there on
+be relative to the bound of the memory region specified by the segment
+descriptor.
 
-...
+\emph{Paging} will divide the virtual address space of a process into several
+consecutive \emph{frames} of a specified page-size (typically 4096 bytes).
+Virtual addresses can be split into a frame number and a frame offset; the frame
+number is translated (mapped) via a translation table into a physical page
+number and the frame offset is used as an offset into this physical page. If a
+frame does not have a corresponding physical page, is is called to be unmapped.
+Unmapped pages can be non-existing pages or can e.g, be swapped to slower media
+like harddisks.
 
+For a detailed description and discussion of these two important mechanisms, the
+reader may reffer to a course on system programming, e.g.
+\cite{rwth_syspro_scriptum:2002}.
+
+On IA32, the CPU can run in various modes of operation; for secure multitasking
+operating systems, the \emph{protected mode} is the preferred one. The protected
+mode can use a two-level address translation: first it will translate the \emph
+{logical address}, consisting of a segment selector (which is an index into
+either the local or the global segment descriptor table) and an offset to the
+\emph{linear address}.  The linear address is then translated via paging to the
+\emph{physical address}. (The paging translation is optional and needs to be
+enabled by a setting a special flag in a control register of the CPU.)
+
+A linux process runs in a simple 4GiB flat virtual address space; no
+segmentation is required. Thus, linux will create, among others, that are not of
+interest for us, four special segments during boot-up: for each privilige level
+(i.e. kernelspace and userspace), it will create segments for both code and
+data. These four so called \emph{flat} segments will span the full virtual
+address space of 4GiB, thus effectively elliminating segmentation. The address
+of the \emph{global descriptor table}, holding the description of these
+segments, is then loaded into the \emph{global descriptor table register} (GDTR)
+and the specific segment registers are loaded with segment selectors refering to
+the segments\footnote{This initialization is done in
+\texttt{linux/arch/i386/kernel/head.S}, GDTs are defined at symbols
+\texttt{boot\_gdt\_table} and \texttt{cpu\_gdt\_table}}.
+
+linux and paging...
 
 
 \subsection{Finding address translation tables}
