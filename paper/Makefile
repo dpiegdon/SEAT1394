@@ -43,9 +43,13 @@ autoupdate: paper.pdf autowindow
 
 #paper.pdf: ${TGIF_FIGURES} ${TEXTS} ${BIBS}
 paper.dvi: ${TEXTS} ${BIBS}
+	# generate .aux for bibtex
 	latex paper.tex
+	# generate bibtex
 	bibtex paper
+	# generate aux for second run
 	latex paper.tex
+	# final run
 	latex paper.tex
 
 paper.ps: paper.dvi

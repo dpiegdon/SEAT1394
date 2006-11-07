@@ -11,9 +11,9 @@ Only a running operating system may use physical addressing to prepare address
 spaces for each running process, manage these, access special memory of
 extension cards and alike, or even only for bootstrapping, as linux does. But
 there are several ways of obtaining access to physical addressed memory. As
-stated, physical addressing will circumvent protection mechanisms, why access to
-it will require system administrator rights or physical access to the hardware
-of the underlying system.
+stated, physical addressing will circumvent protection mechanisms. Thus access
+to it will require system administrator rights or physical access to the
+hardware of the underlying system.
 
 To have a simple, generic interface for all kinds of physical memory sources, I
 implemented a simple interface, where backends for new memory sources may be
@@ -48,7 +48,7 @@ pages $P$. Each page $p \in P$ may be
 Swapped pages will and mapped pages may be loaded only on demand (i.e. when the
 process tries to access the page), as access to a non-mapped page by a process
 will generate a pagefault and the operating system then may map the demanded
-page.  Access to completely unused pages will, via this mechanism, create the
+page.  Access to completely unused pages, via this mechanism, will create the
 well-known segmentation fault.
 
 When one obtains access to physically addressed memory, that is a set $M$ of
@@ -118,7 +118,7 @@ nodes have the ability to be bus master.
 
 DMA (Direct Memory Access) is implemented in hardware by the OHCI chipset; it
 is used to release the CPU from plain I/O. Mechanisms of preventing unwanted
-access exist, but many drivers to not activate these methods by default. In the
+access exist, but many drivers do not activate these methods by default. In the
 case of windows, the operating system can be fooled into giving us DMA (see
 section \ref{windows-dma}).
 
@@ -136,6 +136,13 @@ firewire device.
 For more information on the underlying hardware or protocols, please refer to
 \cite{OHCIspecs:2000} or e.g. \cite{fwire_sys_arch:2222} or the
 \texttt{libraw1394} documentation.
+
+FYI: Plugging in firewire devices will generate syslog messaged on linux
+systems. Furthermore, using firewire to access the memory of a running system
+\emph{may} generate non maskable interrupts (NMI) on the target system and even
+leave the operating system (linux 2.6.17) in a non-usable state. I have seen
+some laptops being disturbed by this, one crashed. My desktop PC at home (with a
+firewire PCI extension card), though, just worked fine during all tests.
 
 
 
@@ -195,15 +202,15 @@ pretending to be a device like an iPod, which ``deserves'' DMA, it is possible
 to fool Windows into giving an attacker DMA.  This attack is as simple as
 reading an iPod's config rom from its CSR and using \texttt{libraw1394}'s
 \texttt{raw1394\_update\_config\_rom()} to use the copy.  Adam Boileau has
-implemented a simple script to do this. I have writting my own program in C
-using \texttt{libraw1394}, which is located in \texttt{1394csrtools/}
+implemented a simple script to do this. I have written my own tool in C using
+\texttt{libraw1394}, which is located in \texttt{1394csrtools/}
 
 
 
 \subsection{Filedescriptor: \texttt{/dev/mem}, memory dumps}
 
 Another source for physical memory may be given to an attacker via a
-filedescriptor. This filedescriptor may refer do a memory dump or the linux
+filedescriptor. This filedescriptor may refer to a memory dump or the linux
 \texttt{/dev/mem} device. In case of a plain memorydump, many of the mentioned
 problems lapse: no caching will be performed, no concurrent process will change
 the dumped data. In the case of a filedescriptor refering to \texttt{/dev/mem},
@@ -253,7 +260,7 @@ page.  Research on a system with 1.5GiB RAM has shown, that most of these pages
 will be in the unmapped area, thus many of the processes will not be
 identifyable by this method. To make its own pagedirectory identifiable from the
 other ones, a process may e.g. map a random file at a typically never used
-address (e.g.  \texttt{0x6000 0000}, make sure the mapping was successful,
+address (e.g.  \texttt{0x6000 0000}), make sure the mapping was successful,
 access this file (to prevent a missing mapping-on-demand) and then search the
 signature in all found pagedirectories. When found, it may map this
 pagedirectory at a special location and directly manipulate it. It should be

@@ -15,15 +15,16 @@ mechanisms can include e.g. segmentation and paging.
 A normal process's memory is divisible into several blocks or \emph{segments}:
 the \emph{code segment} contains all the code that may be run; the \emph{data
 segment} contains the static data that is known at compile time, global
-structures or deliberately allocated memory; the \emph{stack segment} contains
-the stack, including local variables.  On some architectures, it is possible to
-assign segment descriptors, reffering to defined memory regions, to segment
-registers.  This assignment will influence the further behaviour of address
-translation: all addresses will from there on be taken to be relative to the
-bound of the memory region specified by the segment descriptor.
+structures or deliberately allocated memory (including the heap); the
+\emph{stack segment} contains the stack, including local variables.  On some
+architectures, it is possible to assign segment descriptors, reffering to
+defined memory regions, to segment registers.  This assignment will influence
+the further behaviour of address translation: all addresses will from there on
+be taken to be relative to the bound of the memory region specified by the
+segment descriptor.
 
 \emph{Paging} will divide the virtual address space of a process into several
-consecutive \emph{frames} of a specified page-size (typically 4096 bytes).
+consecutive \emph{frames} of a specific page-size (typically 4096 bytes).
 Virtual addresses can be split into a frame number and a frame offset; the frame
 number is translated (mapped) via a translation table into a physical page
 number and the frame offset is used as an offset into this physical page. If a
@@ -35,6 +36,10 @@ For a detailed description and discussion of these two important mechanisms, the
 reader may reffer to a course on system programming, e.g.
 \cite{rwth_syspro_scriptum:2002}.
 
+
+
+\subsection{Example implementation: ia32 backend for \texttt{liblinear}}
+
 On the IA32 architecture, the CPU can run in various modes of operation; for
 secure multitasking operating systems, the \emph{protected mode} is the
 preferred one.  The protected mode can use a two-level address translation:
@@ -45,13 +50,13 @@ address is then translated via paging to the \emph{physical address}. (The
 paging translation is optional and needs to be enabled by setting a special flag
 in a control register of the CPU.)
 
-A linux process runs in a simple 4GiB flat virtual address space; no
-segmentation is required. Thus, linux will create, among others, that are not of
-interest for us, four special segments during boot-up: for each privilige level
-(i.e. kernelspace and userspace), it will create segments for both code and
-data. These four so called \emph{flat} segments will span the full virtual
-address space of 4GiB, thus effectively elliminating segmentation. The address
-of the \emph{global descriptor table}, holding the description of these
+\label{linux_gdt} A linux process runs in a simple 4GiB flat virtual address
+space; no segmentation is required. Thus, linux will create (among others, that
+are not of interest for us) four special segments during boot-up: for each
+privilige level (i.e. kernelspace and userspace), it will create segments for
+both code and data. These four so called \emph{flat} segments will span the full
+virtual address space of 4GiB, thus effectively elliminating segmentation. The
+address of the \emph{global descriptor table}, holding the description of these
 segments, is then loaded into the \emph{global descriptor table register} (GDTR)
 and the specific segment registers are loaded with segment selectors refering to
 the segments\footnote{This initialization is done in
@@ -60,27 +65,74 @@ the segments\footnote{This initialization is done in
 
 The IA32 architecture divides the 4GiB virtual address space into 1024
 4MiB-frames. This splitting is defined by the \emph{pagedirectory}. Each entry
-of a pagedirectory is 4 Bytes long, thus the pagedirectory is $4*1024 = 4096$
+of a pagedirectory is 4 bytes long, thus the pagedirectory is $4*1024 = 4096$
 Bytes long. Each of these \emph{pagedirectory entries} (PDEs), if present (its
 \texttt{PRESENT}-flag is set), can either refer to a 4MiB physical page or a
 pagetable dividing this virtual 4MiB frame further into 4KiB frames. A
-\emph{pagetable} is consisting of 1024 4-byte \emph{pagetable entries} (PTEs),
-each corresponding to a 4KiB frame.
-
-...
+\emph{pagetable} is, again, consisting of 1024 4-byte \emph{pagetable entries}
+(PTEs), each corresponding to a 4KiB frame.
 
 REQ: PDE vs. PAE ; no HIGHMEM-64G (?)
+
+
 
 \subsection{Finding address translation tables}
 \label{findingATT}
 
+When accessing a range of memory via physical addressing, it is neccessary to
+find address translation tables to make sence out of the vast, unsorted number
+of pages. Typically, translation tables are not marked as such and as we can not
+access the processor or the operating system to ask it, where these are, we have
+to search them. The following methods have proven themselves.
+
+
+
 \subsubsection{OS and architecture dependencies; typical address space layout}
 
+Obviously, address translation tables are architecture and operating system
+specific; but within an architecture and an operating system, the will often
+have shared data or specific patterns that are identifiable. For example, one
+can omit searching the segment descriptor tables (see \ref{linux_gdt}) and
+concentrate on finding pagedirectories. There are several special patterns that
+can be found in a typical pagedirectory of a linux process running on IA32. To
+understand, I will layout the typical address space of a linux process on IA32:
+
+\begin{itemize}
+
+	\item \emph{code and heap} will be starting somewhere aroung
+	\texttt{0x0800 0000}, consecutively following with a minor number of
+	unmapped pages between.
+
+	\item \emph{libraries} will be mapped at \texttt{FIXME!}.
+
+	\item the \emph{stack} will be located somewhere, possibly directly,
+	below \texttt{0xC000 0000}. 
+
+	\item from \texttt{0xC000 0000}, the approximately lower physical 970
+	MiB of physical RAM will be mapped, only accessible when the accessing
+	task is running in ring 0.
+
+	\item the kernelspace stack and other kernel data structures are mapped
+	around \texttt{0xF900 0000 (FIXME!)}.
+
+	\item all unmapped pages will have 4-byte entries consisting of zeroes
+	(\texttt{0x0000})
+
+\end{itemize}
+
+Stack- and memory randomization techniques like \emph{PaX} do randomize the base
+addresses a bit, but the general layout stays the same.
+
+Besides searching pages that show non-zero values around these positions and
+zero values elsewhere, it is much easier and faster to just check, if the
+virtual address \texttt{0xC000 0000} maps to the physical address \texttt{0x0},
+because typically the PDE for page no. \texttt{0xC0000} will point to the 4MiB
+physical page at \texttt{0x0}. This test only requires reading the 4byte PDE
+entry \texttt{0xC00} and does sort out the vast majority of non-pagedirectory
+pages.
+
+
 \subsubsection{Matching via statisticts: NCD (nearest compression distance)}
-
-
-
-\subsection{Example implementation: ia32 backend for \texttt{liblinear}}
 
 
 
