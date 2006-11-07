@@ -1,4 +1,4 @@
-# $Id: Makefile 156 2005-12-03 20:26:19Z lostrace $
+# $Id$
 
 TEX = /usr/bin/latex
 .PHONY : all install clean autowindow autoupdate autoreload
