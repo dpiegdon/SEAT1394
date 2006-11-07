@@ -29,24 +29,35 @@ all these features are architecture and operating-system dependent. An
 interested reader may read documentation on system programming to obtain further
 information.
 
-Assume a process with its virtual address space $A$ and its corresponding set
-of pages $P$. For each page $p \in P: p$ is either a real, physical memory page
-that is mapped into the virtual address space, possibly cached in the CPU's
-cache; or $p$ is a not mapped page that is swapped to a slower media, like a
-harddisk; depending on the operating system, $p$ may be a mapped buffer; or $p$
-may be a not mapped page. Swapped pages will and mapped pages may be loaded
-only on demand, as access to a non-mapped page by a process will generate a
-pagefault and the operating system then may map the demanded page.  Access to
-completely unmapped pages will, via this mechanism, create the well-known
-segmentation fault.
+Assume a process with its virtual address space $A$ and its corresponding set of
+pages $P$. Each page $p \in P$ may be
+
+\begin{itemize}
+
+	\item a real, physical memory page that is mapped into the virtual 
+		address space, possibly cached in the CPU's cache,
+
+	\item a used page that is swapped to a slower media, like a harddisk
+
+	\item (depending on the operating system) a mapped buffer or file
+
+	\item not used, and thus not mapped
+
+\end{itemize}
+
+Swapped pages will and mapped pages may be loaded only on demand (i.e. when the
+process tries to access the page), as access to a non-mapped page by a process
+will generate a pagefault and the operating system then may map the demanded
+page.  Access to completely unused pages will, via this mechanism, create the
+well-known segmentation fault.
 
 When one obtains access to physically addressed memory, that is a set $M$ of
 pages, each page $p \in M$ may be a page of memory of a random process, a buffer
 page of a process, a page used by the operating system (kernel code, kernel
 data, kernel stack, IO buffer, ...), an unused page or a page used to give the
-CPU information on how to handle virtuall addresses, as this is done in
-hardware.  The latter pages will be called address translation tables. For more
-information on these, see section \ref{address_translation}.
+CPU information on how to handle virtual addresses, as this is done in hardware.
+The latter pages will be called address translation tables; for more information
+on these, see section \ref{address_translation}.
 
 \subsection{Generic problems: swapping, multiple accessors, caching, address
 translation}
@@ -96,8 +107,8 @@ CPU. For a detailed discussion, see \ref{address_translation}.
 \subsection{IEEE1394}
 
 IEEE1394, also known as firewire (Apple) or iLink (Sony), is an extension bus
-available on many modern computer systems and devices.  In opposite to USB,
-which is a serial periphal bus, firewire is a highspeed serial expansion bus
+available on many modern computer systems and devices.  In opposition to USB,
+which is a serial periphery bus, firewire is a highspeed serial expansion bus
 with features like guaranteed bandwith (which is of interest for many real-time
 applications, mostly media crunching), DMA and the ability to connect multiple
 nodes with one firewire-bus. The concept of bus master and bus slaves, as known
@@ -117,8 +128,10 @@ will be sequential, starting with 0. Access to memory of a node will require a
 10 bit field for the bus ID, a 6 bit field for the node ID and a 48 bit address
 field.  On linux, \texttt{libraw1394} provides an easy and portable interface to
 do this. Ideally, the full physical memory is accessible via the 48 bit address
-field; around \texttt{0xFFFF F000 0000}, several control state registers (CSRs)
-are located, which may provide information about the given target node.
+field, mapped in this address space starting from \texttt{0x0}; around
+\texttt{0xFFFF F000 0000}, several control state registers (CSRs) are located,
+that provide information about the given target node and the capabilities of the
+firewire device.
 
 For more information on the underlying hardware or protocols, please refer to
 \cite{OHCIspecs:2000} or e.g. \cite{fwire_sys_arch:2222} or the
@@ -134,18 +147,25 @@ key). In this case, physical security, i.e. the restriction of access to the
 underlying hardware of a running computer system, is often weak.
 
 In general, a professional attacker will most likely choose the weakest link of
-security for his attacks. If he finds that going straigth to the computer and
+security for his attacks. If he finds that going straight to the computer and
 stealing it, or plugging an embedded device like the iPod into it is easier than
 other known attacks, he will try.
 
 Typical physical attacks on computer systems are:
 
 \begin{itemize}
+
 	\item booting custom operating system
+
 	\item opening the case and attacking the hardware directly
-	\item stealing the whole system or its harddisks \item installing
-	cameras, microphones and keyloggers \item installing specially crafted
-	PCMCIA cards \end{itemize}
+
+	\item stealing the whole system or its harddisks
+
+	\item installing cameras, microphones and keyloggers
+
+	\item installing specially crafted PCMCIA cards
+
+\end{itemize}
 
 Firewire does not require to boot a custom operating system, to open the case,
 steal parts of the hardware, install any hardware or specially crafted hardware.
@@ -193,33 +213,35 @@ circumventing any caching system (like the CPU), but directly using it.
 
 \subsubsection{Problems with \texttt{/dev/mem}, solutions}
 
-\texttt{/dev/mem} on linux has one other, major problem: on 32 bit systems, the
-virtual address space is $2^{32}$ Bytes big, i.e. 4GiB. The virtual address
-space of a typical linux process is divided into one userspace-part, where code,
-libraries and stack are mapped, and one kernelspace-part, where the complete
-kernel, data structures and the kernel-stack of this process are located. The
-userspace thread will never be able to access the kernelspace pages; but when
-the userspace process calls a system call, the CPU will jump into a different
-protection level and execute the syscall entry code, which is part of the
-kernel. At this time the kernel runs in the same virtual address space, just at
-a different protection level. Default kernel configs divide the 4GiB virtual
-address space into a 3GiB userspace-part (\texttt{0x0000 0000} - {0xbfff ffff})
-and a 1GiB kernelspace-part (\texttt{0xc000 0000 - 0xffff ffff}). Different
-kernel config options (\texttt{CONFIG\_VMSPLIT\_3G},
+\texttt{/dev/mem} on linux has one other, major problem:
+
+On 32 bit systems, the virtual address space is $2^{32}$ bytes big, i.e. 4GiB.
+The virtual address space of a linux process is divided into one userspace-part,
+where code, libraries and stack are mapped, and one kernelspace-part, where the
+complete kernel, data structures and the kernel-stack of this process are
+located. The userspace thread will never be able to access the kernelspace
+pages; but when the userspace process calls a system call, the CPU will jump
+into a different protection level and execute the syscall entry code, which is
+part of the kernel. At this time the kernel runs in the same virtual address
+space, just at a different protection level. Default kernel configs divide the
+4GiB virtual address space into a 3GiB userspace-part (\texttt{0x0000 0000} -
+{0xbfff ffff}) and a 1GiB kernelspace-part (\texttt{0xc000 0000 - 0xffff ffff}).
+Different kernel config options (\texttt{CONFIG\_VMSPLIT\_3G},
 \texttt{CONFIG\_PAGE\_OFFSET}) can change the split ratio, but the splitting is
-a basic requirement for linux to work. In the upper kernelspace-part, the lower
-physical memory will be fully mapped (up to about 970MiB), the kernel will - in
-this case - be located at roughly \texttt{0xC100 0000}, i.e. at the physical
-address \texttt{0x0100 0000}. During kernel configuration, these 970MiB are
-called ``precious lowmem'', because it is the only memory accessible by the
-kernel in a simple manner. When allocating kernelspace structures, the kernel
-will normally only use this lowmem, this includes all address translation tables
-(on ia32, these are: pagedirectories, pagetables, local- and global descriptor
-tables)\label{linuxATTinlowmem}. The \texttt{/dev/mem} driver will access this
-lowmem, when a userspace process utilizes it. But if the process tries to read
-more than the mapped lowmem, \texttt{/dev/mem} will fail to return this, as it
-is not mapped in the process.  Thus, when using \texttt{/dev/mem}, only approx.
-the lower 970GiB physical RAM will be accessible.
+a basic design decision and thus a requirement for linux to work. In the upper
+kernelspace-part, the lower physical memory will be fully mapped (up to about
+970MiB), the kernel will - in this case - be located at roughly \texttt{0xC100
+0000}, i.e. at the physical address \texttt{0x0100 0000}. During kernel
+configuration, these 970MiB are called ``precious lowmem'', because it is the
+only memory accessible by the kernel in a simple manner. When allocating
+kernelspace structures (this includes all address translation tables (on ia32,
+these are: pagedirectories, pagetables, local- and global descriptor
+tables)\label{linuxATTinlowmem}), the kernel will normally only use this lowmem.
+The \texttt{/dev/mem} driver will access this lowmem, when a userspace process
+utilizes it. But if the process tries to read more than the mapped lowmem,
+\texttt{/dev/mem} will fail to return this, as it is not mapped in the process.
+Thus, when using \texttt{/dev/mem}, only approx.  the lower 970GiB physical RAM
+will be accessible.
 
 It may be possible to work around this restriction: as stated, all address
 translation tables are located in the accessible memory. A process could try to
