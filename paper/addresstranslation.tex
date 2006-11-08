@@ -99,36 +99,37 @@ understand, I will layout the typical address space of a linux process on IA32:
 
 \begin{itemize}
 
-	\item \emph{code and heap} will be starting somewhere aroung
-	\texttt{0x0800 0000}, consecutively following with a minor number of
-	unmapped pages between.
+	\item \emph{code and heap} will be starting somewhere around
+	\texttt{0x0800~0000}, consecutively following with a minor number of
+	unmapped pages in between
 
-	\item \emph{libraries} will be mapped at \texttt{FIXME!}.
+	\item \emph{libraries} will be mapped at \texttt{FIXME!}
 
-	\item the \emph{stack} will be located somewhere, possibly directly,
-	below \texttt{0xC000 0000}. 
+	\item the \emph{stack} will be mapped somewhere below
+	\texttt{0xc000~0000}, possibly directly starting from
+	\texttt{0xbfff~ffff}
 
-	\item from \texttt{0xC000 0000}, the approximately lower physical 970
+	\item from \texttt{0xc000~0000}, the approximately lower physical 970
 	MiB of physical RAM will be mapped, only accessible when the accessing
-	task is running in ring 0.
+	task is running in ring 0
 
 	\item the kernelspace stack and other kernel data structures are mapped
-	around \texttt{0xF900 0000 (FIXME!)}.
+	around \texttt{0xf900~0000 (FIXME!)}
 
 	\item all unmapped pages will have 4-byte entries consisting of zeroes
 	(\texttt{0x0000})
 
 \end{itemize}
 
-Stack- and memory randomization techniques like \emph{PaX} do randomize the base
-addresses a bit, but the general layout stays the same.
+Stack- and memory randomization techniques like \emph{PaX} randomize the base
+addresses of these locations a bit, but the general layout stays the same.
 
 Besides searching pages that show non-zero values around these positions and
 zero values elsewhere, it is much easier and faster to just check, if the
-virtual address \texttt{0xC000 0000} maps to the physical address \texttt{0x0},
-because typically the PDE for page no. \texttt{0xC0000} will point to the 4MiB
+virtual address \texttt{0xc000~0000} maps to the physical address \texttt{0x0},
+because typically the PDE for page no. \texttt{0xc0000} will point to the 4MiB
 physical page at \texttt{0x0}. This test only requires reading the 4byte PDE
-entry \texttt{0xC00} and does sort out the vast majority of non-pagedirectory
+entry \texttt{0xc00} and does sort out the vast majority of non-pagedirectory
 pages.
 
 

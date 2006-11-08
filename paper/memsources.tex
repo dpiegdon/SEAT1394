@@ -129,7 +129,7 @@ will be sequential, starting with 0. Access to memory of a node will require a
 field.  On linux, \texttt{libraw1394} provides an easy and portable interface to
 do this. Ideally, the full physical memory is accessible via the 48 bit address
 field, mapped in this address space starting from \texttt{0x0}; around
-\texttt{0xFFFF F000 0000}, several control state registers (CSRs) are located,
+\texttt{0xffff~f000~0000}, several control state registers (CSRs) are located,
 that provide information about the given target node and the capabilities of the
 firewire device.
 
@@ -231,16 +231,16 @@ pages; but when the userspace process calls a system call, the CPU will jump
 into a different protection level and execute the syscall entry code, which is
 part of the kernel. At this time the kernel runs in the same virtual address
 space, just at a different protection level. Default kernel configs divide the
-4GiB virtual address space into a 3GiB userspace-part (\texttt{0x0000 0000} -
-{0xbfff ffff}) and a 1GiB kernelspace-part (\texttt{0xc000 0000 - 0xffff ffff}).
+4GiB virtual address space into a 3GiB userspace-part (\texttt{0x0000~0000} -
+{0xbfff~ffff}) and a 1GiB kernelspace-part (\texttt{0xc000~0000 - 0xffff~ffff}).
 Different kernel config options (\texttt{CONFIG\_VMSPLIT\_3G},
 \texttt{CONFIG\_PAGE\_OFFSET}) can change the split ratio, but the splitting is
 a basic design decision and thus a requirement for linux to work. In the upper
 kernelspace-part, the lower physical memory will be fully mapped (up to about
-970MiB), the kernel will - in this case - be located at roughly \texttt{0xC100
-0000}, i.e. at the physical address \texttt{0x0100 0000}. During kernel
-configuration, these 970MiB are called ``precious lowmem'', because it is the
-only memory accessible by the kernel in a simple manner. When allocating
+970MiB), the kernel will - in this case - be located at roughly
+\texttt{0xc100~0000}, i.e. at the physical address \texttt{0x0100~0000}. During
+kernel configuration, these 970MiB are called ``precious lowmem'', because it is
+the only memory accessible by the kernel in a simple manner. When allocating
 kernelspace structures (this includes all address translation tables (on ia32,
 these are: pagedirectories, pagetables, local- and global descriptor
 tables)\label{linuxATTinlowmem}), the kernel will normally only use this lowmem.
@@ -260,7 +260,7 @@ page.  Research on a system with 1.5GiB RAM has shown, that most of these pages
 will be in the unmapped area, thus many of the processes will not be
 identifyable by this method. To make its own pagedirectory identifiable from the
 other ones, a process may e.g. map a random file at a typically never used
-address (e.g.  \texttt{0x6000 0000}), make sure the mapping was successful,
+address (e.g.  \texttt{0x6000~0000}), make sure the mapping was successful,
 access this file (to prevent a missing mapping-on-demand) and then search the
 signature in all found pagedirectories. When found, it may map this
 pagedirectory at a special location and directly manipulate it. It should be
