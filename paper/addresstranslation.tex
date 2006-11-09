@@ -36,6 +36,13 @@ For a detailed description and discussion of these two important mechanisms, the
 reader may reffer to a course on system programming, e.g.
 \cite{rwth_syspro_scriptum:2002}.
 
+\texttt{liblinear} provides a software solution for address translation. The
+provided interface is similar to \texttt{libphysical}; it needs a physical
+memory source (in form of a \texttt{physical\_handle}), and information about
+the target architecture. It provides some functions to find address translation
+tables in the raw memory and functions to use them to access the induced virtual
+address space.
+
 
 
 \subsection{Example implementation: ia32 backend for \texttt{liblinear}}
@@ -82,20 +89,21 @@ REQ: PDE vs. PAE ; no HIGHMEM-64G (?)
 When accessing a range of memory via physical addressing, it is neccessary to
 find address translation tables to make sence out of the vast, unsorted number
 of pages. Typically, translation tables are not marked as such and as we can not
-access the processor or the operating system to ask it, where these are, we have
-to search them. The following methods have proven themselves.
+access the processor or the operating system to ask, where these are, we have to
+search them. The following methods have proven themselves.
 
 
 
 \subsubsection{OS and architecture dependencies; typical address space layout}
 
 Obviously, address translation tables are architecture and operating system
-specific; but within an architecture and an operating system, the will often
-have shared data or specific patterns that are identifiable. For example, one
-can omit searching the segment descriptor tables (see \ref{linux_gdt}) and
-concentrate on finding pagedirectories. There are several special patterns that
-can be found in a typical pagedirectory of a linux process running on IA32. To
-understand, I will layout the typical address space of a linux process on IA32:
+specific; but within an architecture and an operating system, they will often
+shared data or specific patterns that are identifiable. For instance, when
+searching for linux IA32 address translation tables, one can omit searching the
+segment descriptor tables (see section \ref{linux_gdt}) and concentrate on
+finding pagedirectories. There are several special patterns that can be found in
+a typical pagedirectory of a linux process running on IA32. Following is a
+layout of the typical virtual address space of a userspace process:
 
 \begin{itemize}
 
@@ -109,12 +117,12 @@ understand, I will layout the typical address space of a linux process on IA32:
 	\texttt{0xc000~0000}, possibly directly starting from
 	\texttt{0xbfff~ffff}
 
-	\item from \texttt{0xc000~0000}, the approximately lower physical 970
-	MiB of physical RAM will be mapped, only accessible when the accessing
-	task is running in ring 0
+	\item starting from \texttt{0xc000~0000}, the approximately lower
+	physical 970 MiB of physical RAM will be mapped (only accessible when
+	the accessing task is running in ring 0)
 
 	\item the kernelspace stack and other kernel data structures are mapped
-	around \texttt{0xf900~0000 (FIXME!)}
+	around \texttt{0xfa00~0000 (FIXME!)}
 
 	\item all unmapped pages will have 4-byte entries consisting of zeroes
 	(\texttt{0x0000})
@@ -127,13 +135,38 @@ addresses of these locations a bit, but the general layout stays the same.
 Besides searching pages that show non-zero values around these positions and
 zero values elsewhere, it is much easier and faster to just check, if the
 virtual address \texttt{0xc000~0000} maps to the physical address \texttt{0x0},
-because typically the PDE for page no. \texttt{0xc0000} will point to the 4MiB
-physical page at \texttt{0x0}. This test only requires reading the 4byte PDE
-entry \texttt{0xc00} and does sort out the vast majority of non-pagedirectory
+because typically the PDE for 4MiB-page no. \texttt{0xc00} will point to the
+4MiB physical page at \texttt{0x0}. This test only requires reading the 4byte
+PDE entry \texttt{0xc00} and does sort out a vast majority of non-pagedirectory
 pages.
 
 
-\subsubsection{Matching via statisticts: NCD (nearest compression distance)}
 
+\subsubsection{Matching via statisticts: NCD (normalized compression distance)}
 
+FIXME
+
+The \emph{normalized information distance} (NID), a form of similarity distance
+measure, can be understood as a measurement for the minimal amount of changes
+required to change one information into another one.  A NID of 0 means, that two
+informations are totally unrelated; a NID of 1 means, that they are the same.
+Due to its relation to the \emph{Kolgomorov complexity} (a measurement for an
+informations shortest description in a fixed description language), it is
+incalculateable.  As an approximation, it is possible to use data compressors
+instead of the Kolgomorov complexity to measure the minimal size of a
+representation of an information. The resulting \emph{normalized compression
+distance} has proven to be useful in a vast area of applications; for instance,
+it has been used to analyse DNA sequences or languages for relatedness
+(\cite{clustering_by_compression:2005}, \cite{similarity_matrix:2004}), music
+files for relations in style and creator (\cite{clustering_by_compression:2005})
+and attack schemes of virii and worms (\cite{analysing_worms_with_ncd:2006}).
+
+For a detailed introduction and analysis of the NCD and sample applications, the
+reader may refer to these texts.
+
+\texttt{liblinear} uses the NCD to measure the distance between a known true
+pagedirectory against a page of unknown data to determine, whether the page
+could be a pagedirectory.
+
+FIXME
 
