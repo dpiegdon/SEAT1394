@@ -58,5 +58,3 @@ paper.ps: paper.dvi
 paper.pdf: paper.ps
 	ps2pdf paper.ps
 
-#	dvipdfm -p a4 -o paper.pdf paper.dvi
-#	dvipdf paper.dvi

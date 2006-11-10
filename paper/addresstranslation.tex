@@ -45,7 +45,7 @@ address space.
 
 
 
-\subsection{Example implementation: ia32 backend for \texttt{liblinear}}
+\subsection{Example implementation: IA32 backend for \texttt{liblinear}}
 
 On the IA32 architecture, the CPU can run in various modes of operation; for
 secure multitasking operating systems, the \emph{protected mode} is the
@@ -122,10 +122,10 @@ layout of the typical virtual address space of a userspace process:
 	the accessing task is running in ring 0)
 
 	\item the kernelspace stack and other kernel data structures are mapped
-	around \texttt{0xfa00~0000 (FIXME!)}
+	approximately at \texttt{0xfa00~0000 (FIXME!)}
 
 	\item all unmapped pages will have 4-byte entries consisting of zeroes
-	(\texttt{0x0000})
+	(\texttt{0x00~00~00~00})
 
 \end{itemize}
 
@@ -135,7 +135,7 @@ addresses of these locations a bit, but the general layout stays the same.
 Besides searching pages that show non-zero values around these positions and
 zero values elsewhere, it is much easier and faster to just check, if the
 virtual address \texttt{0xc000~0000} maps to the physical address \texttt{0x0},
-because typically the PDE for 4MiB-page no. \texttt{0xc00} will point to the
+because typically the PDE for 4MiB-page no.\@ \texttt{0xc00} will point to the
 4MiB physical page at \texttt{0x0}. This test only requires reading the 4byte
 PDE entry \texttt{0xc00} and does sort out a vast majority of non-pagedirectory
 pages.
@@ -148,26 +148,31 @@ FIXME
 
 The \emph{normalized information distance} (NID), a form of similarity distance
 measurement, can be understood as a measurement for the minimal amount of
-changes required to change one information into another one.  A NID of 0 means,
-that two informations are totally unrelated; a NID of 1 means, that they are the
+changes required to change one information into another one.  A NID of 1 means,
+that two informations are totally unrelated; a NID of 0 means, that they are the
 same.  Due to its relation to the \emph{Kolmogorov complexity} (a measurement
 for an informations shortest description in a fixed description language), it is
 incalculateable.  As an approximation, it is possible to use data compressors
-instead of the Kolmogorov complexity to measure the minimal size of a
+instead of the Kolmogorov complexity to measure the size of a minimal
 representation of an information. The resulting \emph{normalized compression
 distance} has proven to be useful in a vast area of applications; for instance,
 it has shown its usefulness during analysis of DNA sequences or languages for
 relatedness (\cite{clustering_by_compression:2005},
-\cite{similarity_matrix:2004}), music files for relations in style and creator
-(\cite{clustering_by_compression:2005}) and attack schemes of virii and worms
-(\cite{analysing_worms_with_ncd:2006}).
-
-For a detailed introduction and analysis of the NCD and sample applications, the
-reader may refer to these texts.
+\cite{similarity_matrix:2004}), MIDI music files for relations in style and
+creator (\cite{clustering_by_compression:2005}) and attack schemes of virii and
+worms (\cite{analysing_worms_with_ncd:2006}).  For a detailed introduction and
+analysis of the NCD and sample applications, the reader may refer to the above
+texts.
 
 \texttt{liblinear} uses the NCD to measure the distance between a known true
-pagedirectory against a page of unknown data to determine, whether the page
-could be a pagedirectory.
+pagedirectory against a page of unknown data to determine, whether this page
+could be a pagedirectory. The \texttt{complearn}-toolkit
+\cite{complearn_homepage} provides a suite of functions for generating distance
+matrixes between informations, generating relational trees from these and more.
+As we only need to compare two pages, this set of functions is far too big and
+the interface far too complex for this application. Thus, I implemented my own,
+very short NCD version (\texttt{simple\_ncd()} in
+\texttt{liblinear/simple\_ncd.c}, using BZip2 as compressor.
 
 FIXME
 

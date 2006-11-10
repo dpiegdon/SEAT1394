@@ -276,11 +276,11 @@ with a new, adjusted one.
 
 \subsection{Other sources}
 
-The ideas of this paper should be easily adoptable to all memory sources giving
-access to physically addressable memory, this may e.g. include suspend-2-disk
-images or virtual machines that have an interface to access the virtual machines
-memory.  \texttt{qemu} is such a virtual machine, providing a \texttt{gdb}
-remote stub to attach a debugger.
+The ideas described in this paper should be easily adoptable to all memory
+sources giving access to physically addressable memory, this may e.g. include
+suspend-2-disk images or virtual machines that have an interface to access the
+virtual machines memory.  \texttt{qemu} is such a virtual machine, providing a
+\texttt{gdb} remote stub to attach a debugger.
 
 To use a new physical source with the methods introduced in the later sections,
 it is only required to write a new backend for \texttt{libphysical}.
