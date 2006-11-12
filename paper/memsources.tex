@@ -9,7 +9,7 @@ Typically, processes and users are never granted access to physically addressed
 memory, as this addressing mode normally circumvents any protection methods.
 Only a running operating system may use physical addressing to prepare address
 spaces for each running process, manage these, access special memory of
-extension cards and alike, or even only for bootstrapping, as linux does. But
+extension cards and alike, or even only during bootstrapping as linux does. But
 there are several ways of obtaining access to physical addressed memory. As
 stated, physical addressing will circumvent protection mechanisms. Thus access
 to it will require system administrator rights or physical access to the
@@ -22,8 +22,8 @@ backends for IEEE1394 and filedescriptors.
 
 Modern computer hardware provides many protection- and memorymanagement
 mechanisms in hardware. This includes hardware to provide a virtual address
-space for each process, protection mechanisms to restrict a process to only its
-own resources, paging to extend memory to harddisks and fragment available
+space for each process, protection mechanisms to restrict a process to its own
+resources only, paging to extend memory to harddisks and fragment available
 memory, caching to access frequently used memory faster, and more. Obviously,
 all these features are architecture and operating-system dependent. An
 interested reader may read documentation on system programming to obtain further
@@ -51,8 +51,8 @@ will generate a pagefault and the operating system then may map the demanded
 page.  Access to completely unused pages, via this mechanism, will create the
 well-known segmentation fault.
 
-When one obtains access to physically addressed memory, that is a set $M$ of
-pages, each page $p \in M$ may be a page of memory of a random process, a buffer
+When one obtains access to physically addressed memory that is a set $M$ of
+pages each page $p \in M$ may be a page of memory of a random process, a buffer
 page of a process, a page used by the operating system (kernel code, kernel
 data, kernel stack, IO buffer, ...), an unused page or a page used to give the
 CPU information on how to handle virtual addresses, as this is done in hardware.
@@ -85,22 +85,22 @@ set'', will not exist.  Caching may also prevent these.
 If a page is cached in another, faster memory, a copy of it will typically
 reside in physical memory. In most cases we will not know if a page is cached
 or not; on ia32 however the address translation tables contain a flag for each
-page telling the CPU if it may be cached or not. Depending on the way of access
-used to access the memory, it may circumvent the cache or not have access to it
-at all. When thus accessing a page, changes made by a task running in parallel
-may not be visibly to us immediately and changes made by us may be invisible to
-a parallel task or even overwritten by the cache at any time. Special care
+page telling the CPU if it may be cached or not. Depending on the way used to
+access the memory, it may circumvent the cache or not have access to it at all.
+When thus accessing a page, changes made by a task running in parallel may not
+be visible to us immediately and changes made by us may be invisible to a
+parallel task or maybe even overwritten by the cache at any time. Special care
 needs to be taken to minimize this risk. When writing to pages, only choose
-pages that are not cached or unlikely to be cached at the time of write; when
-reading pages, always keep in mind that the data may change at any time or may
-have changed, yet.
+pages that are not cached or unlikely to be cached while writing; when reading
+pages, always keep in mind that the data may change at any time or may have
+changed yet.
 
 As stated above, on systems using paging, physical memory will mostly be a
 concatenation of random pages, each one either used by a random process or the
 operating system. A minor part of these pages will be address translation
-tables, telling the CPU how the virtual address space of different processes
+tables, telling the CPU what the virtual address space of different processes
 looks like. Where these pages are is only known to the operating system and the
-CPU. For a detailed discussion, see section \ref{address_translation}.
+CPU.  For a detailed discussion, see section \ref{address_translation}.
 
 
 
@@ -129,7 +129,7 @@ will be sequential, starting with 0. Access to memory of a node will require a
 field.  On linux, \texttt{libraw1394} provides an easy and portable interface to
 do this. Ideally, the full physical memory is accessible via the 48 bit address
 field, mapped in this address space starting from \texttt{0x0}; around
-\texttt{0xffff~f000~0000}, several control state registers (CSRs) are located,
+\texttt{0xffff~f000~0000} several control state registers (CSRs) are located
 that provide information about the given target node and the capabilities of the
 firewire device.
 
@@ -174,7 +174,7 @@ Typical physical attacks on computer systems are:
 
 \end{itemize}
 
-Firewire does not require to boot a custom operating system, to open the case,
+Firewire does not require to boot a custom operating system to open the case,
 steal parts of the hardware, install any hardware or specially crafted hardware.
 Access via firewire is as easy as plugging in a random firewire device, like the
 iPod, letting it do its job and unplugging it.
@@ -215,40 +215,40 @@ filedescriptor. This filedescriptor may refer to a memory dump or the linux
 problems lapse: no caching will be performed, no concurrent process will change
 the dumped data. In the case of a filedescriptor refering to \texttt{/dev/mem},
 other accessors will exist, as \texttt{/dev/mem} is refering to the systems
-memory; caching on the other hand should not be a problem, as we are not
+memory; caching on the other hand should not be a problem as we are not
 circumventing any caching system (like the CPU), but directly using it.
 
 \subsubsection{Problems with \texttt{/dev/mem}, solutions}
 
 \texttt{/dev/mem} on linux has one other, major problem:
 
-On 32 bit systems, the virtual address space is $2^{32}$ bytes big, i.e. 4GiB.
-The virtual address space of a linux process is divided into one userspace-part,
-where code, libraries and stack are mapped, and one kernelspace-part, where the
-complete kernel, data structures and the kernel-stack of this process are
-located. The userspace thread will never be able to access the kernelspace
-pages; but when the userspace process calls a system call, the CPU will jump
-into a different protection level and execute the syscall entry code, which is
-part of the kernel. At this time the kernel runs in the same virtual address
-space, just at a different protection level. Default kernel configs divide the
-4GiB virtual address space into a 3GiB userspace-part (\texttt{0x0000~0000} -
-{0xbfff~ffff}) and a 1GiB kernelspace-part (\texttt{0xc000~0000 - 0xffff~ffff}).
-Different kernel config options (\texttt{CONFIG\_VMSPLIT\_3G},
-\texttt{CONFIG\_PAGE\_OFFSET}) can change the split ratio, but the splitting is
-a basic design decision and thus a requirement for linux to work. In the upper
-kernelspace-part, the lower physical memory will be fully mapped (up to about
-970MiB), the kernel will - in this case - be located at roughly
-\texttt{0xc100~0000}, i.e. at the physical address \texttt{0x0100~0000}. During
-kernel configuration, these 970MiB are called ``precious lowmem'', because it is
-the only memory accessible by the kernel in a simple manner. When allocating
-kernelspace structures (this includes all address translation tables (on ia32,
-these are: pagedirectories, pagetables, local- and global descriptor
-tables)\label{linuxATTinlowmem}), the kernel will normally only use this lowmem.
-The \texttt{/dev/mem} driver will access this lowmem, when a userspace process
-utilizes it. But if the process tries to read more than the mapped lowmem,
-\texttt{/dev/mem} will fail to return this, as it is not mapped in the process.
-Thus, when using \texttt{/dev/mem}, only approx.  the lower 970GiB physical RAM
-will be accessible.
+On 32 bit systems, the virtual address space has a size of $2^{32}$ bytes, i.e.
+4GiB.  The virtual address space of a linux process is divided into a
+userspace-part, where code, libraries and stack are mapped, and a
+kernelspace-part, where the complete kernel, data structures and the
+kernel-stack of this process are located. The userspace thread will never be
+able to access the kernelspace pages; but when the userspace process calls a
+system call, the CPU will jump into a different protection level and execute the
+syscall entry code, which is part of the kernel. At this time the kernel runs in
+the same virtual address space, just at a different protection level. Default
+kernel configs divide the 4GiB virtual address space into a 3GiB userspace-part
+(\texttt{0x0000~0000} - {0xbfff~ffff}) and a 1GiB kernelspace-part
+(\texttt{0xc000~0000 - 0xffff~ffff}).  Different kernel config options
+(\texttt{CONFIG\_VMSPLIT\_3G}, \texttt{CONFIG\_PAGE\_OFFSET}) can change the
+split ratio, but the splitting is a basic design decision and thus a requirement
+for linux to work. In the upper kernelspace-part, the lower physical memory will
+be fully mapped (up to about 970MiB), the kernel will - in this case - be
+located at roughly \texttt{0xc100~0000}, i.e. at the physical address
+\texttt{0x0100~0000}. During kernel configuration, these 970MiB are called
+``precious lowmem'', because it is the only memory accessible by the kernel in a
+simple manner. When allocating kernelspace structures (this includes all address
+translation tables (on ia32, these are: pagedirectories, pagetables, local- and
+global descriptor tables)\label{linuxATTinlowmem}), the kernel will normally
+only use this lowmem.  The \texttt{/dev/mem} driver will access this lowmem,
+when a userspace process utilizes it. But if the process tries to read more than
+the mapped lowmem, \texttt{/dev/mem} will fail to return this, as it is not
+mapped in the process.  Thus, when using \texttt{/dev/mem}, only approx.  the
+lower 970GiB physical RAM will be accessible.
 
 It may be possible to work around this restriction: as stated, all address
 translation tables are located in the accessible memory. A process could try to
@@ -256,21 +256,20 @@ find its own pagetable and manipulate it to map other regions of physical memory
 into its userspace section; then, no further access to \texttt{/dev/mem} would
 be required. As the reader will see in section \ref{findingATT}, identifying
 processes in linux can mostly be as easy as looking at the upper userspace stack
-page.  Research on a system with 1.5GiB RAM has shown, that most of these pages
+page.  Research on a system with 1.5GiB RAM has shown that most of these pages
 will be in the unmapped area, thus many of the processes will not be
-identifyable by this method. To make its own pagedirectory identifiable from the
-other ones, a process may e.g. map a random file at a typically never used
-address (e.g.  \texttt{0x6000~0000}), make sure the mapping was successful,
-access this file (to prevent a missing mapping-on-demand) and then search the
-signature in all found pagedirectories. When found, it may map this
-pagedirectory at a special location and directly manipulate it. It should be
-taken care of the problem, that a manipulated pagedirectory will only be
-reloaded into the CPU after a re-scheduling of the process, but a simple
-\texttt{usleep()} should suffice. The author is not sure, under which
-circumstances the linux kernel does manipulate a process's pagedirectory; but
-obvious things like mapping new regions or unmapping mapped regions by system
-calls should be avoided, as the system may overwrite the manipulated pagetable
-with a new, adjusted one.
+identifiable by this method. To make its own pagedirectory identifiable from the
+others, a process may e.g. map a random file at a typically never used address
+(e.g.  \texttt{0x6000~0000}), make sure the mapping was successful, access this
+file (to prevent a missing mapping-on-demand) and then search for the signature
+in all found pagedirectories. When found, it may map this pagedirectory at a
+special location and directly manipulate it. It should be taken care of the
+problem that a manipulated pagedirectory will only be reloaded into the CPU
+after a re-scheduling of the process, but a simple \texttt{usleep()} should
+suffice. The author is not sure, under which circumstances the linux kernel does
+manipulate a process's pagedirectory; but obvious things like mapping new
+regions or unmapping mapped regions by system calls should be avoided, as the
+system may overwrite the manipulated pagetable with a new, adjusted one.
 
 
 
@@ -279,7 +278,7 @@ with a new, adjusted one.
 The ideas described in this paper should be easily adoptable to all memory
 sources giving access to physically addressable memory, this may e.g. include
 suspend-2-disk images or virtual machines that have an interface to access the
-virtual machines memory.  \texttt{qemu} is such a virtual machine, providing a
+virtual machines` memory.  \texttt{qemu} is such a virtual machine, providing a
 \texttt{gdb} remote stub to attach a debugger.
 
 To use a new physical source with the methods introduced in the later sections,
