@@ -144,35 +144,42 @@ pages.
 
 \subsubsection{Matching via statisticts: NCD (normalized compression distance)}
 
-FIXME
-
-The \emph{normalized information distance} (NID), a form of similarity distance
-measurement, can be understood as a measurement for the minimal amount of
-changes required to change one information into another one.  A NID of 1 means,
-that two informations are totally unrelated; a NID of 0 means, that they are the
-same.  Due to its relation to the \emph{Kolmogorov complexity} (a measurement
-for an informations shortest description in a fixed description language), it is
-incalculateable.  As an approximation, it is possible to use data compressors
-instead of the Kolmogorov complexity to measure the size of a minimal
-representation of an information. The resulting \emph{normalized compression
-distance} has proven to be useful in a vast area of applications; for instance,
-it has shown its usefulness during analysis of DNA sequences or languages for
-relatedness (\cite{clustering_by_compression:2005},
+The \emph{normalized information distance} (NID), a form of parameterfree
+similarity distance measurement, can be understood as a measurement for the
+minimal amount of changes required to change one information into another one.
+A NID of 1 means that two informations are totally unrelated; a NID of 0 means
+that they are the same.  Due to its relation to the \emph{Kolmogorov complexity}
+(a measurement for an information`s shortest description in a fixed description
+language) it is incalculateable.  As an approximation, it is possible to use
+data compressors instead of the Kolmogorov complexity to measure the size of a
+minimal representation of information. The resulting \emph{normalized
+compression distance} has proven to be useful in a vast area of applications;
+for instance, it has shown its usefulness during analysis of DNA sequences or
+languages for relatedness (\cite{clustering_by_compression:2005},
 \cite{similarity_matrix:2004}), MIDI music files for relations in style and
 creator (\cite{clustering_by_compression:2005}) and attack schemes of virii and
 worms (\cite{analysing_worms_with_ncd:2006}).  For a detailed introduction and
 analysis of the NCD and sample applications, the reader may refer to the above
-texts.
+texts (especially to \cite{similarity_matrix:2004} and
+\cite{clustering_by_compression:2005}).
+
+As the NCD is only an approximation of the NID, based on compression, its
+resulting ``normalized'' distance can be slightly larger that $1.0$ and will
+never reach $0$.
 
 \texttt{liblinear} uses the NCD to measure the distance between a known true
-pagedirectory against a page of unknown data to determine, whether this page
-could be a pagedirectory. The \texttt{complearn}-toolkit
-\cite{complearn_homepage} provides a suite of functions for generating distance
-matrixes between informations, generating relational trees from these and more.
-As we only need to compare two pages, this set of functions is far too big and
-the interface far too complex for this application. Thus, I implemented my own,
-very short NCD version (\texttt{simple\_ncd()} in
-\texttt{liblinear/simple\_ncd.c}, using BZip2 as compressor.
+pagedirectory against a page of unknown data to determine whether this page
+could be a pagedirectory. The NCD has been chosen, because it is a
+\emph{parameterfree} measurement, i.e. it does not depend on specific, known
+structures of the data in question. As different architectures will have
+significantly different address translation schemes, even depending on the
+operating systems used, this choice should be adequate. The
+\texttt{complearn}-toolkit (\href{http://complearn.org/}{http://complearn.org/})
+provides a suite of functions for generating NCD distance matrixes between
+information, generating relational trees from these and more.  As we only need
+to compare two pages, this set of functions is far too big and the interface far
+too complex for this application.  Thus, I implemented my own, very short
+version of the NCD (\texttt{simple\_ncd()} in \texttt{liblinear/simple\_ncd.c},
+using BZip2 as compressor.
 
-FIXME
 
