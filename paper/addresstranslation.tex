@@ -72,11 +72,11 @@ the segments\footnote{This initialization is done in
 
 The IA32 architecture divides the 4GiB virtual address space into 1024
 4MiB-frames. This splitting is defined by the \emph{pagedirectory}. Each entry
-of a pagedirectory is 4 bytes long, thus the pagedirectory is $4*1024 = 4096$
-Bytes long. Each of these \emph{pagedirectory entries} (PDEs), if present (its
-\texttt{PRESENT}-flag is set), can either refer to a 4MiB physical page or a
-pagetable dividing this virtual 4MiB frame further into 4KiB frames. A
-\emph{pagetable} is, again, consisting of 1024 4-byte \emph{pagetable entries}
+of a pagedirectory is 4 bytes long, thus the pagedirectory is $4 \cdot 1024 =
+4096$ Bytes long. Each of these \emph{pagedirectory entries} (PDEs), if present
+(its \texttt{PRESENT}-flag is set), can either refer to a 4MiB physical page or
+a pagetable dividing this virtual 4MiB frame further into 4KiB frames. A
+\emph{pagetable} is again consisting of 1024 4-byte \emph{pagetable entries}
 (PTEs), each corresponding to a 4KiB frame.
 
 REQ: PDE vs. PAE ; no HIGHMEM-64G (?)
@@ -158,14 +158,13 @@ for instance, it has shown its usefulness during analysis of DNA sequences or
 languages for relatedness (\cite{clustering_by_compression:2005},
 \cite{similarity_matrix:2004}), MIDI music files for relations in style and
 creator (\cite{clustering_by_compression:2005}) and attack schemes of virii and
-worms (\cite{analysing_worms_with_ncd:2006}).  For a detailed introduction and
-analysis of the NCD and sample applications, the reader may refer to the above
-texts (especially to \cite{similarity_matrix:2004} and
-\cite{clustering_by_compression:2005}).
+worms (\cite{analysing_worms_with_ncd:2006}).  For a detailed introduction to
+and analysis of the NCD and sample applications, the reader may refer to
+\cite{kolmogorov:1997} and the above texts.
 
-As the NCD is only an approximation of the NID, based on compression, its
-resulting ``normalized'' distance can be slightly larger that $1.0$ and will
-never reach $0$.
+As the NCD is only an approximation of the NID based on compression, its
+resulting ``normalized'' value can be slightly larger that $1.0$ and will never
+reach $0$.
 
 \texttt{liblinear} uses the NCD to measure the distance between a known true
 pagedirectory against a page of unknown data to determine whether this page
@@ -174,12 +173,13 @@ could be a pagedirectory. The NCD has been chosen, because it is a
 structures of the data in question. As different architectures will have
 significantly different address translation schemes, even depending on the
 operating systems used, this choice should be adequate. The
-\texttt{complearn}-toolkit (\href{http://complearn.org/}{http://complearn.org/})
-provides a suite of functions for generating NCD distance matrixes between
-information, generating relational trees from these and more.  As we only need
-to compare two pages, this set of functions is far too big and the interface far
-too complex for this application.  Thus, I implemented my own, very short
-version of the NCD (\texttt{simple\_ncd()} in \texttt{liblinear/simple\_ncd.c},
-using BZip2 as compressor.
+\texttt{complearn}-toolkit \footnote{\texttt{complearn}-toolkit:
+\href{http://complearn.org/}{http://complearn.org/}} provides a suite of
+functions for generating NCD distance matrixes between information, generating
+relational trees from these and more.  As we only need to compare two pages,
+this set of functions is far too big and the interface far too complex for this
+application.  Thus, I implemented my own, very short version of the NCD
+(\texttt{simple\_ncd()} in \texttt{liblinear/simple\_ncd.c}, using BZip2 as
+compressor.
 
 
