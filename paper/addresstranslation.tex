@@ -79,7 +79,20 @@ a pagetable dividing this virtual 4MiB frame further into 4KiB frames. A
 \emph{pagetable} is again consisting of 1024 4-byte \emph{pagetable entries}
 (PTEs), each corresponding to a 4KiB frame.
 
-REQ: PDE vs. PAE ; no HIGHMEM-64G (?)
+As newer IA32 CPU features like \emph{36 bit page size extension} (PSE-36) and
+\emph{physical address extension} (PSE) are not used in case of the proposed
+circumstances (see section \ref{ia32_config_options}), their reflection is
+omitted here.  Furthermore it is not always possible to know from the physical
+memory only, if these features are enabled.  A sample-installation of a system
+to be attacked should give these informations. Also, PAE and PSE-36 are not yet
+implemented in \texttt{liblinear}. PSE though (not PSE-36) is enabled with the
+given options (and implemented), as one can determine by the use of 4MiB-pages.
+
+For an extensive documentation of the IA32 architecture one should refer to the
+\emph{Intel 64 and IA-32 Architectures Software Developer's Manual}
+(\cite{IA32_SDM_1:2006}, \cite{IA32_SDM_2a:2006}, \cite{IA32_SDM_2b:2006},
+\cite{IA32_SDM_3a:2006}, \cite{IA32_SDM_3b:2006}), especially
+\cite{IA32_SDM_3a:2006}.
 
 
 
