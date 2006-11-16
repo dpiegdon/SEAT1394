@@ -222,11 +222,11 @@ circumventing any caching system (like the CPU), but directly using it.
 
 \texttt{/dev/mem} on linux has one other, major problem:
 
-On 32 bit systems, the virtual address space has a size of $2^{32}$ bytes, i.e.
-4GiB.  The virtual address space of a linux process is divided into a
-userspace-part, where code, libraries and stack are mapped, and a
-kernelspace-part, where the complete kernel, data structures and the
-kernel-stack of this process are located. The userspace thread will never be
+\label{kerneluserdivision} On 32 bit systems, the virtual address space has a
+size of $2^{32}$ bytes, i.e.  4GiB.  The virtual address space of a linux
+process is divided into a userspace-part, where code, libraries and stack are
+mapped, and a kernelspace-part, where the complete kernel, data structures and
+the kernel-stack of this process are located. The userspace thread will never be
 able to access the kernelspace pages; but when the userspace process calls a
 system call, the CPU will jump into a different protection level and execute the
 syscall entry code, which is part of the kernel. At this time the kernel runs in

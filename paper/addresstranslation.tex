@@ -103,20 +103,24 @@ When accessing a range of memory via physical addressing, it is neccessary to
 find address translation tables to make sence out of the vast, unsorted number
 of pages. Typically, translation tables are not marked as such and as we can not
 access the processor or the operating system to ask, where these are, we have to
-search them. The following methods have proven themselves.
+search them. The following methods have proven themselves when being combined:
+for all pages first, make a quick guess if a page could be a pagedirectory
+(\ref{ATTguess}) and if so, analyse this page more in detail
+(\ref{ATTstatistics}):
 
 
 
 \subsubsection{OS and architecture dependencies; typical address space layout}
 
-Obviously, address translation tables are architecture and operating system
-specific; but within an architecture and an operating system, they will often
-shared data or specific patterns that are identifiable. For instance, when
-searching for linux IA32 address translation tables, one can omit searching the
-segment descriptor tables (see section \ref{linux_gdt}) and concentrate on
-finding pagedirectories. There are several special patterns that can be found in
-a typical pagedirectory of a linux process running on IA32. Following is a
-layout of the typical virtual address space of a userspace process:
+\label{ATTguess} Obviously, address translation tables are architecture and
+operating system specific; but within an architecture and an operating system,
+they will often share data or specific patterns that are identifiable. For
+instance, when searching for linux IA32 address translation tables, one can omit
+searching the segment descriptor tables (see section \ref{linux_gdt}) and
+concentrate on finding pagedirectories. There are several special patterns that
+can be found in a typical pagedirectory of a linux process running on IA32.
+Following is a layout of the typical virtual address space of a userspace
+process:
 
 \begin{itemize}
 
@@ -153,26 +157,30 @@ because typically the PDE for 4MiB-page no.\@ \texttt{0xc00} will point to the
 PDE entry \texttt{0xc00} and does sort out a vast majority of non-pagedirectory
 pages.
 
+Furthermore in the combination linux/IA32 we only have to search the lower 1GB
+of RAM for pagetables (see first paragraph of section \ref{kerneluserdivision}).
 
 
-\subsubsection{Matching via statisticts: NCD (normalized compression distance)}
 
-The \emph{normalized information distance} (NID), a form of parameterfree
-similarity distance measurement, can be understood as a measurement for the
-minimal amount of changes required to change one information into another one.
-A NID of 1 means that two informations are totally unrelated; a NID of 0 means
-that they are the same.  Due to its relation to the \emph{Kolmogorov complexity}
-(a measurement for an information`s shortest description in a fixed description
-language) it is incalculateable.  As an approximation, it is possible to use
-data compressors instead of the Kolmogorov complexity to measure the size of a
-minimal representation of information. The resulting \emph{normalized
-compression distance} has proven to be useful in a vast area of applications;
-for instance, it has shown its usefulness during analysis of DNA sequences or
-languages for relatedness (\cite{clustering_by_compression:2005},
-\cite{similarity_matrix:2004}), MIDI music files for relations in style and
-creator (\cite{clustering_by_compression:2005}) and attack schemes of virii and
-worms (\cite{analysing_worms_with_ncd:2006}).  For a detailed introduction to
-and analysis of the NCD and sample applications, the reader may refer to
+\subsubsection{Matching via statistics: NCD (normalized compression distance)}
+
+\label{ATTstatistics} The \emph{normalized information distance} (NID), a form
+of parameterfree similarity distance measurement, can be understood as a
+measurement for the minimal amount of changes required to change one information
+into another one.  A NID of 1 means that two informations are totally unrelated;
+a NID of 0 means that they are the same.  Due to its relation to the
+\emph{Kolmogorov complexity} (a measurement for an information`s shortest
+description in a fixed description language) it is incalculateable.  As an
+approximation, it is possible to use data compressors instead of the Kolmogorov
+complexity to measure the size of a minimal representation of information. The
+resulting \emph{normalized compression distance} has proven to be useful in a
+vast area of applications; for instance, it has shown its usefulness during
+analysis of DNA sequences or languages for relatedness
+(\cite{clustering_by_compression:2005}, \cite{similarity_matrix:2004}), MIDI
+music files for relations in style and creator
+(\cite{clustering_by_compression:2005}) and attack schemes of virii and worms
+(\cite{analysing_worms_with_ncd:2006}).  For a detailed introduction to and
+analysis of the NCD and sample applications, the reader may refer to
 \cite{kolmogorov:1997} and the above texts.
 
 As the NCD is only an approximation of the NID based on compression, its
