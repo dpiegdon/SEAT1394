@@ -137,13 +137,6 @@ For more information on the underlying hardware or protocols, please refer to
 \cite{OHCIspecs:2000} or e.g. \cite{fwire_sys_arch:2222} or the
 \texttt{libraw1394} documentation.
 
-FYI: Plugging in firewire devices will generate syslog messaged on linux
-systems. Furthermore, using firewire to access the memory of a running system
-\emph{may} generate non maskable interrupts (NMI) on the target system and even
-leave the operating system (linux 2.6.17) in a non-usable state. I have seen
-some laptops being disturbed by this, one crashed. My desktop PC at home (with a
-firewire PCI extension card), though, just worked fine during all tests.
-
 
 
 \subsubsection{Physical security, attacks with embedded devices like iPod}
@@ -188,6 +181,18 @@ port at its back.
 
 
 \subsubsection{Problems with Firewire, solutions}
+
+Plugging in firewire devices will generate syslog messaged on linux systems.
+
+Using firewire to access the memory of a running system \emph{may} generate non
+maskable interrupts (NMI) on the target system and even leave the operating
+system (linux 2.6.17) in a non-usable state. I have seen some laptops and
+workstations with onboard-controllers being disturbed by this, sometimes
+resulting in crashes. My desktop PC (with a firewire PCI extension card),
+though, just worked fine during all tests. It could be, that the deeply
+incorporated onboard-controllers interfere with the CPU accessing the main
+memory. This needs to be investigated. FIXME blocksize := 4, ist dann problem
+immer noch da? /FIXME
 
 Using \texttt{libraw1394}, it is possible to read different blocksizes of data
 via firewire.  It seems like different hardware does allow bigger blocks to be
