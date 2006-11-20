@@ -3,14 +3,14 @@
 % $Id$
 %
 
-\section{Address translations; virtual, logical, linear and physical addressing}
-\label{address_translation}
+\section{Translating virtual to physical addresses}
 
-All multitasking environments that fulfill current requirements have to provide
-virtual address spaces for each running process or thread. For performance and
-security reason this address translation from a process's virtual address to an
-address valid in physical memory is normally performed in hardware.  These
-mechanisms can include e.g. segmentation and paging.
+\label{address_translation} All multitasking environments that fulfill current
+requirements have to provide virtual address spaces for each running process or
+thread. For performance and security reason this address translation from a
+process's virtual address to an address valid in physical memory is normally
+performed in hardware.  These mechanisms can include e.g. segmentation and
+paging.
 
 A normal process's memory is divisible into several blocks or \emph{segments}:
 the \emph{code segment} contains all the code that may be run; the \emph{data
