@@ -127,21 +127,25 @@ process:
 	\texttt{0x0800~0000}, consecutively following with a minor number of
 	unused frames in between
 
-	\item \emph{libraries} will be mapped at \texttt{FIXME!}
+	\item \emph{libraries} and \emph{custom mappings} will be mapped below
+	\texttt{0xb800~0000}
 
-	\item the \emph{stack} will be mapped somewhere below
+	\item the \emph{userspace stack} will be mapped somewhere below
 	\texttt{0xc000~0000}, possibly directly starting from
 	\texttt{0xbfff~ffff}
 
-	\item starting from \texttt{0xc000~0000}, the approximately lower
-	physical 970 MiB of physical RAM will be mapped (only accessible when
-	the accessing task is running in ring 0)
+	\item starting from \texttt{0xc000~0000} up to approx.
+	\texttt{0xf800~0000} the "`lowmem"' (approx. lower physical 900 MiB of
+	physical RAM) will be mapped
 
-	\item the kernelspace stack and other kernel data structures are mapped
-	approximately at \texttt{0xfa00~0000 (FIXME!)}
+	\item the \emph{kernelspace stack} will be located somewhere in this
+	lowmem
 
-	\item all unused frames will have 4-byte entries consisting of zeroes
-	(\texttt{0x00~00~00~00})
+	\item several so far unidentified pages are mapped after
+	\texttt{0xf800~0000}
+
+	\item all \emph{unused frames} will have 4-byte entries consisting of
+	zeroes (\texttt{0x00~00~00~00})
 
 \end{itemize}
 
@@ -151,9 +155,9 @@ addresses of these locations a bit, but the general layout stays the same.
 Besides searching pages that show non-zero values around these positions and
 zero values elsewhere, it is much easier and faster to just check, if the
 virtual address \texttt{0xc000~0000} maps to the physical address \texttt{0x0},
-because typically the PDE for 4MiB-page no.\@ \texttt{0xc00} will point to the
+because typically the PDE for 4MiB-page no.\@ \texttt{0x300} will point to the
 4MiB physical page at \texttt{0x0}. This test only requires reading the 4byte
-PDE entry \texttt{0xc00} and does sort out a vast majority of non-pagedirectory
+PDE entry \texttt{0x300} and does sort out a vast majority of non-pagedirectory
 pages.
 
 Furthermore in the combination linux/IA32 we only have to search the lower 1GB

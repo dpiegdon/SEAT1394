@@ -141,10 +141,11 @@ For more information on the underlying hardware or protocols, please refer to
 
 \subsubsection{Physical security, attacks with embedded devices like iPod}
 
-Designing protection schemes of security systems should always include physical
-security, even if the object of interest is a pure virtual one (like a secret
-key). In this case, physical security, i.e. the restriction of access to the
-underlying hardware of a running computer system, is often weak.
+Designing protection schemes of security systems should always include taking
+care of physical security, even if the object of interest is a pure virtual one
+(like a secret key). In this case, physical security, i.e. the restriction of
+access to the underlying hardware of a running computer system, is often
+forgotten and thus weak.
 
 In general, a professional attacker will most likely choose the weakest link of
 security for his attacks. If he finds that going straight to the computer and
@@ -237,14 +238,14 @@ system call, the CPU will jump into a different protection level and execute the
 syscall entry code, which is part of the kernel. At this time the kernel runs in
 the same virtual address space, just at a different protection level. Default
 kernel configs divide the 4GiB virtual address space into a 3GiB userspace-part
-(\texttt{0x0000~0000} - {0xbfff~ffff}) and a 1GiB kernelspace-part
+(\texttt{0x0000~0000} - \texttt{0xbfff~ffff}) and a 1GiB kernelspace-part
 (\texttt{0xc000~0000 - 0xffff~ffff}).  Different kernel config options
 (\texttt{CONFIG\_VMSPLIT\_3G}, \texttt{CONFIG\_PAGE\_OFFSET}) can change the
 split ratio, but the splitting is a basic design decision and thus a requirement
 for linux to work. In the upper kernelspace-part, the lower physical memory will
-be fully mapped (up to about 970MiB), the kernel will - in this case - be
+be fully mapped (up to about 900MiB), the kernel will - in this case - be
 located at roughly \texttt{0xc100~0000}, i.e. at the physical address
-\texttt{0x0100~0000}. During kernel configuration, these 970MiB are called
+\texttt{0x0100~0000}. During kernel configuration, these 900MiB are called
 ``precious lowmem'', because it is the only memory accessible by the kernel in a
 simple manner. When allocating kernelspace structures (this includes all address
 translation tables (on ia32, these are: pagedirectories, pagetables, local- and
@@ -253,7 +254,7 @@ only use this lowmem.  The \texttt{/dev/mem} driver will access this lowmem,
 when a userspace process utilizes it. But if the process tries to read more than
 the mapped lowmem, \texttt{/dev/mem} will fail to return this, as it is not
 mapped in the process.  Thus, when using \texttt{/dev/mem}, only approx.  the
-lower 970GiB physical RAM will be accessible.
+lower 900GiB physical RAM will be accessible.
 
 It may be possible to work around this restriction: as stated, all address
 translation tables are located in the accessible memory. A process could try to
