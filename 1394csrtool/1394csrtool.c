@@ -227,7 +227,8 @@ void usage(char* progname)
 	       "\t -r : read  own config rom of -p <port> to -f <filename>\n"
 	       "\t -w : write own config rom of -p <port> from -f <filename>\n"
 	       "\t -d : dump config rom of -p <port> -t <target> to -f <filename>\n"
-	       "\t -s : scan all ports\n");
+	       "\t -s : scan all ports\n",
+	       progname);
 }
 
 enum command {
