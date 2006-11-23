@@ -459,7 +459,7 @@ void check_ssh_agent(linear_handle lin) {
 #	define REMOTE_TO_LOCAL(r,lbase)	((char*) (lbase + ((uint32_t)r) - (AGENT_START << 12)) )
 #	define LOCAL_TO_REMOTE(l,lbase)	((char*) (l - lbase + (AGENT_START << 12)) )
 
-	printf("\x1b[1;33m" "hit" "\x1b[0m" "\n");
+	printf("\n\x1b[1;33m" "hit" "\x1b[0m" "\n");
 	char identity_path[1024];
 	char* heap;	// actually this is a dump of the executable and heap
 			// but we don't care for the executable.
@@ -631,14 +631,20 @@ int main(int argc, char**argv)
 		return -5;
 	}
 
+	printf("keys:\t\t.    -   checked another 0x80 pages\n"
+		    "\t\t_    -   matched simple expression but not NCD"
+		    "\t\to    -   matched NCD but failed to load referenced pagetables"
+		    "\t\tK    -   matched NCD, loaded but found no stack (kernel thread?)"
+		    "\t\tU<n> -   matched NCD, loaded, found stack and process name ``n''"
+	      );
+
 	// search all pages for pagedirs
 	// then, for each found, print process name
 	// we only need to check first phys. GB
 	for( pn = 0; pn < 0x40000; pn++ ) {
-		if((pn%0x100) == 0) {
-			printf("page 0x%05llx\r", pn);
-			fflush(stdout);
-		}
+		fflush(stdout);
+		if((pn%0x80) == 0)
+			putchar('.');
 		if(linear_is_pagedir_fast(lin, pn)) {
 			// load page
 			physical_read_page(phy, pn, page);
@@ -649,23 +655,25 @@ int main(int argc, char**argv)
 				// set the pagedir
 				printf("page 0x%05llx prob: %0.3f", pn, prob);
 				if(linear_set_new_pagedirectory(lin, page)) {
-					printf("\nloading pagedir failed\n");
+					putchar('o');
 					continue;
 				}
 
 				// get process name
 				pname = get_process_name(lin);
 				if(!pname) {
-					printf("\n");
+					putchar('K');
 					continue;
 				}
-				printf(" | %s\n", pname);
+				printf("U<%s>", pname);
 
 				// check for ssh-agent
 				if((!strcmp(pname, "ssh-agent") || !strcmp(pname, "/usr/bin/ssh-agent")))
 					check_ssh_agent(lin);
 
 				free(pname);
+			} else {
+				putchar('_');
 			}
 		}
 	}
