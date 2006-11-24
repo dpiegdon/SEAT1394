@@ -388,6 +388,9 @@ int steal_dsa_key(linear_handle lin, Key* key)
 	if(key->dsa->p && key->dsa->q && key->dsa->g && key->dsa->pub_key && key->dsa->priv_key) {
 		// sanity check of parameters
 		int len;
+		int i;
+		int ret;
+		BN_CTX* ctx;
 
 		// p
 		len = BN_num_bits(key->dsa->p);
@@ -397,6 +400,20 @@ int steal_dsa_key(linear_handle lin, Key* key)
 		else
 			printf("\t\t\t(ok)   p is a multiple of 64 bits long (64*%d)\n", len/64);
 		// BN_is_prime_fasttest_ex (openssl/crypto/bn/bn_prime.h)
+		ctx = BN_CTX_new();
+		for(i = 0; i < BN_prime_checks_for_size(len); i++) {
+			ret = BN_is_prime_fasttest_ex(key->dsa->p, BN_prime_checks, ctx, 1, NULL);
+			if(ret == 0) {
+				printf("\t\t\t(WARN) p is not a prime!\n");
+				break;
+			}
+			if(ret == -1) {
+				printf("\t\t\t(ERR)  some strange error during test, if p is a prime\n");
+				break;
+			}
+		}
+		if(ret == 0)
+			printf("\t\t\t(ok)   p seems to be a prime\n");
 
 		// q
 		len = BN_num_bits(key->dsa->q);
@@ -411,6 +428,8 @@ int steal_dsa_key(linear_handle lin, Key* key)
 
 
 		printf("\t\t\t" "\x1b[1;32m" "OK." "\x1b[0m" "\n");
+
+		BN_CTX_free(ctx);
 		return 1;
 	}
 
