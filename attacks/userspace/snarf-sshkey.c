@@ -190,7 +190,9 @@ BIGNUM* fix_bignum(linear_handle lin, BIGNUM* rb)
 {
 	addr_t p;
 	BIGNUM* b;
+#ifdef __BIG_ENDIAN__
 	int i;
+#endif
 
 	printf("\t\t\t\tfix bignum @0x%08x: ", (uint32_t)rb);
 	p = (uint32_t)rb;
@@ -382,7 +384,7 @@ int steal_dsa_key(linear_handle lin, Key* key)
 	// 	q = a 160-bit prime factor of p-1
 	//	g = h^(p-1)/q mod p , where h is any number less than p-1 such that g>1
 	//	priv_key = a number less than q
-	//	pub_key = g^x mod p, where x < q
+	//	pub_key = g^priv_key mod p
 
 
 	if(key->dsa->p && key->dsa->q && key->dsa->g && key->dsa->pub_key && key->dsa->priv_key) {
@@ -391,16 +393,20 @@ int steal_dsa_key(linear_handle lin, Key* key)
 		int i;
 		int ret;
 		BN_CTX* ctx;
+		BIGNUM *o,*n;
 
-		// p
+		ctx = BN_CTX_new();
+		o = BN_new();
+		n = BN_new();
+
+		// p: size
 		len = BN_num_bits(key->dsa->p);
 		printf("\t\t\t(info) p is %d bits long.\n", len);
 		if(len%64)
 			printf("\t\t\t(WARN) p is not a multiple of 64 bits long! (len%%64 = %d)\n", len%64);
 		else
 			printf("\t\t\t(ok)   p is a multiple of 64 bits long (64*%d)\n", len/64);
-		// BN_is_prime_fasttest_ex (openssl/crypto/bn/bn_prime.h)
-		ctx = BN_CTX_new();
+		// p: test for prime:
 		for(i = 0; i < BN_prime_checks_for_size(len); i++) {
 			ret = BN_is_prime_fasttest_ex(key->dsa->p, BN_prime_checks, ctx, 1, NULL);
 			if(ret == 0) {
@@ -412,28 +418,38 @@ int steal_dsa_key(linear_handle lin, Key* key)
 				break;
 			}
 		}
+		/* is this neccessary?!
+		BN_CTX_free(ctx);
+		ctx = BN_CTX_new();
+		*/
 		if(ret == 1)
-			printf("\t\t\t(ok)   p seems to be a prime\n");
+			printf("\t\t\t(ok)   p seems to be a prime (after %d tests)\n", i);
 
-		// q
+		// q: size
 		len = BN_num_bits(key->dsa->q);
 		if(len != 160)
 			printf("\t\t\t(WARN) q is not 160 bits but %d bits long!\n", len);
 		else
 			printf("\t\t\t(ok)   q is 160 bits long.\n");
-		
 
+		// pub_key:
+		BN_mod_exp(o, key->dsa->g, key->dsa->priv_key, key->dsa->p, ctx);
+		BN_sub(n, o, key->dsa->pub_key);
+		if(BN_is_zero(n))
+			printf("\t\t\t(ok)   pubkey matches to parameters\n");
+		else
+			printf("\t\t\t(WARN) pubkey does not match to parameters\n");
 
-
-
+		// this should suffice as a test
 
 		printf("\t\t\t" "\x1b[1;32m" "OK." "\x1b[0m" "\n");
 
-		BN_CTX_free(ctx);
+		BN_free(n);
+		BN_free(o);
+
 		return 1;
 	}
 
-fail:
 	// BN_free can live with NULL.
 	// FIXME: if these failed: can bignums be invalid?! (->SIGSEGV ?!)
 	//  i don't think so.
