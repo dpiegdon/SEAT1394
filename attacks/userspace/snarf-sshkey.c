@@ -393,13 +393,17 @@ int steal_dsa_key(linear_handle lin, Key* key)
 		len = BN_num_bits(key->dsa->p);
 		printf("\t\t\t(info) p is %d bits long.\n", len);
 		if(len%64)
-			printf("\t\t\t(WARN) p is not a multiple of 64 bits long!\n");
+			printf("\t\t\t(WARN) p is not a multiple of 64 bits long! (len%%64 = %d)\n", len%64);
+		else
+			printf("\t\t\t(ok)   p is a multiple of 64 bits long (64*%d)\n", len/64);
 		// BN_is_prime_fasttest_ex (openssl/crypto/bn/bn_prime.h)
 
 		// q
 		len = BN_num_bits(key->dsa->q);
 		if(len != 160)
 			printf("\t\t\t(WARN) q is not 160 bits but %d bits long!\n", len);
+		else
+			printf("\t\t\t(ok)   q is 160 bits long.\n");
 		
 
 
