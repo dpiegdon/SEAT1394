@@ -36,6 +36,7 @@
 #include <openssl/rsa.h>
 #include <openssl/dsa.h>
 #include <openssl/evp.h>
+#include <openssl/bn.h>
 
 #include <libraw1394/raw1394.h>
 #include <libraw1394/csr.h>
@@ -376,16 +377,53 @@ int steal_dsa_key(linear_handle lin, Key* key)
 	key->dsa->pub_key = fix_bignum(lin, key->dsa->pub_key);
 	key->dsa->priv_key = fix_bignum(lin, key->dsa->priv_key);
 
+	// p,q and g are public DSA parameters; 
+	// 	p = a prime number L bits long (DSA standard say L \in [512,1024]
+	// 	q = a 160-bit prime factor of p-1
+	//	g = h^(p-1)/q mod p , where h is any number less than p-1 such that g>1
+	//	priv_key = a number less than q
+	//	pub_key = g^x mod p, where x < q
+
+
 	if(key->dsa->p && key->dsa->q && key->dsa->g && key->dsa->pub_key && key->dsa->priv_key) {
+		// sanity check of parameters
+		int len;
+
+		// p
+		len = BN_num_bits(key->dsa->p);
+		printf("\t\t\t(info) p is %d bits long.\n", len);
+		if(len%64)
+			printf("\t\t\t(WARN) p is not a multiple of 64 bits long!\n");
+		// BN_is_prime_fasttest_ex (openssl/crypto/bn/bn_prime.h)
+
+		// q
+		len = BN_num_bits(key->dsa->q);
+		if(len != 160)
+			printf("\t\t\t(WARN) q is not 160 bits but %d bits long!\n", len);
+		
+
+
+
+
+
 		printf("\t\t\t" "\x1b[1;32m" "OK." "\x1b[0m" "\n");
 		return 1;
-	} else {
-		// TODO: free BIGNUMs
-		free(key->dsa);
-		key->dsa = NULL;
-		printf("\t\t\t" "\x1b[1;31m" "failed to recover bignums." "\x1b[0m" "\n");
-		return 0;
 	}
+
+fail:
+	// BN_free can live with NULL.
+	// FIXME: if these failed: can bignums be invalid?! (->SIGSEGV ?!)
+	//  i don't think so.
+	BN_free(key->dsa->p);
+	BN_free(key->dsa->q);
+	BN_free(key->dsa->g);
+	BN_free(key->dsa->pub_key);
+	BN_free(key->dsa->priv_key);
+
+	free(key->dsa);
+	key->dsa = NULL;
+	printf("\t\t\t" "\x1b[1;31m" "failed to recover bignums." "\x1b[0m" "\n");
+	return 0;
 }
 
 // create a unique filename, consisting of target's 1394-GUID, ssh-agent's username and key's comment
