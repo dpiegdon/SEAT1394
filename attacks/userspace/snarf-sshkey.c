@@ -412,7 +412,7 @@ int steal_dsa_key(linear_handle lin, Key* key)
 				break;
 			}
 		}
-		if(ret == 0)
+		if(ret == 1)
 			printf("\t\t\t(ok)   p seems to be a prime\n");
 
 		// q
