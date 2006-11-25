@@ -39,12 +39,18 @@
 static int pagedirtest_fast_linux3G1G(struct linear_handle_data* h, addr_t physical_pageno)
 {
 	union pagedir_entry pde;
+	int res;
 
 	// on ia32-linux with a __PAGE_OFFSET of 0xc0000000, the linear adr 0xc0000000 will resolve to phys 0x0.
 	// check this. 0xc0000000 is PDE#0x300. should be a 4M-page and not a pointer to a pagetable.
 	// but check this possibility, too (?)
 	// if not, this is not a linux-PDE with __PAGE_OFFSET 0xc0000000 (that is a linux with 3G/1G memlayout)
-	physical_read(h->phy, physical_pageno * h->phy->pagesize + 0x300*sizeof(union pagedir_entry), &pde, sizeof(pde));
+	res = physical_read(h->phy, physical_pageno * h->phy->pagesize + 0x300*sizeof(union pagedir_entry), &pde, sizeof(pde));
+
+	// handle read error:
+	if(res == -EBADR)
+		return -EBADR;
+
 #ifdef __BIG_ENDIAN__
 	pde.raw = endian_swap32(pde.raw);
 #endif

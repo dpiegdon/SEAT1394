@@ -94,7 +94,7 @@ int linear_load_new_pagedir(linear_handle h, addr_t pagedir_pageno);
 
 // gives a quick guess, if (1) the _physical_ page is a page-directory on this
 // architecture or not (0)
-// < 0 on error
+// < 0 on error (especially -EBADR)
 int linear_is_pagedir_fast(linear_handle h, addr_t physical_pageno);
 
 // gives a probability if (1.00) the page is a page-directory or not (0.00)
