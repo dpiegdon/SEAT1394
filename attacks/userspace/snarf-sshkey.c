@@ -504,8 +504,15 @@ int steal_dsa_key(linear_handle lin, Key* key)
 				printf("\t\t\t"TERM_RED"(WARN)"TERM_RESET" q is not 160 bits but %d bits long!\n", len);
 			else
 				printf("\t\t\t"TERM_GREEN"(ok)"TERM_RESET"   q is 160 bits long.\n");
-			// q: prime-factor of p-1?
-
+			// q: prime-factor of p-1? then q is the greatest common divisor of q and p-1.
+			BN_one(n);				// n := 1;
+			BN_sub(o,key->dsa->p,n);		// o := p-1;
+			BN_gcd(n,o,key->dsa->q,ctx);		// n := GCD(p-1,q);
+			BN_sub(o,n,key->dsa->q);		// o := GCD(p-1,q) - q; -- this should be 0 if q is a prime-factor or p-1
+			if(BN_is_zero(o))
+				printf("\t\t\t"TERM_GREEN"(ok)"TERM_RESET"   q is a prime-factor of p-1.\n");
+			else
+				printf("\t\t\t"TERM_RED"(WARN)"TERM_RESET"   q is NO prime-factor of p-1!\n");
 
 			// pub_key:
 			BN_mod_exp(o, key->dsa->g, key->dsa->priv_key, key->dsa->p, ctx);
@@ -834,7 +841,8 @@ int main(int argc, char**argv)
 		return -1;
 	}
 
-	printf("keys:\t\t.    -   checked another 0x80 pages\n"
+	printf(	"now checking first phys. 1GB for pagedirectories:\n"
+		"keys:\t\t.    -   checked another 0x80 pages\n"
 		    "\t\t_    -   matched simple expression but not NCD\n"
 		    "\t\to    -   matched NCD but failed to load referenced pagetables\n"
 		    "\t\tK    -   matched NCD, loaded but found no stack (kernel thread?)\n"
