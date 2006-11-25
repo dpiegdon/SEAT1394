@@ -364,7 +364,7 @@ int steal_rsa_key(linear_handle lin, Key* key)
 			printf("\t\t\t"TERM_GREEN"(ok)"TERM_RESET"   q (%d bits) seems to be a prime (after %d tests)\n", len, i);
 
 		// n:
-		printf("\t\t\t(info) n is %d bits long.\n",BN_num_bits(key->rsa->n));
+		printf("\t\t\t(info) n is "TERM_CYAN"%d bits"TERM_RESET" long.\n",BN_num_bits(key->rsa->n));
 
 
 		printf("\t\t\t" TERM_GREEN "OK." TERM_RESET "\n");
@@ -471,7 +471,7 @@ int steal_dsa_key(linear_handle lin, Key* key)
 
 		// p: size
 		len = BN_num_bits(key->dsa->p);
-		printf("\t\t\t(info) p is %d bits long.\n", len);
+		printf("\t\t\t(info) p is "TERM_CYAN"%d bits"TERM_RESET" long.\n", len);
 		if(len%64)
 			printf("\t\t\t"TERM_RED"(WARN)"TERM_RESET" p is not a multiple of 64 bits long! (len%%64 = %d)\n", len%64);
 		else
@@ -508,7 +508,7 @@ int steal_dsa_key(linear_handle lin, Key* key)
 
 		// this should suffice as a test
 		// show length of priv_key as info
-		printf("\t\t\t(info) priv_key is %d bits long\n", BN_num_bits(key->dsa->priv_key));
+		printf("\t\t\t(info) priv_key is %d bits long (should be <= len(q))\n", BN_num_bits(key->dsa->priv_key));
 
 		printf("\t\t\t" TERM_GREEN "OK." TERM_RESET "\n");
 
