@@ -48,8 +48,8 @@ static int pagedirtest_fast_linux3G1G(struct linear_handle_data* h, addr_t physi
 	res = physical_read(h->phy, physical_pageno * h->phy->pagesize + 0x300*sizeof(union pagedir_entry), &pde, sizeof(pde));
 
 	// handle read error:
-	if(res == -EBADR)
-		return -EBADR;
+	if(res < 0)
+		return res;
 
 #ifdef __BIG_ENDIAN__
 	pde.raw = endian_swap32(pde.raw);
