@@ -301,7 +301,7 @@ int steal_rsa_key(linear_handle lin, Key* key)
 	key->rsa->flags = endian_swap32(key->rsa->flags);
 #endif
 
-	printf("\t\t\tRSA: pad:%d version:%ld flags:%d data: %p %p %p %p %p  %p %p %p\n",
+	printf("\t\t\tRSA: pad:%d version:%ld flags:%d data: n@%p e@%p d@%p p@%p q@%p  dmp1@%p dmq1@%p iqmp@%p\n",
 		key->rsa->pad, key->rsa->version, key->rsa->flags, key->rsa->n, key->rsa->e, key->rsa->d, key->rsa->p, key->rsa->q,   key->rsa->dmp1, key->rsa->dmq1, key->rsa->iqmp);
 
 	key->rsa->n = fix_bignum(lin, key->rsa->n);
