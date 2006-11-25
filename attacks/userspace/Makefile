@@ -22,7 +22,7 @@ snarf-sshkey: openssh/openbsd-compat/libopenbsd-compat.a openssh/libssh.a openss
 		-o snarf-sshkey
 
 snarf-sshkey.o: snarf-sshkey.c ssh-authfile.h
-	gcc snarf-sshkey.c -Wall -W -I/home/lostrace/include -c -o snarf-sshkey.o
+	gcc snarf-sshkey.c -Wall -W -I/home/lostrace/include -DUSETERM -c -o snarf-sshkey.o
 
 clean:
 	-rm -f remote-ps snarf-sshkey *.o
