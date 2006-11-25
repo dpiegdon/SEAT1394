@@ -331,6 +331,7 @@ int steal_rsa_key(linear_handle lin, Key* key)
 		ctx = BN_CTX_new();
 
 		// is p a prime?
+		len = BN_num_bits(key->rsa->p);
 		for(i = 0; i < BN_prime_checks_for_size(len); i++) {
 			ret = BN_is_prime_fasttest_ex(key->rsa->p, BN_prime_checks, ctx, 1, NULL);
 			if(ret == 0) {
@@ -343,9 +344,10 @@ int steal_rsa_key(linear_handle lin, Key* key)
 			}
 		}
 		if(ret == 1)
-			printf("\t\t\t(ok)   p seems to be a prime (after %d tests)\n", i);
+			printf("\t\t\t(ok)   p (%d bits) seems to be a prime (after %d tests)\n", len, i);
 
 		// is q a prime?
+		len = BN_num_bits(key->rsa->q);
 		for(i = 0; i < BN_prime_checks_for_size(len); i++) {
 			ret = BN_is_prime_fasttest_ex(key->rsa->q, BN_prime_checks, ctx, 1, NULL);
 			if(ret == 0) {
@@ -358,7 +360,7 @@ int steal_rsa_key(linear_handle lin, Key* key)
 			}
 		}
 		if(ret == 1)
-			printf("\t\t\t(ok)   q seems to be a prime (after %d tests)\n", i);
+			printf("\t\t\t(ok)   q (%d bits) seems to be a prime (after %d tests)\n", len, i);
 
 		// n:
 		printf("\t\t\t(info) n is %d bits long.\n",BN_num_bits(key->rsa->n));
@@ -647,7 +649,7 @@ void check_ssh_agent(linear_handle lin)
 	while((comment = memmem(comment + 1, AGENT_MAXLEN * 4096 - (comment+1 - heap), identity_path, strlen(identity_path)))) {
 						// do not search the tailing \0 !
 		rcomment = LOCAL_TO_REMOTE(comment, heap);
-		printf("\nfound \"%s\" at remote 0x%08x\n", comment, (uint32_t)rcomment);
+		printf("\nfound the string \"%s\" at remote 0x%08x\n", comment, (uint32_t)rcomment);
 #ifdef __BIG_ENDIAN__
 		rcomment = (char*) endian_swap32((uint32_t)rcomment);
 #endif
