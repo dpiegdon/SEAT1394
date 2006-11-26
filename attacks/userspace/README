@@ -24,7 +24,12 @@ remote-ps.c
 	find this number (0...CSR), use e.g. 1394csrtool.
 
 
-snarf-sshkey.c, ssh-authfile.h
+dump-sshkey.c
+	dump all parameters of an existing ssh private key. used for
+	debugging only.
+
+
+snarf-sshkey.c
 	this will search for ssh-agent processes and dump all private
 	keys it can find in an immediately usable format (!). again,
 	give target number of machine on firewirebus as argument. to

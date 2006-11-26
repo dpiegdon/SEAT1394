@@ -116,7 +116,7 @@ int main(int argc, char**argv)
 	Key* key;
 
 	if(argc != 2) {
-		printf( "please give filename of private key to dump as parameter.\n"
+		printf( "please give filename of private key to dump.\n"
 			"please note, that the key must not be encrypted.\n");
 		return -1;
 	}
