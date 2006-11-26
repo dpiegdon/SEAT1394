@@ -7,7 +7,7 @@
 
 
 
-\subsection{Userspace}
+\subsection{Userspace Modifications}
 
 \subsubsection{Identifying processes}
 
@@ -19,7 +19,7 @@
 
 
 
-\subsection{Kernelspace}
+\subsection{Kernelspace Modifications}
 
 \subsubsection{Emulating \texttt{/dev/kmem}}
 
@@ -32,6 +32,94 @@
 \subsubsection{Typical places to find secret keys}
 
 \subsubsection{Example attack: ssh-agent snarfer}
+
+To proof that it is rather easy to obtain secret keys from a system I have
+written a sample attack to obtain \emph{ssh public/private keypairs} from
+\texttt{ssh-agent}s via \emph{firewire}.
+
+When using \texttt{ssh} for accessing remote computers it is possible to
+authenticate via passwords, public/private keypairs and various other methods.
+The usage of public/private keypairs is wide-spread among people using
+\texttt{ssh} on a regular basis. These keypairs can either be a DSA or a RSA
+keypair, they are typically created with \texttt{ssh-keygen} and stored
+somewhere in \texttt{\$HOME/.ssh/}, e.g.  \texttt{/root/.ssh/id\_dsa} and
+\texttt{/root/.ssh/id\_dsa.pub}. Keypairs can and should be encrypted with a
+passphrase to prevent attackers from using them, if they were able to obtain
+them somehow. Thus to use a keypair it is required to enter this passphrase each
+time. This can be disturbing during frequent usage, e.g. when using
+\texttt{ssh+svn} or \texttt{scp} with remote-tab-completition (\texttt{zsh} is
+capable of this).
+
+For these and other reasons, the \texttt{ssh-agent} has been developed. This
+agent will run in the background; the user can store a keypair into it (once
+entering the passphrase to unlock the keypair) and successively use the keypair
+without the requirement to enter the passphrase each time. The keypair can be
+wiped from memory on demand and also be loaded only for a specified period of
+time.
+
+Actually, here begins the fun. During my tests I found that the key is
+\emph{not} wiped from memory when the timelimit is hit. It will be wiped the
+next time the ssh-agent is queried (via its socket), but the agent is stalled in
+a \emph{read}-systemcall until this query and thus can not wipe the key. That
+makes it possible to obtain long overdue keys from \texttt{ssh-agent}s, although
+their owners believed them to be safe. A simple timer could have prevented this
+-- I hereby strongly encourage the developers to implement such a timer. But
+even with such a time enabled it would be possible to acquire the key during its
+lifetime.
+
+To obtain a keypair from an agent via firewire, a staged attack is required:
+
+\begin{enumerate}
+
+	\item Seek the first GiB of physical memory for pagetables.
+
+	\item For each pagetable: check, if the found userspace belongs to a
+	\texttt{ssh-agent} process. If not, seek next pagetable.
+
+	\item Construct a possible path where the keypair may reside in the
+	filesystem (e.g. ``\texttt{/home/lostrace/.ssh/}'') and seek this string
+	in the heap. This will only find keypairs that have been loaded with
+	this keylocation. Actually this field is the key's comment-field that is
+	mostly unused and overwritten with the filename of the key. \\ Keypairs
+	loaded from different locations or via a relative path or with set
+	comment-fields can thus not be found by this search.
+	
+	\item This string is pointed to by the \emph{identity}-struct, that also
+	contains a pointer to a \emph{KEY}-struct. To find the
+	\emph{identity}-struct, we have to seek the address of the above string
+	in the heap. \emph{Each} loaded keypair has one \emph{identity}-struct
+	and can be found by searching the above pattern in the full heap and
+	then searching its address in the heap.	To create a better
+	search-algorithm remains as an exercise to the interested reader.
+
+	\item Once the \emph{KEY}-struct has been found, the reconstruction to a
+	local copy consists of a lot of memory-jumping, pointer arithmetics and
+	alike, but is fully implemented for both DSA and RSA keypairs by now.
+
+	\item Each found keypair is then saved to a file.
+	
+\end{enumerate}
+
+As stated obove, the keypairs reside decrypted in the memory of the ssh-agent
+(even if overtime) and thus, when stored to a file, can be immediately used by
+the command \texttt{ssh~-i~keyfile~user@host}~.  Such an attack will not take
+much longer than reading the first 1 GiB of physical RAM, that is
+\emph{typically no more than 15 seconds}. If an attack fails but an agent was
+found, it would be possible to just dump the heap of the agent and stage a more
+thorough attack at a later time.  Once the heap is dumped, all required data is
+obtained.  A similar attack via ptrace should be possible as well.
+
+
+The reader may refer to \texttt{attacks/userspace/snarf-sshkey.c} in the
+corresponding tarball for the source-code of the working attack. As the attack
+dumps the key in a format directly usable by \texttt{ssh} is is required to link
+against \texttt{libssh.a}, which is part of \emph{openssh}. Because of this, to
+compile the snarfer it is required to have a \texttt{./configure}d
+\emph{openssh}-source in \texttt{attacks/userspace/openssh/}. Please keep in
+mind that this attack will only find keys \emph{without comment-fields} and
+loaded with the absolute path \texttt{\$HOME/.ssh/}.
+
+
 
 \subsubsection{Matching and statistics to find secret keys}
 
