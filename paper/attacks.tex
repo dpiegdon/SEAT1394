@@ -7,7 +7,8 @@
 
 
 
-\subsection{Userspace Modifications}
+
+\subsection{Information Gathering}
 
 \subsubsection{Identifying processes}
 
@@ -19,35 +20,62 @@ For userspace applications there is a simple way to identify a process's
 \emph{environment variables}: All this information is often required by a
 process and thus the kernel will provide it to the process by copying it to the
 uppermost stack-page, i.e.  the stack-page that is found first when seeking from
-\texttt{0xbfff f000} downward.
+\texttt{0xbfff~f000} downward.
 
 FIXME FIXME
 
-\subsubsection{Overwriting process code}
+\subsubsection{Typical places to find secrets}
 
-\subsubsection{Overwriting library code}
+Many applications keep secrets in their memory, some of them even locking then
+into the main memory (e.g. via the \emph{mlock} function) to prevent the
+operating system from swapping them to slower media.
 
-\subsubsection{Overwriting stack and return addresses}
+Secret includes, among other information, \emph{authentication data},
+\emph{cryptographic key material}, \emph{random data} (e.g. to seed a
+cryptographic algorithm) and sometimes even \emph{algorithms} (see
+\emph{proprietary software}).  Authentication data can be e.g. passwords or
+private keys for signature algorithms; cryptographic key material, as the name
+says, are keys for cryptographic algorithms (like the above signature
+algorithms). These two will be of main interest for us, here.
 
+Many applications using a cryptographic infrastructure for communications will
+keep once loaded passwords or keys in their main memory for successive usage.
+The operating systems protection model ensures the safety of them from other
+processes running on the same system. But by accessing the main memory we do
+have full access to this material. The only task that remains is to reconstruct
+the key material and passwords from the memory.
 
+As an example, the following applications are of interest:
 
-\subsection{Kernelspace Modifications}
+\begin{itemize}
 
-\subsubsection{Emulating \texttt{/dev/kmem}}
+	\item GnuPG and PGP: applications to sign and encrypt arbitrary data
+	with public/private keypairs. They are wide spread for email-encryption
+	and -signing.
 
-\subsubsection{Resolving kernel addresses}
+	\item sshd, ssh and ssh-agent: the \emph{secure shell} application is an
+	extended, encrypted version of telnet using strong cryptography,
+	including passwords, skey, x509 certificates, RSA and DSA keys.
 
+	\item Apache and other SSL-enabled web servers.
 
+	\item OpenVPN, Cisco-VPN and other VPN-servers and clients
 
-\subsection{Information Gathering: secret keys, passwords and more}
+	\item Instant Messaging Applications, e.g. Psi keeps the authentication
+	information and possibly the GnuPG keypair in memory.
 
-\subsubsection{Typical places to find secret keys}
+	\item The computer BIOS or PGP-Wholedisk: the computer can be locked
+	with a BIOS password or the harddisk can be encrypted. For a sample
+	attack, see \cite{rux2k6firewire}.
+
+\end{itemize}
+
 
 \subsubsection{Example attack: ssh-agent snarfer}
 
-To proof that it is rather easy to obtain secret keys from a system I have
-written a sample attack to obtain \emph{ssh public/private keypairs} from
-\texttt{ssh-agent}s via \emph{firewire}.
+\label{ssh-agent-snarfer} To proof that it is rather easy to obtain secret keys
+from a system I have written a sample attack to obtain \emph{ssh public/private
+keypairs} from \texttt{ssh-agent}s via \emph{firewire}.
 
 When using \texttt{ssh} for accessing remote computers it is possible to
 authenticate via passwords, public/private keypairs and various other methods.
@@ -131,9 +159,29 @@ compile the snarfer it is required to have a \texttt{./configure}d
 mind that this attack will only find keys \emph{without comment-fields} and
 loaded with the absolute path \texttt{\$HOME/.ssh/}.
 
-
-
 \subsubsection{Matching and statistics to find secret keys}
+
+
+
+
+\subsection{Userspace Modifications}
+
+\subsubsection{Overwriting process code}
+
+\subsubsection{Overwriting library code}
+
+\subsubsection{Overwriting stack and return addresses}
+
+
+
+
+\subsection{Kernelspace Modifications}
+
+\subsubsection{Emulating \texttt{/dev/kmem}}
+
+\subsubsection{Resolving kernel addresses}
+
+
 
 
 
