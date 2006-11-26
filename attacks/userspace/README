@@ -31,12 +31,13 @@ snarf-sshkey.c, ssh-authfile.h
 	find target number (0...CSR), use e.g. 1394csrtool.
 
 	as second parameter, -t may be given to test the obtained keys
-	on validity on the fly. this may take up to several seconds
-	per key, depending on the key length and type.
+	for validity on the fly. this may take up to several seconds
+	per key, depending on key length and type.
 
 	sometimes, DSA keys fail to be reconstructed:
-	the dsa->pub_key member fails to reconstruct, possibly more.
-	the reason is unknown, so far.
+	the dsa->pub_key or dsa->priv_key member fails to reconstruct,
+	the other members seem to be intact. the reason is unknown,
+	so far.
 
 	to compile this, you will need a current openssh-version:
 	in this directory, do:
