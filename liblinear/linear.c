@@ -179,8 +179,8 @@ int linear_read_in_page(linear_handle h, addr_t adr, void* buf, unsigned long in
 // read from linear address
 int linear_read(linear_handle h, addr_t adr, void* buf, unsigned long int len)
 {
-	// data may be spread over several pages. take care of each page of these
-	// and call linear_read_in_page for each of these.
+	// data may be spread over several pages.
+	// call linear_read_in_page for each of these.
 	addr_t page_start, page_end;
 	addr_t data_start, data_end;
 	addr_t data_bound;
@@ -191,8 +191,8 @@ int linear_read(linear_handle h, addr_t adr, void* buf, unsigned long int len)
 	// for each page the data resides in:
 	while(adr < data_bound) {
 		// calculate page bounds
-		page_start =  (adr % h->phy->pagesize)      * h->phy->pagesize;
-		page_end   = ((adr % h->phy->pagesize) + 1) * h->phy->pagesize;
+		page_start =  (adr / h->phy->pagesize)      * h->phy->pagesize;
+		page_end   = ((adr / h->phy->pagesize) + 1) * h->phy->pagesize;
 
 		// check, if data starts before or after pagestart
 		if(adr > page_start)
@@ -237,8 +237,8 @@ int linear_write_in_page(linear_handle h, addr_t adr, void* buf, unsigned long i
 // write to linear address
 int linear_write(linear_handle h, addr_t adr, void* buf, unsigned long int len)
 {
-	// data may be spread over several pages. take care of each page of these
-	// and call linear_read_in_page for each of these.
+	// data may be spread over several pages.
+	// call linear_read_in_page for each of these.
 	addr_t page_start, page_end;
 	addr_t data_start, data_end;
 	addr_t data_bound;
@@ -249,8 +249,8 @@ int linear_write(linear_handle h, addr_t adr, void* buf, unsigned long int len)
 	// for each page the data resides in:
 	while(adr < data_bound) {
 		// calculate page bounds
-		page_start =  (adr % h->phy->pagesize)      * h->phy->pagesize;
-		page_end   = ((adr % h->phy->pagesize) + 1) * h->phy->pagesize;
+		page_start =  (adr / h->phy->pagesize)      * h->phy->pagesize;
+		page_end   = ((adr / h->phy->pagesize) + 1) * h->phy->pagesize;
 
 		// check, if data starts before or after pagestart
 		if(adr > page_start)
