@@ -35,6 +35,8 @@
 #define MAX_MESSAGESIZE 1029
 static char gdb_buffer[MAX_MESSAGESIZE];
 
+// flush data that is stuck in the read buffer:
+// some random stuff we don't need
 static int gdb_flush_read(struct physical_handle_data* h)
 {
 	int l = 0;
@@ -47,11 +49,11 @@ static int gdb_flush_read(struct physical_handle_data* h)
 			gdb_buffer[l] = 0;
 			printf("gdb_flush_read(): flushed %d bytes: \"%s\"\n", l, gdb_buffer);
 		}
-		
 	}
 	return m;
 }
 
+// send a payload to the GDB client stub
 static int gdb_send_payload(struct physical_handle_data* h, char*data, size_t len)
 {
 	int checksum;
@@ -75,6 +77,7 @@ static int gdb_send_payload(struct physical_handle_data* h, char*data, size_t le
 	write(h->data.gdb.fd, gdb_buffer, len+4);
 }
 
+// receive payload from the GDB client stub
 static int gdb_receive_payload(struct physical_handle_data* h)
 {	
 	int l = 0;
@@ -87,7 +90,8 @@ static int gdb_receive_payload(struct physical_handle_data* h)
 			gdb_buffer[l] = 0;
 			printf("gdb_receive_payload(): flushed %d bytes: \"%s\"\n", l, gdb_buffer);
 		}
-		
+
+		// TODO: eval payload and return data.
 	}
 	return m;
 }
@@ -98,7 +102,8 @@ static int gdb_receive_payload(struct physical_handle_data* h)
 
 int physical_gdb_init(struct physical_handle_data* h)
 {
-	// XXX this stub is not ready, yet.
+	// we already have an opened connection to the gdb client stub in data->fd,
+	// but XXX this stub is not ready, yet.
 	return -1;
 }
 

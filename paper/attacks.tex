@@ -11,6 +11,18 @@
 
 \subsubsection{Identifying processes}
 
+Once a address translation table has been found, the question is: what kind of
+process resides in this virtual address space?
+
+For userspace applications there is a simple way to identify a process's
+\emph{filename}, its \emph{command line arguments} and even its full set of
+\emph{environment variables}: All this information is often required by a
+process and thus the kernel will provide it to the process by copying it to the
+uppermost stack-page, i.e.  the stack-page that is found first when seeking from
+\texttt{0xbfff f000} downward.
+
+FIXME FIXME
+
 \subsubsection{Overwriting process code}
 
 \subsubsection{Overwriting library code}
