@@ -1,7 +1,7 @@
 
 .PHONY: all clean
 
-all:	remote-ps snarf-sshkey dump-sshkey
+all:	remote-ps snarf-sshkey
 
 openssh/openbsd-compat/libopenbsd-compat.a:
 	make -C openssh/openbsd-compat/ libopenbsd-compat.a
@@ -21,11 +21,11 @@ snarf-sshkey: openssh/openbsd-compat/libopenbsd-compat.a openssh/libssh.a openss
 		-L ./openssh/ -L ./openssh/openbsd-compat/ -L${HOME}/lib					\
 		-o snarf-sshkey
 
-dump-sshkey: openssh/openbsd-compat/libopenbsd-compat.a openssh/libssh.a openssh/entropy.o dump-sshkey.o sshkey-sanitychecks.o
-	gcc dump-sshkey.o sshkey-sanitychecks.o openssh/entropy.o				\
+debug-sshkey: openssh/openbsd-compat/libopenbsd-compat.a openssh/libssh.a openssh/entropy.o debug-sshkey.o sshkey-sanitychecks.o
+	gcc debug-sshkey.o sshkey-sanitychecks.o openssh/entropy.o				\
 		-lm -lresolv -lcrypto -lcrypt -lutil -lz -lnsl   -lssh -lopenbsd-compat		\
 		-L ./openssh/ -L ./openssh/openbsd-compat/ -L${HOME}/lib			\
-		-o dump-sshkey
+		-o debug-sshkey
 
 sshkey-sanitychecks.o: sshkey-sanitychecks.h sshkey-sanitychecks.c term.h
 	gcc sshkey-sanitychecks.c -Wall -W -DUSETERM -c -o sshkey-sanitychecks.o
@@ -33,8 +33,8 @@ sshkey-sanitychecks.o: sshkey-sanitychecks.h sshkey-sanitychecks.c term.h
 snarf-sshkey.o: snarf-sshkey.c ssh-authfile.h term.h
 	gcc snarf-sshkey.c -Wall -W -I/home/lostrace/include -DUSETERM -c -o snarf-sshkey.o
 
-dump-sshkey.o: dump-sshkey.c ssh-authfile.h term.h
-	gcc dump-sshkey.c -Wall -W -DUSETERM -c -o dump-sshkey.o
+debug-sshkey.o: debug-sshkey.c ssh-authfile.h term.h
+	gcc debug-sshkey.c -Wall -W -DUSETERM -c -o debug-sshkey.o
 
 clean:
-	-rm -f remote-ps snarf-sshkey dump-sshkey *.o
+	-rm -f remote-ps snarf-sshkey debug-sshkey *.o
