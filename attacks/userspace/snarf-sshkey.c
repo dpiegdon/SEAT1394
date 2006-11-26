@@ -249,13 +249,18 @@ BIGNUM* fix_bignum(linear_handle lin, BIGNUM* rb)
 
 	if(   linear_read(lin, p   , &(b->d), 4)
 	   || linear_read(lin, p+4 , &(b->top), 4)
-	   || linear_read(lin, p+8 , &(b->dmax), 4)
+//	   || linear_read(lin, p+8 , &(b->dmax), 4)
 	   || linear_read(lin, p+12, &(b->neg), 4)
 	   || linear_read(lin, p+16, &(b->flags), 4) ) {
 		free(b);
 		printf("failed to read BIGNUM @0x%08llx\n", p);
 		return NULL;
 	}
+
+	// don't use dmax but top, as this is the number of really
+	// used words.
+	b->dmax = b->top;
+
 #ifdef __BIG_ENDIAN__
 	b->d = (BN_ULONG*) endian_swap32((uint32_t)b->d);
 	b->top = endian_swap32(b->top);
@@ -268,6 +273,9 @@ BIGNUM* fix_bignum(linear_handle lin, BIGNUM* rb)
 	p = ((uint32_t)b->d);
 	p &= 0xffffffff;
 	b->d = calloc(4, b->dmax);
+	// actually, elements of d[] can be of 16, 32 or 64 bits, depending on how
+	// "BITS2" was defined in openssl/bn.h
+	// so, this will only work, if on the target system, it was defined as 32.
 	if(linear_read(lin, p, b->d, 4*b->dmax)) {
 		free(b->d);
 		free(b);
