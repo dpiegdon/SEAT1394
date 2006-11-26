@@ -255,23 +255,28 @@ BIGNUM* fix_bignum(linear_handle lin, BIGNUM* rb)
 	   || linear_read(lin, p+4 , &(b->top), 4)
 //	   || linear_read(lin, p+8 , &(b->dmax), 4)
 	   || linear_read(lin, p+12, &(b->neg), 4)
-	   || linear_read(lin, p+16, &(b->flags), 4) ) {
+//	   || linear_read(lin, p+16, &(b->flags), 4)
+	   ) {
 		free(b);
 		printf("failed to read BIGNUM @0x%08llx\n", p);
 		return NULL;
 	}
 
-	// don't use dmax but top, as this is the number of really
-	// used words.
-	b->dmax = b->top;
-
 #ifdef __BIG_ENDIAN__
 	b->d = (BN_ULONG*) endian_swap32((uint32_t)b->d);
 	b->top = endian_swap32(b->top);
-	b->dmax = endian_swap32(b->dmax);
+//	b->dmax = endian_swap32(b->dmax);
 	b->neg = endian_swap32(b->neg);
-	b->flags = endian_swap32(b->flags);
+//	b->flags = endian_swap32(b->flags);
 #endif
+
+	// set flags to BN_FLG_MALLOCED, because we used malloced memory for
+	// all our bignums.
+	b->flags = BN_FLG_MALLOCED;
+
+	// don't use dmax but top, as this is the number of really
+	// used words.
+	b->dmax = b->top;
 
 	// load b->d
 	p = ((uint32_t)b->d);
