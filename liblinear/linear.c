@@ -161,8 +161,9 @@ int linear_to_physical(linear_handle h, addr_t lin_adr, addr_t* physical_adr)
 		return -EBADR;
 }
 
-// read from linear address
-int linear_read(linear_handle h, addr_t adr, void* buf, size_t len)
+// read from linear address: it has to be sure, that this data is inside
+// a single page
+static int linear_read_in_page(linear_handle h, addr_t adr, void* buf, size_t len)
 {
 	addr_t ladr;
 
@@ -175,8 +176,47 @@ int linear_read(linear_handle h, addr_t adr, void* buf, size_t len)
 		return -EBADR;
 }
 
-// write to linear address
-int linear_write(linear_handle h, addr_t adr, void* buf, size_t len)
+// read from linear address
+int linear_read(linear_handle h, addr_t adr, void* buf, size_t len)
+{
+	// data may be spread over several pages. take care of each page of these
+	// and call linear_read_in_page for each of these.
+	addr_t page_start, page_end;
+	addr_t data_start, data_end;
+	addr_t data_bound;
+	int res;
+
+	data_bound = adr+len;
+
+	while(adr < data_bound) {
+		page_start =  (adr % h->phy->pagesize)      * h->phy->pagesize;
+		page_end   = ((adr % h->phy->pagesize) + 1) * h->phy->pagesize;
+
+		if(adr > page_start)
+			data_start = adr;
+		else
+			data_start = page_start;
+
+		if(data_bound > page_end)
+			data_end = page_end;
+		else
+			data_end = data_bound;
+
+		len = data_end - data_start;
+
+		res = linear_read_in_page(h, data_start, buf, len);
+		if(res < 0)
+			return res;
+
+		adr += len;
+		buf = (void*)((uint32_t)buf+len);
+	}
+	return 0;
+}
+
+// write to linear address: it has to be sure, that this data is inside
+// a single page
+static int linear_write_in_page(linear_handle h, addr_t adr, void* buf, size_t len)
 {
 	addr_t ladr;
 
@@ -187,6 +227,43 @@ int linear_write(linear_handle h, addr_t adr, void* buf, size_t len)
 			return physical_write(h->phy, ladr, buf, len);
 	} else
 		return -EBADR;
+}
+// write to linear address
+int linear_write(linear_handle h, addr_t adr, void* buf, size_t len)
+{
+	// data may be spread over several pages. take care of each page of these
+	// and call linear_write_in_page for each of these.
+	addr_t page_start, page_end;
+	addr_t data_start, data_end;
+	addr_t data_bound;
+	int res;
+
+	data_bound = adr+len;
+
+	while(adr < data_bound) {
+		page_start =  (adr % h->phy->pagesize)      * h->phy->pagesize;
+		page_end   = ((adr % h->phy->pagesize) + 1) * h->phy->pagesize;
+
+		if(adr > page_start)
+			data_start = adr;
+		else
+			data_start = page_start;
+
+		if(data_bound > page_end)
+			data_end = page_end;
+		else
+			data_end = data_bound;
+
+		len = data_end - data_start;
+
+		res = linear_write_in_page(h, data_start, buf, len);
+		if(res < 0)
+			return res;
+
+		adr += len;
+		buf = (void*)((uint32_t)buf+len);
+	}
+	return 0;
 }
 
 // read a linearly addressed page
