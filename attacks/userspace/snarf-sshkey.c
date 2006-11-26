@@ -21,6 +21,8 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+//#define DUMP_HEAP
+
 #define _LARGEFILE64_SOURCE
 
 // needed for memmem:
@@ -58,6 +60,37 @@ addr_t stack_bottom = 0;
 int test_keys = 0;
 
 #define NODE_OFFSET     0xffc0
+
+#ifdef DUMP_HEAP
+// dump a page in a neat, readable style to the file f
+void dump_page(FILE* f,uint32_t pn, char* page)
+{{{
+	uint32_t addr;
+	int i,j;
+	char c;
+	fprintf(f, "dump page %x\n", pn);
+
+	addr = pn * 4096;
+	for(i = 0; i<4096; i+=16) {
+		fprintf(f, "page 0x%05x, addr 0x%08x: ", pn, addr+i);
+		for(j = 0; j < 16; j++) {
+			fprintf(f, "%02hhx ", (page+i)[j]);
+			if((j+1)%4 == 0 && j)
+				fputc(' ',f);
+		}
+		fprintf(f,"  |  ");
+		for(j = 0; j < 16; j++) {
+			c = (page+i)[j];
+			if(c < 0x20)
+				c = '.';
+			if(c >= 0x7f)
+				c = '.';
+			fputc(c,f);
+		}
+		fprintf(f,"\n");
+	}
+}}}
+#endif
 
 // the following two functions (get_process_name and resolve_env) are
 // using the stack bottom of the given process. i have found that
@@ -525,6 +558,9 @@ void check_ssh_agent(linear_handle lin)
 	time_t death;	// when the key dies
 	Key key;	// the key we want
 	int n;
+#ifdef DUMP_HEAP
+	FILE* heapfile;
+#endif
 
 	// get string we search for
 	home = resolve_env(lin, "HOME");
@@ -547,6 +583,16 @@ void check_ssh_agent(linear_handle lin)
 	for(pn = 0; pn < AGENT_MAXLEN; pn++) {
 		linear_read_page(lin, AGENT_START + pn, heap + 4096 * pn);
 	}
+
+#ifdef DUMP_HEAP
+	printf(TERM_RED"DEBUG"TERM_RESET": dumping full heap to heap.txt\n");
+	heapfile = fopen("heap.txt", "w");
+
+	for(pn = 0; pn < AGENT_MAXLEN; pn++) {
+		dump_page(heapfile, AGENT_START + pn, heap + 4096*pn);
+	}
+	fclose(heapfile);
+#endif
 
 	// find all substrings in the heap (one for each loaded keypair that resides in $HOME/.ssh/)
 	comment = heap;
