@@ -107,13 +107,13 @@ int physical_gdb_finish(struct physical_handle_data* h)
 	return 0;
 }
 
-int physical_gdb_read(struct physical_handle_data* h, addr_t adr, void* buf, size_t len)
+int physical_gdb_read(struct physical_handle_data* h, addr_t adr, void* buf, unsigned long int len)
 {
 	char cmd_buffer[64];
 	while(len > 0) {
 		gdb_flush_read(h);
 		// send gdb-command
-		snprintf(cmd_buffer, 64, "m%llx,%x", adr, len);
+		snprintf(cmd_buffer, 64, "m%llx,%lx", adr, len);
 		gdb_send_payload(h, cmd_buffer, strlen(cmd_buffer));
 		gdb_receive_payload(h);
 
@@ -123,7 +123,7 @@ int physical_gdb_read(struct physical_handle_data* h, addr_t adr, void* buf, siz
 	return 0;
 }
 
-int physical_gdb_write(struct physical_handle_data* h, addr_t adr, void* buf, size_t len)
+int physical_gdb_write(struct physical_handle_data* h, addr_t adr, void* buf, unsigned long int len)
 {
 	// TODO
 

@@ -126,7 +126,7 @@ int physical_handle_release(physical_handle h)
 
 // read physical memory: read at address <adr>, <len> bytes and
 // store them into <buf>
-int physical_read(physical_handle h, addr_t adr, void* buf, size_t len)
+int physical_read(physical_handle h, addr_t adr, void* buf, unsigned long int len)
 {
 	if(h && (h->type != physical_none)) {
 		return h->read(h,adr,buf,len);
@@ -135,7 +135,7 @@ int physical_read(physical_handle h, addr_t adr, void* buf, size_t len)
 }
 
 // write physical memory: write at address <adr>, len bytes from <buf>
-int physical_write(physical_handle h, addr_t adr, void* buf, size_t len)
+int physical_write(physical_handle h, addr_t adr, void* buf, unsigned long int len)
 {
 	if(h && (h->type != physical_none)) {
 		return h->write(h,adr,buf,len);

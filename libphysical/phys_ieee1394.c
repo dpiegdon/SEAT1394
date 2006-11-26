@@ -50,7 +50,7 @@ int physical_ieee1394_finish(struct physical_handle_data* h)
 	return 0;
 }
 
-int physical_ieee1394_read(struct physical_handle_data* h, addr_t adr, void* buf, size_t len)
+int physical_ieee1394_read(struct physical_handle_data* h, addr_t adr, void* buf, unsigned long int len)
 {
 	int err;
 	size_t r = 0;		// how much was read so far
@@ -80,7 +80,7 @@ int physical_ieee1394_read(struct physical_handle_data* h, addr_t adr, void* buf
 	return 0;
 }
 
-int physical_ieee1394_write(struct physical_handle_data* h, addr_t adr, void* buf, size_t len)
+int physical_ieee1394_write(struct physical_handle_data* h, addr_t adr, void* buf, unsigned long int len)
 {
 	int err;
 	size_t w = 0;		// how much was written so far

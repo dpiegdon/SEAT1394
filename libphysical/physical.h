@@ -75,8 +75,8 @@ struct physical_handle_data {
 	// type-specific functions:
 	int(*finish)(struct physical_handle_data* h);
 
-	int(*read)(struct physical_handle_data* h, addr_t adr, void* buf, size_t len);
-	int(*write)(struct physical_handle_data* h, addr_t adr, void* buf, size_t len);
+	int(*read)(struct physical_handle_data* h, addr_t adr, void* buf, unsigned long int len);
+	int(*write)(struct physical_handle_data* h, addr_t adr, void* buf, unsigned long int len);
 	int(*read_page)(struct physical_handle_data* h, addr_t pagenum, void* buf);
 	int(*write_page)(struct physical_handle_data* h, addr_t pagenum, void* buf);
 };
@@ -100,10 +100,10 @@ int physical_handle_release(physical_handle h);
 
 // read physical memory: read at address <adr>, <len> bytes and
 // store them into <buf>
-int physical_read(physical_handle h, addr_t adr, void* buf, size_t len);
+int physical_read(physical_handle h, addr_t adr, void* buf, unsigned long int len);
 
 // write physical memory: write at address <adr>, len bytes from <buf>
-int physical_write(physical_handle h, addr_t adr, void* buf, size_t len);
+int physical_write(physical_handle h, addr_t adr, void* buf, unsigned long int len);
 
 // read the full physical page no. <pagenum> into <buf>
 int physical_read_page(physical_handle h, addr_t pagenum, void* buf);

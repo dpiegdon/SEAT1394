@@ -38,7 +38,7 @@ int physical_fd_finish(struct physical_handle_data* h)
 	return 0;
 }
 
-int physical_fd_read(struct physical_handle_data* h, addr_t adr, void* buf, size_t len)
+int physical_fd_read(struct physical_handle_data* h, addr_t adr, void* buf, unsigned long int len)
 {
 	if( ((off64_t)-1)  == lseek64(h->data.filedescriptor.fd, adr, SEEK_SET))
 		return -1;
@@ -47,7 +47,7 @@ int physical_fd_read(struct physical_handle_data* h, addr_t adr, void* buf, size
 	return 0;
 }
 
-int physical_fd_write(struct physical_handle_data* h, addr_t adr, void* buf, size_t len)
+int physical_fd_write(struct physical_handle_data* h, addr_t adr, void* buf, unsigned long int len)
 {
 	if( ((off64_t)-1)  == lseek64(h->data.filedescriptor.fd, adr, SEEK_SET)) {
 		return -1;
