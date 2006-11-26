@@ -37,4 +37,4 @@ dump-sshkey.o: dump-sshkey.c ssh-authfile.h term.h
 	gcc dump-sshkey.c -Wall -W -DUSETERM -c -o dump-sshkey.o
 
 clean:
-	-rm -f remote-ps snarf-sshkey *.o
+	-rm -f remote-ps snarf-sshkey dump-sshkey *.o

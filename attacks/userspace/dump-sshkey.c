@@ -20,95 +20,102 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-void dump_rsa(Key* key)
+#include <stdio.h>
+
+#include <openssl/rsa.h>
+#include <openssl/dsa.h>
+#include <openssl/evp.h>
+#include <openssl/bn.h>
+
+#include "ssh-authfile.h"
+#include "sshkey-sanitychecks.h"
+#include "term.h"
+
+void dump_rsa(RSA* rsa)
 {
+	char *bn;
+
 	printf("dumping RSA key:\n");
 
 	printf("\tsanity checks on key:\n");
+	test_rsa(rsa);
 
+	printf("\tdumping RSA key members:\n");
+
+	// n e d p q dmp1 dmq1 iqmp
+
+	bn = BN_bn2hex(rsa->n);
+	printf("\t\t"TERM_BLUE"n:"TERM_RESET" 0x%s\n", bn);
+	free(bn);
+
+	bn = BN_bn2hex(rsa->e);
+	printf("\t\t"TERM_BLUE"e:"TERM_RESET" 0x%s\n", bn);
+	free(bn);
+
+	bn = BN_bn2hex(rsa->d);
+	printf("\t\t"TERM_BLUE"d:"TERM_RESET" 0x%s\n", bn);
+	free(bn);
+
+	bn = BN_bn2hex(rsa->p);
+	printf("\t\t"TERM_BLUE"p:"TERM_RESET" 0x%s\n", bn);
+	free(bn);
+
+	bn = BN_bn2hex(rsa->q);
+	printf("\t\t"TERM_BLUE"q:"TERM_RESET" 0x%s\n", bn);
+	free(bn);
+
+	bn = BN_bn2hex(rsa->dmp1);
+	printf("\t\t"TERM_BLUE"dmp1:"TERM_RESET" 0x%s\n", bn);
+	free(bn);
+
+	bn = BN_bn2hex(rsa->dmq1);
+	printf("\t\t"TERM_BLUE"dmq1:"TERM_RESET" 0x%s\n", bn);
+	free(bn);
+
+	bn = BN_bn2hex(rsa->iqmp);
+	printf("\t\t"TERM_BLUE"iqmp:"TERM_RESET" 0x%s\n", bn);
+	free(bn);
 }
 
-void dump_dsa(Key* key)
+void dump_dsa(DSA* dsa)
 {
+	char *bn;
+
 	printf("dumping DSA key:\n");
 
 	printf("\tsanity checks on key:\n");
-	{{{
-		int len;
-		int i;
-		int ret;
-		BN_CTX* ctx;
-		BIGNUM *o,*n;
+	test_dsa(dsa);
 
-		ctx = BN_CTX_new();
-		o = BN_new();
-		n = BN_new();
+	printf("\tdumping DSA key members:\n");
 
-		// p: size
-		len = BN_num_bits(key->dsa->p);
-		printf("\t\t(info) p is "TERM_CYAN"%d bits"TERM_RESET" long.\n", len);
-		if(len%64)
-			printf("\t\t"TERM_RED"(WARN)"TERM_RESET" p is not a multiple of 64 bits long! (len%%64 = %d)\n", len%64);
-		else
-			printf("\t\t"TERM_GREEN"(ok)"TERM_RESET"   p is a multiple of 64 bits long (64*%d)\n", len/64);
-		// p: test for prime:
-		for(i = 0; i < BN_prime_checks_for_size(len); i++) {
-			ret = BN_is_prime_fasttest_ex(key->dsa->p, BN_prime_checks, ctx, 1, NULL);
-			if(ret == 0) {
-				printf("\t\t"TERM_RED"(WARN)"TERM_RESET" p is not a prime!\n");
-				break;
-			}
-			if(ret == -1) {
-				printf("\t\t"TERM_FAULT"(ERR)"TERM_RESET"  some strange error during test, if p is a prime\n");
-				break;
-			}
-		}
-		if(ret == 1)
-			printf("\t\t"TERM_GREEN"(ok)"TERM_RESET"   p seems to be a prime (after %d tests)\n", i);
+	// p q g pub_key priv_key
+	
+	bn = BN_bn2hex(dsa->p);
+	printf("\t\t"TERM_BLUE"p:"TERM_RESET" 0x%s\n", bn);
+	free(bn);
 
-		// q: size
-		len = BN_num_bits(key->dsa->q);
-		if(len != 160)
-			printf("\t\t"TERM_RED"(WARN)"TERM_RESET" q is not 160 bits but %d bits long!\n", len);
-		else
-			printf("\t\t"TERM_GREEN"(ok)"TERM_RESET"   q is 160 bits long.\n");
-		// q: prime-factor of p-1? then q is the greatest common divisor of q and p-1.
-		BN_one(n);				// n := 1;
-		BN_sub(o,key->dsa->p,n);		// o := p-1;
-		BN_gcd(n,o,key->dsa->q,ctx);		// n := GCD(p-1,q);
-		BN_sub(o,n,key->dsa->q);		// o := GCD(p-1,q) - q; -- this should be 0 if q is a prime-factor or p-1
-		if(BN_is_zero(o))
-			printf("\t\t"TERM_GREEN"(ok)"TERM_RESET"   q is a prime-factor of p-1.\n");
-		else
-			printf("\t\t"TERM_RED"(WARN)"TERM_RESET"   q is NO prime-factor of p-1!\n");
+	bn = BN_bn2hex(dsa->q);
+	printf("\t\t"TERM_BLUE"q:"TERM_RESET" 0x%s\n", bn);
+	free(bn);
 
-		// pub_key:
-		BN_mod_exp(o, key->dsa->g, key->dsa->priv_key, key->dsa->p, ctx);
-		BN_sub(n, o, key->dsa->pub_key);
-		if(BN_is_zero(n))
-			printf("\t\t"TERM_GREEN"(ok)"TERM_RESET"   pubkey matches to parameters\n");
-		else
-			printf("\t\t"TERM_RED"(WARN)"TERM_RESET" pubkey does not match to parameters\n");
+	bn = BN_bn2hex(dsa->g);
+	printf("\t\t"TERM_BLUE"g:"TERM_RESET" 0x%s\n", bn);
+	free(bn);
 
-		// this should suffice as a test
-		// show length of priv_key as info
-		printf("\t\t(info) priv_key is %d bits long (should be <= len(q))\n", BN_num_bits(key->dsa->priv_key));
+	bn = BN_bn2hex(dsa->pub_key);
+	printf("\t\t"TERM_BLUE"pub_key:"TERM_RESET" 0x%s\n", bn);
+	free(bn);
 
-		printf("\t\t" TERM_GREEN "OK." TERM_RESET "\n");
-
-		BN_CTX_free(ctx);
-
-		BN_free(n);
-		BN_free(o);
-	}}}
+	bn = BN_bn2hex(dsa->priv_key);
+	printf("\t\t"TERM_BLUE"priv_key:"TERM_RESET" 0x%s\n", bn);
+	free(bn);
 }
 
-int main(int argc, char*argv)
+int main(int argc, char**argv)
 {
 	Key* key;
 
-
-	if(argc != 1) {
+	if(argc != 2) {
 		printf( "please give filename of private key to dump as parameter.\n"
 			"please note, that the key must not be encrypted.\n");
 		return -1;
@@ -117,8 +124,10 @@ int main(int argc, char*argv)
 	key = key_load_private(argv[1], NULL, NULL);
 
 	if(key->rsa)
-		dump_rsa(key);
+		dump_rsa(key->rsa);
 
 	if(key->dsa)
-		dump_dsa(key);
+		dump_dsa(key->dsa);
+
+	return 1;
 }

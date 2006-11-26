@@ -48,6 +48,7 @@
 #include <endian_swap.h>
 
 #include "ssh-authfile.h"
+#include "sshkey-sanitychecks.h"
 #include "term.h"
 
 char pagedir[4096];
