@@ -108,11 +108,19 @@ float linear_is_pagedir_probability(linear_handle h, void* page);
 // if no pagedir was set, returns a -EDESTADDRREQ
 int linear_to_physical(linear_handle h, addr_t log_adr, addr_t* physical_adr);
 
+// read from linear address: it has to be sure, that this data is inside
+// a single page
+int linear_read_in_page(linear_handle h, addr_t adr, void* buf, unsigned long int len);
+
 // read from linear address
-int linear_read(linear_handle h, addr_t adr, void* buf, size_t len);
+int linear_read(linear_handle h, addr_t adr, void* buf, unsigned long int len);
+
+// write to linear address: it has to be sure, that this data is inside
+// a single page
+int linear_write_in_page(linear_handle h, addr_t adr, void* buf, unsigned long int len);
 
 // write to linear address
-int linear_write(linear_handle h, addr_t adr, void* buf, size_t len);
+int linear_write(linear_handle h, addr_t adr, void* buf, unsigned long int len);
 
 // read a linearly addressed page
 int linear_read_page(linear_handle h, addr_t pagenum, void* buf);

@@ -163,7 +163,7 @@ int linear_to_physical(linear_handle h, addr_t lin_adr, addr_t* physical_adr)
 
 // read from linear address: it has to be sure, that this data is inside
 // a single page
-static int linear_read_in_page(linear_handle h, addr_t adr, void* buf, size_t len)
+int linear_read_in_page(linear_handle h, addr_t adr, void* buf, unsigned long int len)
 {
 	addr_t ladr;
 
@@ -177,7 +177,7 @@ static int linear_read_in_page(linear_handle h, addr_t adr, void* buf, size_t le
 }
 
 // read from linear address
-int linear_read(linear_handle h, addr_t adr, void* buf, size_t len)
+int linear_read(linear_handle h, addr_t adr, void* buf, unsigned long int len)
 {
 	// data may be spread over several pages. take care of each page of these
 	// and call linear_read_in_page for each of these.
@@ -188,35 +188,40 @@ int linear_read(linear_handle h, addr_t adr, void* buf, size_t len)
 
 	data_bound = adr+len;
 
+	// for each page the data resides in:
 	while(adr < data_bound) {
+		// calculate page bounds
 		page_start =  (adr % h->phy->pagesize)      * h->phy->pagesize;
 		page_end   = ((adr % h->phy->pagesize) + 1) * h->phy->pagesize;
 
+		// check, if data starts before or after pagestart
 		if(adr > page_start)
 			data_start = adr;
 		else
 			data_start = page_start;
 
+		// check, if data ends before or after pageend
 		if(data_bound > page_end)
 			data_end = page_end;
 		else
 			data_end = data_bound;
 
+		// read data in this page
 		len = data_end - data_start;
-
 		res = linear_read_in_page(h, data_start, buf, len);
 		if(res < 0)
 			return res;
 
+		// go to next page and adjust buffer
 		adr += len;
-		buf = (void*)((uint32_t)buf+len);
+		buf = (void*)((unsigned long int)buf+len);
 	}
 	return 0;
 }
 
 // write to linear address: it has to be sure, that this data is inside
 // a single page
-static int linear_write_in_page(linear_handle h, addr_t adr, void* buf, size_t len)
+int linear_write_in_page(linear_handle h, addr_t adr, void* buf, unsigned long int len)
 {
 	addr_t ladr;
 
@@ -228,11 +233,12 @@ static int linear_write_in_page(linear_handle h, addr_t adr, void* buf, size_t l
 	} else
 		return -EBADR;
 }
+
 // write to linear address
-int linear_write(linear_handle h, addr_t adr, void* buf, size_t len)
+int linear_write(linear_handle h, addr_t adr, void* buf, unsigned long int len)
 {
 	// data may be spread over several pages. take care of each page of these
-	// and call linear_write_in_page for each of these.
+	// and call linear_read_in_page for each of these.
 	addr_t page_start, page_end;
 	addr_t data_start, data_end;
 	addr_t data_bound;
@@ -240,28 +246,33 @@ int linear_write(linear_handle h, addr_t adr, void* buf, size_t len)
 
 	data_bound = adr+len;
 
+	// for each page the data resides in:
 	while(adr < data_bound) {
+		// calculate page bounds
 		page_start =  (adr % h->phy->pagesize)      * h->phy->pagesize;
 		page_end   = ((adr % h->phy->pagesize) + 1) * h->phy->pagesize;
 
+		// check, if data starts before or after pagestart
 		if(adr > page_start)
 			data_start = adr;
 		else
 			data_start = page_start;
 
+		// check, if data ends before or after pageend
 		if(data_bound > page_end)
 			data_end = page_end;
 		else
 			data_end = data_bound;
 
+		// write data in this page
 		len = data_end - data_start;
-
 		res = linear_write_in_page(h, data_start, buf, len);
 		if(res < 0)
 			return res;
 
+		// go to next page and adjust buffer
 		adr += len;
-		buf = (void*)((uint32_t)buf+len);
+		buf = (void*)((unsigned long int)buf+len);
 	}
 	return 0;
 }
