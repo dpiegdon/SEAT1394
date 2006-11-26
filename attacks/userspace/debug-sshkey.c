@@ -21,6 +21,7 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 
 #include <openssl/rsa.h>
 #include <openssl/dsa.h>
@@ -114,6 +115,7 @@ void dump_dsa(DSA* dsa)
 int main(int argc, char**argv)
 {
 	Key* key;
+	char* comment = NULL;
 
 	if(argc != 2) {
 		printf( "please give filename of private key to dump.\n"
@@ -121,7 +123,18 @@ int main(int argc, char**argv)
 		return -1;
 	}
 
-	key = key_load_private(argv[1], NULL, NULL);
+	// load private key
+	key = key_load_private(argv[1], NULL, &comment);
+
+	if(!key) {
+		printf("failed to load ``%s''!\n(wrong password or permissions?)\n", comment);
+		return -1;
+	}
+
+	if(comment == NULL)
+		comment = strdup(argv[1]);
+
+	printf("key ``%s'' loaded successfully\n", argv[1]);
 
 	if(key->rsa)
 		dump_rsa(key->rsa);
@@ -129,5 +142,6 @@ int main(int argc, char**argv)
 	if(key->dsa)
 		dump_dsa(key->dsa);
 
-	return 1;
+	return 0;
 }
+

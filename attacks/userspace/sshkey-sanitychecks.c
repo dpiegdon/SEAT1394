@@ -31,6 +31,19 @@
 // sanity-check a RSA-key
 void test_rsa(RSA* rsa)
 {{{
+	// x,y,z are public
+	// 	p is a random prime
+	// 	q is a random prime
+	// 	n = p*q   (public modulus; bit length of this is of interest)
+	//	e (public exponent): e*n is relatively prime (don't share other factors than 1)
+	//	  e is usually 3 or 65537 (Fermat's F4 number)
+	//	d = f(e,p,q)
+	//
+	//	dmp1:	?
+	//	dmq1:	?
+	//	iqmp:	?
+	// n,e are public key; d is private key
+
 	int len;
 	int i;
 	int ret;
