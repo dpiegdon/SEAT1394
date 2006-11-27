@@ -26,24 +26,23 @@ FIXME FIXME
 
 \subsubsection{Typical places to find secrets}
 
-Many applications keep secrets in their memory, some of them even locking then
+Many applications keep secrets in their memory, some of them even locking them
 into the main memory (e.g. via the \emph{mlock} function) to prevent the
-operating system from swapping them to slower media.
-
-Secret includes, among other information, \emph{authentication data},
-\emph{cryptographic key material}, \emph{random data} (e.g. to seed a
-cryptographic algorithm) and sometimes even \emph{algorithms} (see
-\emph{proprietary software}).  Authentication data can be e.g. passwords or
-private keys for signature algorithms; cryptographic key material, as the name
-says, are keys for cryptographic algorithms (like the above signature
-algorithms). These two will be of main interest for us, here.
+operating system from swapping them to slower media. ``Secrets'' includes, among
+other information, \emph{authentication data}, \emph{cryptographic key
+material}, \emph{random data} (e.g. to seed a cryptographic algorithm) and
+sometimes even \emph{algorithms} (\emph{proprietary software}). Authentication
+data can be e.g.  passwords or private keys for signature algorithms;
+cryptographic key material, as the name says, are keys for usage with
+cryptographic algorithms (like the above signature algorithms). These two will
+be of main interest in this section.
 
 Many applications using a cryptographic infrastructure for communications will
 keep once loaded passwords or keys in their main memory for successive usage.
-The operating systems protection model ensures the safety of them from other
-processes running on the same system. But by accessing the main memory we do
-have full access to this material. The only task that remains is to reconstruct
-the key material and passwords from the memory.
+The operating systems protection model ensures the safety of this information
+from other processes running on the same system; but by accessing the main
+memory we do have full access to this material. The only task that remains is to
+reconstruct the key material and passwords from the memory.
 
 As an example, the following applications are of interest:
 
@@ -66,7 +65,7 @@ As an example, the following applications are of interest:
 
 	\item The computer BIOS or PGP-Wholedisk: the computer can be locked
 	with a BIOS password or the harddisk can be encrypted. For a sample
-	attack, see \cite{rux2k6firewire}.
+	attack, see \cite{rux2k6firewire:2006}.
 
 \end{itemize}
 
@@ -74,7 +73,7 @@ As an example, the following applications are of interest:
 \subsubsection{Example attack: ssh-agent snarfer}
 
 \label{ssh-agent-snarfer} To proof that it is rather easy to obtain secret keys
-from a system I have written a sample attack to obtain \emph{ssh public/private
+from a process I have written a sample attack to obtain \emph{ssh public/private
 keypairs} from \texttt{ssh-agent}s via \emph{firewire}.
 
 When using \texttt{ssh} for accessing remote computers it is possible to
@@ -126,36 +125,36 @@ To obtain a keypair from an agent via firewire, a staged attack is required:
 	
 	\item This string is pointed to by the \emph{identity}-struct, that also
 	contains a pointer to a \emph{KEY}-struct. To find the
-	\emph{identity}-struct, we have to seek the address of the above string
+	\emph{identity}-struct, one has to seek the address of the above string
 	in the heap. \emph{Each} loaded keypair has one \emph{identity}-struct
-	and can be found by searching the above pattern in the full heap and
-	then searching its address in the heap.	To create a better
-	search-algorithm remains as an exercise to the interested reader.
-
+	and can be found by searching its comment field in the full heap and
+	then searching its address in the heap.
+	
 	\item Once the \emph{KEY}-struct has been found, the reconstruction to a
 	local copy consists of a lot of memory-jumping, pointer arithmetics and
 	alike, but is fully implemented for both DSA and RSA keypairs by now.
+	To create a better search-algorithm remains as an exercise to the
+	interested reader.
 
-	\item Each found keypair is then saved to a file.
+	\item Save each found keypair to a file.
 	
 \end{enumerate}
 
-As stated obove, the keypairs reside decrypted in the memory of the ssh-agent
-(even if overtime) and thus, when stored to a file, can be immediately used by
-the command \texttt{ssh~-i~keyfile~user@host}~.  Such an attack will not take
-much longer than reading the first 1 GiB of physical RAM, that is
-\emph{typically no more than 15 seconds}. If an attack fails but an agent was
+As stated above, the keypairs reside decrypted in the memory of the agent (even
+if overtime) and thus, when stored to a file, can be immediately used by the
+command \texttt{ssh~-i~keyfile~user@host}~.  Such an attack will not take much
+longer than searching the first 1 GiB of physical RAM for pagedirectories, that
+is \emph{typically no more than 15 seconds}. If an attack fails but an agent was
 found, it would be possible to just dump the heap of the agent and stage a more
-thorough attack at a later time.  Once the heap is dumped, all required data is
-obtained.  A similar attack via ptrace should be possible as well.
-
+thorough attack at a later time. Once the heap is dumped, all required data is
+obtained. A similar attack via \emph{ptrace} should be possible as well.
 
 The reader may refer to \texttt{attacks/userspace/snarf-sshkey.c} in the
-corresponding tarball for the source-code of the working attack. As the attack
-dumps the key in a format directly usable by \texttt{ssh} is is required to link
-against \texttt{libssh.a}, which is part of \emph{openssh}. Because of this, to
-compile the snarfer it is required to have a \texttt{./configure}d
-\emph{openssh}-source in \texttt{attacks/userspace/openssh/}. Please keep in
+corresponding tarball for the source-code of the attack. As the attack dumps the
+key in a format directly usable by \texttt{ssh} is is required to link against
+\texttt{libssh.a}, which is part of \emph{openssh}. Because of this, it is
+required to have a \texttt{./configure}d \emph{openssh}-source in
+\texttt{attacks/userspace/openssh/} to compile the snarfer. Please also keep in
 mind that this attack will only find keys \emph{without comment-fields} and
 loaded with the absolute path \texttt{\$HOME/.ssh/}.
 
