@@ -97,11 +97,12 @@ void dump_page(FILE* f,uint32_t pn, char* page)
 
 // get_process_name and resolve_env are using the stack bottom of the
 // given process:
-// i have found that after a process starts and parses its ENV and ARGVs,
+// i have found that after a process starts and parses its ENV and ARGV,
 // all those are in the uppermost page of the userspace (adr < 0xc0000000).
 // in this page, the uppermost (-1) argument is the process name (with
-// about five (5) \0 at the end of the string, then environment variables
-// follow, each separated by a \0. then the ARGVs and then \0\0.
+// about five NUL-characters at the end of the string. before it, environment
+// variables follow, each separated by a NUL-character. before this, the
+// ARGV and before this, \0\0.
 
 // return the process name in a malloc'ed buffer or NULL, if none.
 // set stack_bottom so successive queries (resolve_env) don't need to
@@ -275,7 +276,7 @@ BIGNUM* fix_bignum(linear_handle lin, BIGNUM* rb)
 	b->flags = BN_FLG_MALLOCED;
 
 	// don't use dmax but top, as this is the number of really
-	// used words.
+	// used words. all words above top are leading zeroes.
 	b->dmax = b->top;
 
 	// load b->d
@@ -519,7 +520,7 @@ void save_key(linear_handle lin, char* key_comment, Key* key)
 	free(filename);
 	free(comment);
 	free(username);
-  }}}
+}}}
 
 
 
@@ -537,7 +538,6 @@ void check_ssh_agent(linear_handle lin)
 #	define REMOTE_TO_LOCAL(r,lbase)	((char*) (lbase + ((uint32_t)r) - (AGENT_START << 12)) )
 #	define LOCAL_TO_REMOTE(l,lbase)	((char*) (l - lbase + (AGENT_START << 12)) )
 
-	printf( TERM(TERM_A_BLINK,TERM_C_BG_RED) "hit:" TERM_RESET " ");
 	char identity_path[1024];
 	char* heap;	// actually this is a dump of the executable and heap
 			// but we don't care for the executable.
@@ -557,10 +557,12 @@ void check_ssh_agent(linear_handle lin)
 	FILE* heapfile;
 #endif
 
+	printf( TERM(TERM_A_BLINK,TERM_C_BG_RED) "hit:" TERM_RESET " ");
+
 	// get string we search for
 	home = resolve_env(lin, "HOME");
 	if(!home) {
-		printf("\tfailed to lookup $HOME!> ");
+		printf("failed to lookup $HOME!> ");
 		return;
 	}
 
