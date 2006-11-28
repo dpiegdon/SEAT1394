@@ -80,12 +80,20 @@ int proc_info(linear_handle h, int *arg_c, char ***arg_v, int *env_c, char ***en
 	static char stack[4096*MAX_ARG_PAGES];
 	addr_t pn;
 	addr_t stack_bottom_page;
-	char *p;
 	int valid_page;
+
+	char *p;
 	int i;
-	char *argv0p;
-	char **argv; int argc; char **largv;
-	char **envv; int envc; char **lenvv;
+
+	char *rargv0p;
+	char *largv0p;
+	char **argv;
+	int argc;
+	char **largv;
+
+	char *envv0p;
+	int envc;
+	char **lenvv;
 
 	// seek stack-bottom
 	pn = 0xbffff;
@@ -101,8 +109,12 @@ int proc_info(linear_handle h, int *arg_c, char ***arg_v, int *env_c, char ***en
 	}
 	if(!valid_page) {
 		// there was no stack...
+		// may be a kernel-thread. so this MAY be no error
 		printf("(no stack found)");
-		return 0;
+		*bin = NULL;
+		*arg_c = *env_c = 0;
+		*arg_v = *env_v = NULL;
+		return 1;
 	}
 	stack_bottom_page = pn;
 
@@ -110,17 +122,17 @@ int proc_info(linear_handle h, int *arg_c, char ***arg_v, int *env_c, char ***en
 	if(linear_read_page(h, stack_bottom_page, stack+4096*(MAX_ARG_PAGES-1))) {
 		// the stack bottom was not readable...
 		printf("(stackbottom (@0x%08llx) unreadable.)", stack_bottom_page);
+		*bin = NULL;
 		return 0;
 	}
 	// now read the following pages
 	bzero(stack,4096*(MAX_ARG_PAGES-1));
 	// page "0" was read above.
 	for(i = 1; i < MAX_ARG_PAGES; i++)
-		if(linear_read_page(h, stack_bottom_page - i, stack + 4096 * (MAX_ARG_PAGES-(i+1))))
-			break;
+		linear_read_page(h, stack_bottom_page - i, stack + 4096 * (MAX_ARG_PAGES-(i+1)));
 
-//for(i = 0; i < MAX_ARG_PAGES; i++)
-//	dump_page(stdout, stack_bottom_page - (MAX_ARG_PAGES-1) + i, stack+4096*(i));
+for(i = 0; i < MAX_ARG_PAGES; i++)
+	dump_page(stdout, stack_bottom_page - (MAX_ARG_PAGES-1) + i, stack+4096*(i));
 
 	// find name of binary
 	p = stack + 4096*MAX_ARG_PAGES - 6;
@@ -132,10 +144,12 @@ int proc_info(linear_handle h, int *arg_c, char ***arg_v, int *env_c, char ***en
 	// point to the first non-NUL-char, that is argv[0]
 	while (*(p-1) || *(p-2))
 		p--;
-	// this is the address of argv[0]
-	argv0p = (char*)((uint32_t)(p - stack) + (((uint32_t)stack_bottom_page - MAX_ARG_PAGES + 1) * 4096));
+	// this is the local address of argv[0]
+	largv0p = p;
+	// this is the remote address of argv[0]
+	rargv0p = (char*)((uint32_t)(p - stack) + (((uint32_t)stack_bottom_page - MAX_ARG_PAGES + 1) * 4096));
 #ifdef __BIG_ENDIAN__
-	argv0p = (char*)endian_swap32((uint32_t)argv0p);
+	rargv0p = (char*)endian_swap32((uint32_t)rargv0p);
 #endif
 
 	// now find the address of argv[0] in the stack;
@@ -145,7 +159,7 @@ int proc_info(linear_handle h, int *arg_c, char ***arg_v, int *env_c, char ***en
 	p = stack; argv = NULL;
 	while(p) {
 		argv = (char**)p;
-		p = memmem(p+1, MAX_ARG_PAGES * 4096 - (p-stack), &argv0p, 4);
+		p = memmem(p+1, MAX_ARG_PAGES * 4096 - (p-stack), &rargv0p, 4);
 	}
 	if(!argv) {
 		printf("(did not find argv[] on stack of \"%s\")", *bin);
@@ -161,57 +175,59 @@ int proc_info(linear_handle h, int *arg_c, char ***arg_v, int *env_c, char ***en
 		printf("(more than 32768 args for \"%s\")", *bin);
 		return 0;
 	}
-	if(argc <= 0) {
+	if(argc < 1) {
 		// oops... a program never can have <1 argument,
 		// as argv[1] is the string by which it was execve()'d
 		printf("(no args or negative argc for \"%s\")", *bin);
 		return 0;
 	}
-	if(argv[argc]) {
-		printf("(last arg != 0) for \"%s\"", *bin);
-		return 0;
-	}
 
-	// translate remote argv to local argv.
+	// now that we do have argc, we know how many arguments are real arguments, even if they contain an '=' (like "--foo=bar"). we could
+	// use the argv and envv, but some application modify or delete these. so we will parse the list and create our own vectors.
+
+	// create largv
 	largv = malloc(sizeof(char*) * (argc+1));
-	largv[argc] = 0;
-	for(i = 0; i < argc; i++) {
-		// get address
-		if(argv[i]) {
-#ifdef __BIG_ENDIAN__
-			largv[i] = (char*)endian_swap32((uint32_t)argv[i]);
-#else
-			largv[i] = argv[i];
-#endif
-			// and transform it to a local address
-			largv[i] = (char*)(  (uint32_t)largv[i] - ((uint32_t)stack_bottom_page - MAX_ARG_PAGES + 1) * 4096 + (uint32_t)stack  );
-		} else {
-			largv[i] = NULL;
+	largv[0] = largv0p;
+	largv[argc] = NULL;
+	p = largv0p;
+	for(i = 1; i < argc; i++) {
+		// seek end of string
+		while(*p && (p < ((*bin) - 1)))
+			p++;
+		// go to next
+		p++;
+		if(p >= *bin-1) {
+			// argc was too big?!
+			free(largv);
+			printf("(argc > found arguments)");
+			return 0;
 		}
+		largv[i] = p;
 	}
+	p = p + strlen(p) + 1;
+	envv0p = p;
 
-	// count envv's size
-	envv = &(argv[argc+1]);
+	// count env-vars
 	envc = 0;
-	while(envv[envc])
+	while(p < (*bin - 1)) {
 		envc++;
-
-	// translate remote envv to local envv.
-	envv = &(argv[argc+1]);
+		while(*p)
+			p++;
+		p++;
+	}
+	// and create envv
 	lenvv = malloc(sizeof(char*) * (envc+1));
-	for(i = 0; i < envc; i++) {
-		// get address
-		if(envv[i]) {
-#ifdef __BIG_ENDIAN__
-			lenvv[i] = (char*)endian_swap32((uint32_t)envv[i]);
-#else
-			lenvv[i] = envv[i];
-#endif
-			// and transform it to a local address
-			lenvv[i] = (char*)( (uint32_t)lenvv[i] - ((uint32_t)stack_bottom_page - MAX_ARG_PAGES + 1) * 4096 + (uint32_t)stack  );
-		} else {
-			lenvv[i] = NULL;
-		}
+	lenvv[0] = envv0p;
+	lenvv[envc] = NULL;
+	p = envv0p;
+	for(i = 1; i < envc; i++) {
+		// seek end of string
+		while(*p && (p < (*bin - 1)))
+			p++;
+		// go to next
+		p++;
+		if(p < *bin)
+			lenvv[i] = p;
 	}
 
 	*arg_c = argc;
@@ -272,7 +288,7 @@ int main(int argc, char**argv)
 	// then, for each found, print process name
 	for( pn = 0; pn < 0x80000; pn++ ) {
 		if((pn%0x100) == 0) {
-			printf("page 0x%05llx\r", pn);
+			printf("0x%05llx\r", pn);
 			fflush(stdout);
 		}
 		if(linear_is_pagedir_fast(lin, pn)) {
@@ -280,7 +296,7 @@ int main(int argc, char**argv)
 			physical_read_page(phy, pn, page);
 			prob = linear_is_pagedir_probability(lin, page);
 			if(prob > 0.01) {
-				printf("page 0x%05llx prob: %0.3f ", pn, prob);
+				printf("0x%05llx @%0.3f%% ", pn, prob);
 				if(linear_set_new_pagedirectory(lin, page)) {
 					printf("\nloading pagedir failed\n");
 					continue;
@@ -292,13 +308,23 @@ int main(int argc, char**argv)
 				int i;
 
 				if(!proc_info(lin, &argc, &argv, &envc, &envv, &bin)) {
-					printf(" "TERM_RED"FAIL"TERM_RESET".\n");
+					printf(" "TERM_RED"FAIL"TERM_RESET": %s\n", bin);
 				} else {
-					printf("\t\t%20s\t\t", bin);
+					if(argc>0) {
+						printf(" %40s\t", bin); fflush(stdout);
 
-					for(i = 0; i<argc; i++)
-						printf("%s ", argv[i]);
-					putchar('\n');
+						for(i = 0; i<argc; i++) {
+							printf("%s ", argv[i]); fflush(stdout);
+						}
+						putchar('\n');
+						for(i = 0; i<envc; i++) {
+							printf("\t\t\t\tENV(%d) %p", i, envv[i]);
+							fflush(stdout);
+							printf("%s\n", envv[i]);
+						}
+					} else {
+						putchar('\n');
+					}
 				}
 			}
 		}
