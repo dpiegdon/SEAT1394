@@ -5,6 +5,44 @@
 
 \section{Translating virtual to physical addresses}
 
+\subsection{Motivation}
+
+There are two obvious ways to extract useful information from a physical memory
+source:
+
+\begin{itemize}
+
+	\item It is possible to parse the operating systems internal data
+	structures holding all relevant information about loaded drivers,
+	running processes et al.
+	
+	\item It is possible to use the information that the operating system
+	provides to the hardware to tell it about the virtual address spaces of
+	each process.
+	
+\end{itemize}
+
+The first scenario can change between operating systems and even versions and
+branches of the same operating system and the underlying architecture, while the
+latter changes only with the underlying architecture. On the other hand, the
+first approach will give much more information about the system than the second,
+as we obtain all information directly from the kernel structures, while using
+the second approach we only can enter virtual address spaces of processes.
+
+\cite{finding_digital_evidence_in_physical_memory:2006} is analysing parsing of
+kernel-structs of windows and linux kernels. I will in the following use the
+second approach for most attacks, as this seems to be more robust and
+automatiseable. As the above mentioned paper is about \emph{finding an attacker}
+and not \emph{attacking}, the forensic personell does know about the
+architecture, the operating system and version and can build a copy of the
+system to test its tools, while an attacker only can guess the architecture and
+operating system and needs more robust tools for his attacks.  (Obviously this
+is only a short-term argument, as an attacker can also write such tools for
+\emph{all} OS version and architecture combinations... but the heck with
+this...)
+
+\subsection{Basic address translations}
+
 \label{address_translation} All multitasking environments that fulfill current
 requirements have to provide virtual address spaces for each running process or
 thread. For performance and security reason this address translation from a
