@@ -1,4 +1,6 @@
 /*  $Id$
+ *  vim: fdm=marker
+ *
  *  remote-ps : ps on a remote linux-ia32-box via firewire
  *
  *  Copyright (C) 2006
@@ -67,20 +69,14 @@ void dump_page(FILE* f,uint32_t pn, char* page)
 		fprintf(f,"\n");
 	}
 }}}
-///////////////////////////////////////////////////////////////////////////////
 
+///////////////////////////////////////////////////////////////////////////////
 // on linux, the max environment and argument is limited by PAGESIZE * MAX_ARG_PAGES
 // MAX_ARG_PAGES is 32 (statically defined in include/linux/binfmts.h)
-// so we will read 32 pages of the stack (if there are that many)
 #define MAX_ARG_PAGES 32
-
 #define STRING_SEEK_START(p) { if(*p) {while(*p) p--; p++;} }
-
-#define REMOTE_TO_LOCAL(r,lbase)	((char*) (lbase + ((uint32_t)r) - (AGENT_START << 12)) )
-#define LOCAL_TO_REMOTE(l,lbase)	((char*) (l - lbase + (AGENT_START << 12)) )
-
 int proc_info(linear_handle h, int *arg_c, char ***arg_v, int *env_c, char ***env_v, char **bin)
-{
+{{{
 	static char stack[4096*MAX_ARG_PAGES];
 	addr_t pn;
 	addr_t stack_bottom_page;
@@ -225,12 +221,11 @@ int proc_info(linear_handle h, int *arg_c, char ***arg_v, int *env_c, char ***en
 	*env_v = lenvv;
 
 	return 1;
-}
-
+}}}
 ///////////////////////////////////////////////////////////////////////////////
 
 int main(int argc, char**argv)
-{
+{{{
 	physical_handle phy;
 	union physical_type_data phy_data;
 	linear_handle lin;
@@ -318,5 +313,5 @@ int main(int argc, char**argv)
 	// exit 
 	raw1394_destroy_handle(phy_data.ieee1394.raw1394handle);
 	return 0;
-}
+}}}
 
