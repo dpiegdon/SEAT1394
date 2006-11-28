@@ -34,6 +34,8 @@
 #include <linear.h>
 #include <endian_swap.h>
 
+#include "term.h"
+
 char pagedir[4096];
 
 #define NODE_OFFSET     0xffc0
@@ -295,7 +297,7 @@ int main(int argc, char**argv)
 				int i;
 
 				if(!proc_info(lin, &argc, &argv, &envc, &envv, &bin)) {
-					printf(" FAIL.\n");
+					printf(" "TERM_RED"FAIL"TERM_RESET".\n");
 				} else {
 					printf("\t\t%20s\t\t", bin);
 

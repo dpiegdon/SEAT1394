@@ -13,7 +13,7 @@ openssh/entropy.o: openssh/entropy.c
 	make -C openssh/ entropy.o
 
 remote-ps: remote-ps.c
-	gcc remote-ps.c -Wall -W -lphysical -llinear -L/home/lostrace/lib -I/home/lostrace/include -o remote-ps
+	gcc remote-ps.c -Wall -W -lphysical -llinear -L/home/lostrace/lib -I/home/lostrace/include -DUSETERM -o remote-ps
 
 snarf-sshkey: openssh/openbsd-compat/libopenbsd-compat.a openssh/libssh.a openssh/entropy.o snarf-sshkey.o sshkey-sanitychecks.o
 	gcc snarf-sshkey.o sshkey-sanitychecks.o openssh/entropy.o						\
