@@ -42,34 +42,6 @@ char pagedir[4096];
 
 #define NODE_OFFSET     0xffc0
 
-void dump_page(FILE* f,uint32_t pn, char* page)
-{{{
-	uint32_t addr;
-	int i,j;
-	char c;
-	fprintf(f, "dump page %x\n", pn);
-
-	addr = pn * 4096;
-	for(i = 0; i<4096; i+=16) {
-		fprintf(f, "page 0x%05x, addr 0x%08x: ", pn, addr+i);
-		for(j = 0; j < 16; j++) {
-			fprintf(f, "%02hhx ", (page+i)[j]);
-			if((j+1)%4 == 0 && j)
-				fputc(' ',f);
-		}
-		fprintf(f,"  |  ");
-		for(j = 0; j < 16; j++) {
-			c = (page+i)[j];
-			if(c < 0x20)
-				c = '.';
-			if(c >= 0x7f)
-				c = '.';
-			fputc(c,f);
-		}
-		fprintf(f,"\n");
-	}
-}}}
-
 ///////////////////////////////////////////////////////////////////////////////
 // on linux, the max environment and argument is limited by PAGESIZE * MAX_ARG_PAGES
 // MAX_ARG_PAGES is 32 (statically defined in include/linux/binfmts.h)
@@ -130,9 +102,6 @@ int proc_info(linear_handle h, int *arg_c, char ***arg_v, int *env_c, char ***en
 	// page "0" was read above.
 	for(i = 1; i < MAX_ARG_PAGES; i++)
 		linear_read_page(h, stack_bottom_page - i, stack + 4096 * (MAX_ARG_PAGES-(i+1)));
-
-for(i = 0; i < MAX_ARG_PAGES; i++)
-	dump_page(stdout, stack_bottom_page - (MAX_ARG_PAGES-1) + i, stack+4096*(i));
 
 	// find name of binary
 	p = stack + 4096*MAX_ARG_PAGES - 6;
@@ -313,15 +282,17 @@ int main(int argc, char**argv)
 					if(argc>0) {
 						printf(" %40s\t", bin); fflush(stdout);
 
+						// print argv
 						for(i = 0; i<argc; i++) {
 							printf("%s ", argv[i]); fflush(stdout);
 						}
 						putchar('\n');
-						for(i = 0; i<envc; i++) {
-							printf("\t\t\t\tENV(%d) %p", i, envv[i]);
-							fflush(stdout);
-							printf("%s\n", envv[i]);
-						}
+						// print envv
+//						for(i = 0; i<envc; i++) {
+//							printf("\t\t\t\tENV(%d) %p", i, envv[i]);
+//							fflush(stdout);
+//							printf("%s\n", envv[i]);
+//						}
 					} else {
 						putchar('\n');
 					}
