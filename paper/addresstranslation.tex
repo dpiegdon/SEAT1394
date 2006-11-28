@@ -22,14 +22,22 @@ source:
 	
 \end{itemize}
 
-The first scenario can change between operating systems and even versions and
-branches of the same operating system and the underlying architecture, while the
-latter changes only with the underlying architecture. On the other hand, the
-first approach will give much more information about the system than the second,
-as we obtain all information directly from the kernel structures, while using
-the second approach we only can enter virtual address spaces of processes.
+The first scenario will not work between different operating systems and
+architectures, it will be neccessary to write a parser for each combination of
+them, possibly even for different versions of the same operating system.
 
-\cite{finding_digital_evidence_in_physical_memory:2006} is analysing parsing of
+The latter uses an information structure that only changes between different
+architectures, as the architecture relies on it. Furthermore there is a well
+defined algorithm for using this information (implemented in hardware in the
+architecture, but well defined in the reference manuals for this architecture,
+so system designers can provide valid data to the hardware).
+
+On the other hand, the first approach will give much more information about the
+system than the second, as we obtain all information directly from the kernel
+structures, while using the second approach we only can enter virtual address
+spaces of processes.
+
+\cite{finding_digital_evidence_in_physical_memory:2006} is parsing
 kernel-structs of windows and linux kernels. I will in the following use the
 second approach for most attacks, as this seems to be more robust and
 automatiseable. As the above mentioned paper is about \emph{finding an attacker}
@@ -39,7 +47,7 @@ system to test its tools, while an attacker only can guess the architecture and
 operating system and needs more robust tools for his attacks.  (Obviously this
 is only a short-term argument, as an attacker can also write such tools for
 \emph{all} OS version and architecture combinations... but the heck with
-this...)
+this...).
 
 \subsection{Basic address translations}
 

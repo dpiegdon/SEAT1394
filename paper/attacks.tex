@@ -12,7 +12,7 @@
 
 \subsubsection{Identifying processes}
 
-Once a address translation table has been found, the question is: what kind of
+Once an address translation table has been found, the question is: what kind of
 process resides in this virtual address space?
 
 For userspace applications there is a simple way to identify a process's
@@ -128,13 +128,13 @@ To obtain a keypair from an agent via firewire, a staged attack is required:
 	\emph{identity}-struct, one has to seek the address of the above string
 	in the heap. \emph{Each} loaded keypair has one \emph{identity}-struct
 	and can be found by searching its comment field in the full heap and
-	then searching its address in the heap.
+	then searching its address in the heap. (The search algorithm (2,3,4) is
+	far from perfect but works rather well. To create a better algorithm
+	remains as an exercise to the interested reader.)
 	
 	\item Once the \emph{KEY}-struct has been found, the reconstruction to a
 	local copy consists of a lot of memory-jumping, pointer arithmetics and
 	alike, but is fully implemented for both DSA and RSA keypairs by now.
-	To create a better search-algorithm remains as an exercise to the
-	interested reader.
 
 	\item Save each found keypair to a file.
 	
