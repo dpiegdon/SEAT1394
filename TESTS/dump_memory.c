@@ -82,11 +82,10 @@ int main(int argc, char**argv)
 
 	// release handles
 	printf("rel phy handle..\n"); fflush(stdout);
+	raw1394_destroy_handle(phy_data.ieee1394.raw1394handle);
 	physical_handle_release(phy);
 	
-	// exit 
 	close(dumpfd);
-	raw1394_destroy_handle(phy_data.ieee1394.raw1394handle);
 
 	return 0;
 }

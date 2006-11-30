@@ -100,7 +100,6 @@ int main(int argc, char**argv)
 	}
 
 	
-	// exit 
 	close(dumpfd);
 #ifdef PHYSICAL_DEV_MEM
 	close(memfd);

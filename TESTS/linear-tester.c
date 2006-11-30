@@ -191,18 +191,17 @@ int main(
 	// FUNSTUFF end
 
 	// release handles
-	printf("rel lin handle..\n"); fflush(stdout);
-	linear_handle_release(lin);
-	printf("rel phy handle..\n"); fflush(stdout);
-	physical_handle_release(phy);
-	
-	// exit 
 #ifdef PHYSICAL_DEV_MEM
 	close(memfd);
 #endif
 #ifdef PHYSICAL_FIREWIRE
 	raw1394_destroy_handle(phy_data.ieee1394.raw1394handle);
 #endif
+	printf("rel lin handle..\n"); fflush(stdout);
+	linear_handle_release(lin);
+	printf("rel phy handle..\n"); fflush(stdout);
+	physical_handle_release(phy);
+	
 	return 0;
 }
 
