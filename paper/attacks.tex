@@ -15,19 +15,19 @@
 Once an address translation table has been found, the question is: what kind of
 process resides in this virtual address space?
 
-For userspace applications there is a simple way to identify a process's
-\emph{filename}, its \emph{command line arguments} and even its full set of
-\emph{environment variables}: All this information is often required by a
+For userspace applications on IA32-linux there is a simple way to identify a
+process's \emph{filename}, its \emph{command line arguments} and even its full
+set of \emph{environment variables}: All this information is often required by a
 process and thus the kernel will provide it to the process by copying it to the
-uppermost stack-page, i.e.  the stack-page that is found first when seeking from
-\texttt{0xbfff~f000} downward.
+stacks bottom pages, i.e.  the stack-pages that are found first when seeking
+from \texttt{0xbfff~f000} downward.
 
 FIXME FIXME
 
 \subsubsection{Typical places to find secrets}
 
 Many applications keep secrets in their memory, some of them even locking them
-into the main memory (e.g. via the \emph{mlock} function) to prevent the
+into the main memory\footnote{e.g. via the \emph{mlock} function} to prevent the
 operating system from swapping them to slower media. ``Secrets'' includes, among
 other information, \emph{authentication data}, \emph{cryptographic key
 material}, \emph{random data} (e.g. to seed a cryptographic algorithm) and
