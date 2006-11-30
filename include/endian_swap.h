@@ -2,6 +2,8 @@
 #ifndef __ENDIAN_SWAP_H__
 # define __ENDIAN_SWAP_H__
 
+#include <stdint.h>
+
 // endian_swapXX will convert from big to little endianess
 // and also from little to big endianess.
 //
@@ -11,7 +13,7 @@
 // (e.g. via physical mem), we need to change it, even
 // if htons does not do anything... :(
 
-inline uint64_t endian_swap64(uint64_t val)
+static inline uint64_t endian_swap64(uint64_t val)
 {
 	uint64_t sval;
 
@@ -27,7 +29,7 @@ inline uint64_t endian_swap64(uint64_t val)
 	return sval;
 }
 
-inline uint32_t endian_swap32(uint32_t val)
+static inline uint32_t endian_swap32(uint32_t val)
 {
 	uint32_t sval;
 
@@ -39,7 +41,7 @@ inline uint32_t endian_swap32(uint32_t val)
 	return sval;
 }
 
-inline uint16_t endian_swap16(uint32_t val)
+static inline uint16_t endian_swap16(uint32_t val)
 {
 	uint16_t sval;
 
