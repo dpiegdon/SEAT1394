@@ -2,43 +2,44 @@ seminar paper outline:
 
 no.	title												progress code:		progress text:
 
-0	TOC												  -			  50% :-)
+0	TOC												  -			 95%
 
-1	abstract: physical addressed/plain memory hacking						  -			  0%
+1	Abstract											  -			 10%
 
-2	physical addressed/plain memory sources: libphysical						 75%			  0%
-2.1	generic problems: caching, swapped memory, ...							  -			  0%
-2.2	firewire											 80%			  0%
-2.2.1	physical security, attacks with embedded devices like ipod					  -			  0%
-2.2.2	problems with firewire: windows DMA, ...; solutions: config rom copying, ...			 90%			  0%
-2.3	filedescriptor: /dev/mem, dumps									 90%			  0%
-2.3.1	problems with /dev/mem (in linux 3G1G): custom mapping?						  -			  0%
-2.4	other possible sources: qemu, suspend-to-disk images, ...					 25%			  0%
+2	Physically addressable memory sources: libphysical						 90%			 95%
+2.1	Generic problems: swapping, multiple accessors, caching, address translation			  -			 95%
+2.2	IEEE1394											 90%			 95%
+2.2.1	Physical security, attacks with embedded devices like iPod					  -			 95%
+2.2.2	Problems with firewire, solutions								 90%			 95%
+2.3	Filedescriptor: /dev/mem, memory dumps								 95%			 95%
+2.3.1	Problems with /dev/mem, solutions								  -			 95%
+2.4	Other sources											 25%			 95%
 
-3	problem of physical->linear mapping, paging: liblinear						 95%			  0%
-3.1	finding pagedirectories										 75%			  0%
-3.1.1	OS and arch-dependency, typical address layout							 70%			  0%
-3.1.2	matching via statistics: NCD (nearest compression distance)					 95%			  0%
-3.2	example-implementation: ia32 backend								 95%			  0%
+3	Translating virtual to physical addresses							 95%			 95%
+3.1	Motivation											  -			 95%
+3.2	Basic address translation									  -			 95%
+3.3	Example implementation: IA32 backend for liblinear						 95%			 95%
+3.4	Finding address translation tables								 80%			 95%
+3.4.1	OS and architecture dependency, typical address spacce layout					 70%			 95%
+3.4.2	Matching via statistics: NCD (normalized compression distance)					 95%			 95%
 
-4	possible attack-vectors										  5%			  0%
-4.1	userspace											 10%			  0%
-4.1.1	identifying processes										 80%			  0%
-4.1.2	overwriting process code									  0%			  0%
-4.1.3	overwriting library code									  0%			  0%
-4.1.4	overwriting stack and return address on stack							  0%			  0%
-4.2	kernelspace											  0%			  0%
-4.2.1	emulating /dev/kmem; using typical /dev/kmem rootkit						  0%			  0%
-4.2.2	resolving kernel addresses (by pattern matching?)						  0%			  0%
-4.3	information gathering: secret keys, passwords, ...						 25%			  0%
-4.3.1	typical places to find secret keys:								  .			  .
-	sshd, ssh-agent, gpg, vpn-daemons, ssl-enabled apps, fetchmail					 70%			  0%
-4.3.2	matching (NCD, entropy?) to find secret keys							  0%			  0%
-4.4	bootstrapping custom operating systems								  0%			  0%
+4	Attack vectors											 30%			 30%
 
-5	conclusion											  -			  0%
+4.1	Information Gathering										 25%			 70%
+4.1.2	Identifying processes										 90%			 95%
+4.1.2	Typical places to find secret keys								 60%			 95%
+4.1.3	Example attack: ssh-agent snarfer								 90%			 95%
+4.1.4	Matching and statistics to find secret keys							  0%			 60%
+4.2	Userspace Modifications										 10%			  0%
+4.2.2	Overwriting process code									  0%			  0%
+4.2.3	Overwriting library code									  0%			  0%
+4.2.4	Overwriting stack and return addresses								  0%			  0%
+4.3	Kernelspace											  0%			  0%
+4.3.1	Emulating /dev/kmem										  0%			  0%
+4.3.2	Resolving kernel addresses									  0%			  0%
+4.4	Bootstrapping custom operating systems								  0%			  0%
 
-6	acknowledgements										  -			  0%
+5	Conclusion											  -			  0%
 
-7	references											  -			  0%
+6	Acknowledgements										  -			  0%
 
