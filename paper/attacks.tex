@@ -165,11 +165,20 @@ loaded with the absolute path \texttt{\$HOME/.ssh/}.
 \subsubsection{Matching and statistics to find secret keys}
 
 \cite{hide_n_seek:1998} introduces some schemes to find secret keys in random
-data and countermeasures. It takes a special look at finding private RSA keys if
-their corresponding public keys are known and finding (public) keys by searching
-high-entropy regions.
-
-FIXME: paper nochmal lesen und bla bla...
+data and some countermeasures. It takes a special look at finding private RSA
+keys if their corresponding public keys are known and finding keys by searching
+high-entropy regions. Though I encourage the reader to read this interesting
+paper, the circumstances are most likely very different now: cheap and small
+storage media like flash-memory and small harddisks have increased portable
+storage to a huge size, equal or larger than the memory a computer system
+typically has. Thus, an attacker can just dump the full memory or a subset of it
+(like the virtual address space of a single process) that is promising to
+contain a secret. A thorough attack can then be staged later.  Still, searching
+private keys with the introduced methods can be very helpful, if reconstruction
+of the used data-structures is impossible or more expensive. Furthermore, when
+trying to obtain a private key, often enough the corresponding public key is
+unknown. This invalidates the approaches introduced to find RSA secret keys that
+require the public key.
 
 \subsection{Userspace Modifications}
 
