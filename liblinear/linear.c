@@ -27,7 +27,7 @@
 #include "lin_ia32.h"
 
 // request a new handle. returns NULL on error
-linear_handle __attribute__ ((visibility ("hidden")))
+linear_handle __attribute__ ((visibility ("default")))
 linear_new_handle()
 {
 	linear_handle h;
@@ -41,7 +41,7 @@ linear_new_handle()
 }
 
 // associate a linear handle with a physical memory source and a memory-architecture
-int __attribute__ ((visibility ("hidden")))
+int __attribute__ ((visibility ("default")))
 linear_handle_associate(linear_handle h, physical_handle p, enum architecture arch)
 {
 	if(!h)
@@ -81,7 +81,7 @@ linear_handle_associate(linear_handle h, physical_handle p, enum architecture ar
 }
 
 // release a handle
-int __attribute__ ((visibility ("hidden")))
+int __attribute__ ((visibility ("default")))
 linear_handle_release(linear_handle h)
 {
 	if(!h)
@@ -98,7 +98,7 @@ linear_handle_release(linear_handle h)
 // physical source.
 // the data in pagedir is not touched and not used after linear_set_new_pagedirectory(),
 // all needed data is internally buffered.
-int __attribute__ ((visibility ("hidden")))
+int __attribute__ ((visibility ("default")))
 linear_set_new_pagedirectory(linear_handle h, void* pagedir)
 {
 	if(h && (h->arch != arch_none)) {
@@ -109,7 +109,7 @@ linear_set_new_pagedirectory(linear_handle h, void* pagedir)
 
 // load_new_pagedir will load a page from the physical source and use this page as the
 // new pagedir via set_new_pagedirectory.
-int __attribute__ ((visibility ("hidden")))
+int __attribute__ ((visibility ("default")))
 linear_load_new_pagedir(linear_handle h, addr_t pagedir_pageno)
 {
 	void* pagedir;
@@ -135,7 +135,7 @@ linear_load_new_pagedir(linear_handle h, addr_t pagedir_pageno)
 // gives a quick guess, if (1) the _physical_ page is a page-directory on this
 // architecture or not (0)
 // < 0 on error
-int __attribute__ ((visibility ("hidden")))
+int __attribute__ ((visibility ("default")))
 linear_is_pagedir_fast(linear_handle h, addr_t physical_pageno)
 {
 	if(h && (h->arch != arch_none)) {
@@ -146,7 +146,7 @@ linear_is_pagedir_fast(linear_handle h, addr_t physical_pageno)
 
 // gives a probability if (1.00) the page is a page-directory or not (0.00)
 // -1 on error
-float __attribute__ ((visibility ("hidden")))
+float __attribute__ ((visibility ("default")))
 linear_is_pagedir_probability(linear_handle h, void* page)
 {
 	if(h && (h->arch != arch_none)) {
@@ -160,7 +160,7 @@ linear_is_pagedir_probability(linear_handle h, void* page)
 
 // transform a linear address into a physical address
 // if no pagedir was set, returns a -EDESTADDRREQ
-int __attribute__ ((visibility ("hidden")))
+int __attribute__ ((visibility ("default")))
 linear_to_physical(linear_handle h, addr_t lin_adr, addr_t* physical_adr)
 {
 	if(h && (h->arch != arch_none)) {
@@ -171,7 +171,7 @@ linear_to_physical(linear_handle h, addr_t lin_adr, addr_t* physical_adr)
 
 // read from linear address: it has to be sure, that this data is inside
 // a single page
-int __attribute__ ((visibility ("hidden")))
+int __attribute__ ((visibility ("default")))
 linear_read_in_page(linear_handle h, addr_t adr, void* buf, unsigned long int len)
 {
 	addr_t ladr;
@@ -186,7 +186,7 @@ linear_read_in_page(linear_handle h, addr_t adr, void* buf, unsigned long int le
 }
 
 // read from linear address
-int __attribute__ ((visibility ("hidden")))
+int __attribute__ ((visibility ("default")))
 linear_read(linear_handle h, addr_t adr, void* buf, unsigned long int len)
 {
 	// data may be spread over several pages.
@@ -231,7 +231,7 @@ linear_read(linear_handle h, addr_t adr, void* buf, unsigned long int len)
 
 // write to linear address: it has to be sure, that this data is inside
 // a single page
-int __attribute__ ((visibility ("hidden")))
+int __attribute__ ((visibility ("default")))
 linear_write_in_page(linear_handle h, addr_t adr, void* buf, unsigned long int len)
 {
 	addr_t ladr;
@@ -246,7 +246,7 @@ linear_write_in_page(linear_handle h, addr_t adr, void* buf, unsigned long int l
 }
 
 // write to linear address
-int __attribute__ ((visibility ("hidden")))
+int __attribute__ ((visibility ("default")))
 linear_write(linear_handle h, addr_t adr, void* buf, unsigned long int len)
 {
 	// data may be spread over several pages.
@@ -290,7 +290,7 @@ linear_write(linear_handle h, addr_t adr, void* buf, unsigned long int len)
 }
 
 // read a linearly addressed page
-int __attribute__ ((visibility ("hidden")))
+int __attribute__ ((visibility ("default")))
 linear_read_page(linear_handle h, addr_t pagenum, void* buf)
 {
 	addr_t ladr;
@@ -307,7 +307,7 @@ linear_read_page(linear_handle h, addr_t pagenum, void* buf)
 }
 
 // write a linearly addressed page
-int __attribute__ ((visibility ("hidden")))
+int __attribute__ ((visibility ("default")))
 linear_write_page(linear_handle h, addr_t pagenum, void* buf)
 {
 	addr_t ladr;
