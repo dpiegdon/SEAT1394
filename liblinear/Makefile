@@ -28,8 +28,8 @@ RMDIR ?= $(shell which rmdir)
 OBJECTS = $(patsubst %.c,%.o,$(shell echo *.c))
 HEADERS = $(shell echo *.h)
 
-CFLAGS += -O9 -fPIC -finline-functions  -ffast-math  -funroll-all-loops -Wall -Wpointer-arith -D_REENTRANT -I${PREFIX}/include
-LDFLAGS+= -shared -lphysical -L$(PREFIX)/lib -lbz2
+CFLAGS += -O9 -fPIC -fvisibility=hidden -finline-functions  -ffast-math  -funroll-all-loops -Wall -Wpointer-arith -D_REENTRANT -I${PREFIX}/include
+LDFLAGS+= -shared -fvisibility=hidden -lphysical -L$(PREFIX)/lib -lbz2
 
 all:	liblinear.so
 	-

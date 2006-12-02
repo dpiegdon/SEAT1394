@@ -28,8 +28,8 @@ RMDIR ?= $(shell which rmdir)
 OBJECTS = $(patsubst %.c,%.o,$(shell echo *.c))
 HEADERS = $(shell echo *.h)
 
-CFLAGS += -O9 -fPIC -finline-functions  -ffast-math  -funroll-all-loops -Wall -Wpointer-arith -D_REENTRANT
-LDFLAGS+= -shared -lraw1394
+CFLAGS += -O9 -fvisibility=hidden -fPIC -finline-functions  -ffast-math  -funroll-all-loops -Wall -Wpointer-arith -D_REENTRANT
+LDFLAGS+= -shared -lraw1394 -fvisibility=hidden
 
 all:	libphysical.so
 	-

@@ -29,7 +29,8 @@
 #include "phys_gdb.h"
 
 // request a new handle. returns NULL on error
-physical_handle physical_new_handle()
+physical_handle __attribute__ ((visibility ("default")))
+physical_new_handle()
 {
 	physical_handle h;
 
@@ -42,7 +43,8 @@ physical_handle physical_new_handle()
 }
 
 // associate a given handle with a physical memory source of type <type>, typical pagesize <pagesize>
-int physical_handle_associate(physical_handle h, enum physical_type type, union physical_type_data *data, size_t pagesize)
+int __attribute__ ((visibility ("default")))
+physical_handle_associate(physical_handle h, enum physical_type type, union physical_type_data *data, size_t pagesize)
 {
 	if(!h)
 		return -EBADR;
@@ -112,7 +114,8 @@ int physical_handle_associate(physical_handle h, enum physical_type type, union 
 }
 
 // release a handle (and remove it)
-int physical_handle_release(physical_handle h)
+int __attribute__ ((visibility ("default")))
+physical_handle_release(physical_handle h)
 {
 	if(!h)
 		return -EBADR;		// bad request descriptor
@@ -126,7 +129,8 @@ int physical_handle_release(physical_handle h)
 
 // read physical memory: read at address <adr>, <len> bytes and
 // store them into <buf>
-int physical_read(physical_handle h, addr_t adr, void* buf, unsigned long int len)
+int __attribute__ ((visibility ("default")))
+physical_read(physical_handle h, addr_t adr, void* buf, unsigned long int len)
 {
 	if(h && (h->type != physical_none)) {
 		return h->read(h,adr,buf,len);
@@ -135,7 +139,8 @@ int physical_read(physical_handle h, addr_t adr, void* buf, unsigned long int le
 }
 
 // write physical memory: write at address <adr>, len bytes from <buf>
-int physical_write(physical_handle h, addr_t adr, void* buf, unsigned long int len)
+int __attribute__ ((visibility ("default")))
+physical_write(physical_handle h, addr_t adr, void* buf, unsigned long int len)
 {
 	if(h && (h->type != physical_none)) {
 		return h->write(h,adr,buf,len);
@@ -144,7 +149,8 @@ int physical_write(physical_handle h, addr_t adr, void* buf, unsigned long int l
 }
 
 // read the full physical page no. <pagenum> into <buf>
-int physical_read_page(physical_handle h, addr_t pagenum, void* buf)
+int __attribute__ ((visibility ("default")))
+physical_read_page(physical_handle h, addr_t pagenum, void* buf)
 {
 	if(h && (h->type != physical_none)) {
 		return h->read_page(h,pagenum,buf);
@@ -153,7 +159,8 @@ int physical_read_page(physical_handle h, addr_t pagenum, void* buf)
 }
 
 // write the full page in <buf> to the physical page no. <pagenum>
-int physical_write_page(physical_handle h, addr_t pagenum, void* buf)
+int __attribute__ ((visibility ("default")))
+physical_write_page(physical_handle h, addr_t pagenum, void* buf)
 {
 	if(h && (h->type != physical_none)) {
 		return h->write_page(h,pagenum,buf);
