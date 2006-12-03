@@ -43,34 +43,99 @@ char pagedir[4096];
 
 #define NODE_OFFSET     0xffc0
 
+void usage(char* argv0)
+{
+	printf( "%s <"TERM_YELLOW"-n nodeid"TERM_RESET"|"TERM_YELLOW"-f filename"TERM_RESET">\n"
+		"\tprint a process list of\n"
+		"\t\t* the host connected via firewire with the given nodeid\n"
+		"\t\t* the memory dump in the given file\n",
+		argv0);
+}
+
+enum memsource {
+	SOURCE_UNDEFINED,
+	SOURCE_MEMDUMP,
+	SOURCE_IEEE1394
+};
+
 int main(int argc, char**argv)
-{{{
+{
 	physical_handle phy;
 	union physical_type_data phy_data;
 	linear_handle lin;
+
 	addr_t pn;
 	char page[4096];
 	float prob;
+	int c;
+	char *p;
 
-	if(argc != 2) {
-		printf("please give targets nodeid\n");
-		return -1;
+	enum memsource memsource = SOURCE_UNDEFINED;
+	char *filename;
+	int nodeid;
+
+	while( -1 != (c = getopt(argc, argv, "n:f:"))) {
+		switch (c) {
+			case 'n':
+				memsource = SOURCE_IEEE1394;
+				nodeid = strtoll(optarg, &p, 10);
+				if((p&&(*p)) || (nodeid > 63) || (nodeid < 0)) {
+					printf("invalid nodeid. nodeid should be >=0 and <64.\n");
+					usage(argv[0]);
+					return -2;
+				}
+				break;
+			case 'f':
+				memsource = SOURCE_MEMDUMP;
+				filename = optarg;
+				break;
+			default:
+				usage(argv[0]);
+				return -2;
+				break;
+		}
 	}
+	if(c != -1) {
+		printf("too many arguments? (\"%s\")\n", argv[c]);
+		usage(argv[0]);
+		return -2;
+	}
+
 	// create and associate a physical source to /dev/mem
 	phy = physical_new_handle();
 	if(!phy)
 		{ printf("physical handle is null\n"); return -2; }
-	phy_data.ieee1394.raw1394handle = raw1394_new_handle();
-        if(!phy_data.ieee1394.raw1394handle)
-		{ printf("failed to open raw1394\n"); return -1; }
-	if(raw1394_set_port(phy_data.ieee1394.raw1394handle, 0))
-		{ printf("raw1394 failed to set port\n"); return -4; }
-
-	phy_data.ieee1394.raw1394target = atoi(argv[1]) + NODE_OFFSET;
-	printf("using target %d\n", phy_data.ieee1394.raw1394target - NODE_OFFSET);
-	printf("associating physical source with raw1394\n"); fflush(stdout);
-	if(physical_handle_associate(phy, physical_ieee1394, &phy_data, 4096))
-		{ printf("physical_handle_associate() failed\n"); return -3; }
+	if( memsource == SOURCE_IEEE1394 ) {
+		// create raw1394handle
+		phy_data.ieee1394.raw1394handle = raw1394_new_handle();
+		if(!phy_data.ieee1394.raw1394handle)
+			{ printf("failed to open raw1394\n"); return -3; }
+		// associate raw1394 to port
+		if(raw1394_set_port(phy_data.ieee1394.raw1394handle, 0))
+			{ printf("raw1394 failed to set port\n"); return -3; }
+		// set attack target
+		phy_data.ieee1394.raw1394target = nodeid + NODE_OFFSET;
+		printf("using target %d\n", phy_data.ieee1394.raw1394target - NODE_OFFSET);
+		if(physical_handle_associate(phy, physical_ieee1394, &phy_data, 4096)) {
+			printf("physical_handle_associate() failed\n");
+			return -3;
+		}
+	} else if( memsource == SOURCE_MEMDUMP ) {
+		c = open(filename, O_RDONLY);
+		if(c < 0) {
+			printf("failed to open file \"%s\"\n", filename);
+			return -2;
+		}
+		phy_data.filedescriptor.fd = c;
+		if(physical_handle_associate(phy, physical_filedescriptor, &phy_data, 4096)) {
+			printf("physical_handle_associate() failed\n");
+			return -3;
+		}
+	} else {
+		printf("missing memory source\n");
+		usage(argv[0]);
+		return -2;
+	}
 
 	// associate linear
 	printf("new lin handle..\n"); fflush(stdout);
@@ -93,7 +158,7 @@ int main(int argc, char**argv)
 			physical_read_page(phy, pn, page);
 			prob = linear_is_pagedir_probability(lin, page);
 			if(prob > 0.01) {
-				printf("0x%05llx @%0.3f%% ", pn, prob);
+				printf("0x%05llx [~%0.3f] ", pn, prob);
 				if(linear_set_new_pagedirectory(lin, page)) {
 					printf("\nloading pagedir failed\n");
 					continue;
@@ -135,5 +200,5 @@ int main(int argc, char**argv)
 	physical_handle_release(phy);
 	
 	return 0;
-}}}
+}
 

