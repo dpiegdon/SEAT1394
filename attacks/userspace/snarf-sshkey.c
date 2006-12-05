@@ -21,6 +21,12 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+// TODO:
+// 	1. resolve "idtable" from .bss
+// 	2. resolve all keys in idtable
+// 		see also TAILQ stuff (defined in openssh/openbsd-compat/sys-queue.h)
+// 	3. dump all keys
+
 #define _LARGEFILE64_SOURCE
 
 // needed for memmem:
@@ -59,9 +65,9 @@ char pagedir[4096];
 // this may take several seconds, depending on keytype and length!
 int test_keys = 0;
 
-// uuid - unique uid for the memory source (filename of memdump or
+// uid - unique ID for the memory source (filename of memdump or
 // ieee1394-GUID of host)
-char* uuid = NULL;
+char* uid = NULL;
 
 #define NODE_OFFSET     0xffc0
 
@@ -313,7 +319,7 @@ void save_key(char *key_comment, Key* key, char *username)
 	char* id;
 	char* bid;
 
-	id = strdupa(uuid);
+	id = strdupa(uid);
 	bid = basename(id);
 
 	// create a comment that does not contain slashes
@@ -599,8 +605,8 @@ int main(int argc, char**argv)
 #else
 		guid = (((uint64_t)low) << 32) | high;
 #endif
-		uuid = malloc(9);
-		snprintf(uuid, 8, "%08llx", guid);
+		uid = malloc(9);
+		snprintf(uid, 8, "%08llx", guid);
 	} else if( memsource == SOURCE_MEMDUMP ) {
 		c = open(filename, O_RDONLY);
 		if(c < 0) {
@@ -612,7 +618,7 @@ int main(int argc, char**argv)
 			printf("physical_handle_associate() failed\n");
 			return -3;
 		}
-		uuid = filename;
+		uid = filename;
 	} else {
 		printf("missing memory source\n");
 		usage(argv[0]);
