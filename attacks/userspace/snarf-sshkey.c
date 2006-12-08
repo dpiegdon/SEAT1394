@@ -623,9 +623,9 @@ int main(int argc, char**argv)
 			return -3;
 		}
 		// get GUID of target
-		raw1394_read(lin->phy->data.ieee1394.raw1394handle, nodeid+NODE_OFFSET, CSR_REGISTER_BASE + CSR_CONFIG_ROM + 0x0c, 4, &low);
-		raw1394_read(lin->phy->data.ieee1394.raw1394handle, nodeid+NODE_OFFSET, CSR_REGISTER_BASE + CSR_CONFIG_ROM + 0x10, 4, &high);
-		// GUID is in big endian.
+		raw1394_read(phy->data.ieee1394.raw1394handle, nodeid+NODE_OFFSET, CSR_REGISTER_BASE + CSR_CONFIG_ROM + 0x0c, 4, &low);
+		raw1394_read(phy->data.ieee1394.raw1394handle, nodeid+NODE_OFFSET, CSR_REGISTER_BASE + CSR_CONFIG_ROM + 0x10, 4, &high);
+		// GUID is in big endian or something
 #ifndef __BIG_ENDIAN__  
 		guid = (((uint64_t)high) << 32) | low;
 		guid = endian_swap64(guid);
