@@ -1,16 +1,13 @@
 
 .PHONY: all clean
 
-all:	remote-ps snarf-sshkey elfparser
+all:	remote-ps snarf-sshkey
 
 clean:
-	-rm -f elfparser remote-ps snarf-sshkey debug-sshkey *.o
+	-rm -f remote-ps snarf-sshkey debug-sshkey *.o
 
 
 
-
-elfparser: elfparser.o proc_info.o
-	gcc elfparser.o proc_info.o -lphysical -llinear -lelf -L/home/lostrace/lib  -DUSETERM -o elfparser
 
 remote-ps: remote-ps.o proc_info.o
 	gcc remote-ps.o proc_info.o -lphysical -llinear -L/home/lostrace/lib   -DUSETERM -o remote-ps
@@ -38,9 +35,6 @@ openssh/entropy.o: openssh/entropy.c
 	make -C openssh/ entropy.o
 
 
-
-elfparser.o: elfparser.c
-	gcc elfparser.c -Wall -W -DUSETERM -I/home/lostrace/include -c -o elfparser.o
 
 remote-ps.o: remote-ps.c
 	gcc remote-ps.c -Wall -W -DUSETERM -I/home/lostrace/include -c -o remote-ps.o
