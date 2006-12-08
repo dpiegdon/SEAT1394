@@ -150,12 +150,11 @@ the ELF-headers of the mapped executable to resolve the symbol of the
 are loaded into the agent}. This approach is straight-forward, hits \emph{all}
 keys and would have worked almost always, if not many (almost all) distributions
 distributed programs with stripped symbols to reduce their size.  Sadly this
-stripping also strips any information about the \emph{idtable} symbol.
+stripping also removes any information of the \emph{idtable} symbol.
 
 Furthermore once \emph{one} \emph{identity}-struct is found, \emph{all} structs
-of the same keytype (RSA or DSA) can be found by walking the list this key is
-linked into.  This has only been omitted so far for reasons of \emph{me missing
-the time to implement it}.
+of the same keytype (RSA or DSA) could be found by walking the list this key is
+linked into.
 
 As stated above, the keypairs reside decrypted in the memory of the agent (even
 if overtime) and thus, when stored to a file, can be immediately used by the
@@ -167,13 +166,9 @@ thorough attack at a later time. Once the heap is dumped, all required data is
 obtained. A similar attack via \emph{ptrace} should be possible as well.
 
 The reader may refer to \texttt{attacks/userspace/snarf-sshkey.c} in the
-corresponding tarball for the source-code of the attack. As the attack dumps the
-key in a format directly usable by \texttt{ssh} it is required to link against
-\texttt{libssh.a}, which is part of \emph{openssh}. Because of this, it is
-required to have a \texttt{./configure}d \emph{openssh}-source in
-\texttt{attacks/userspace/openssh/} to compile the snarfer. Please also keep in
-mind that this attack will only find keys \emph{without comment-fields} and
-loaded with the absolute path \texttt{\$HOME/.ssh/}.
+corresponding tarball for the source-code of the attack. Please keep in mind
+that this attack will only find keys loaded with the absolute path
+\texttt{\$HOME/.ssh/}.
 
 
 \subsubsection{Matching and statistics to find secret keys}
