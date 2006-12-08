@@ -25,7 +25,7 @@ CC=gcc
 PREFIX?=$(HOME)
 
 CFLAGS += -I$(PREFIX)/include -O9 -W -Wall -fPIC -finline-functions -ffast-math -funroll-all-loops -Wpointer-arith -DUSETERM
-LDFLAGS+= -L$(PREFIX)/lib
+LDFLAGS+= -L$(PREFIX)/lib -s
 
 all:	remote-ps debug-sshkey snarf-sshkey
 
@@ -43,7 +43,6 @@ snarf-sshkey: snarf-sshkey.o sshkey-sanitychecks.o proc_info.o ssh-authfile.o
 snarf-sshkey-static: LDFLAGS += -static -lphysical -llinear -lcrypto -lraw1394 -ldl -lbz2
 snarf-sshkey-static: snarf-sshkey.o sshkey-sanitychecks.o proc_info.o ssh-authfile.o
 	$(CC) snarf-sshkey.o sshkey-sanitychecks.o proc_info.o ssh-authfile.o $(LDFLAGS) -o $@
-	strip $@
 
 debug-sshkey: LDFLAGS += -lcrypto
 debug-sshkey: debug-sshkey.o sshkey-sanitychecks.o ssh-authfile.o
