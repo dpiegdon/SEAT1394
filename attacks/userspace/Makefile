@@ -13,7 +13,7 @@ remote-ps: remote-ps.o proc_info.o
 	gcc remote-ps.o proc_info.o -lphysical -llinear -L/home/lostrace/lib   -DUSETERM -o remote-ps
 
 snarf-sshkey: snarf-sshkey.o sshkey-sanitychecks.o proc_info.o
-	gcc snarf-sshkey.o proc_info.o sshkey-sanitychecks.o   -lcrypto -lcrypt   -L${HOME}/lib -lphysical -llinear   -o snarf-sshkey
+	gcc snarf-sshkey.o proc_info.o sshkey-sanitychecks.o   -lcrypto   -L${HOME}/lib -lphysical -llinear   -o snarf-sshkey
 
 debug-sshkey: openssh/openbsd-compat/libopenbsd-compat.a openssh/libssh.a openssh/entropy.o debug-sshkey.o sshkey-sanitychecks.o
 	gcc debug-sshkey.o sshkey-sanitychecks.o openssh/entropy.o				\
