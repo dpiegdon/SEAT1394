@@ -25,12 +25,12 @@ CC=gcc
 PREFIX?=$(HOME)
 
 CFLAGS += -I$(PREFIX)/include -O9 -W -Wall -fPIC -finline-functions -ffast-math -funroll-all-loops -Wpointer-arith -DUSETERM
-LDFLAGS+= -L$(PREFIX)/lib -pie
+LDFLAGS+= -L$(PREFIX)/lib
 
 all:	remote-ps debug-sshkey snarf-sshkey
 
 clean:
-	-rm -f remote-ps snarf-sshkey debug-sshkey *.o
+	-rm -f remote-ps snarf-sshkey snarf-sshkey-static debug-sshkey *.o
 
 
 
@@ -40,9 +40,10 @@ remote-ps: remote-ps.o proc_info.o
 snarf-sshkey: LDFLAGS += -lphysical -llinear -lcrypto
 snarf-sshkey: snarf-sshkey.o sshkey-sanitychecks.o proc_info.o ssh-authfile.o
 
-snarf-sshkey-static: LDFLAGS += -lphysical -llinear -static -lcrypto -lraw1394 -ldl -lbz2
-snarf-sshkey-static: snarf-sshkey.o sshkey-sanitychecks.o proc_info.o
-	$(CC) snarf-sshkey.o sshkey-sanitychecks.o proc_info.o $(LDFLAGS) -o $@
+snarf-sshkey-static: LDFLAGS += -static -lphysical -llinear -lcrypto -lraw1394 -ldl -lbz2
+snarf-sshkey-static: snarf-sshkey.o sshkey-sanitychecks.o proc_info.o ssh-authfile.o
+	$(CC) snarf-sshkey.o sshkey-sanitychecks.o proc_info.o ssh-authfile.o $(LDFLAGS) -o $@
+	strip $@
 
 debug-sshkey: LDFLAGS += -lcrypto
 debug-sshkey: debug-sshkey.o sshkey-sanitychecks.o ssh-authfile.o
