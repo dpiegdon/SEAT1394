@@ -43,10 +43,8 @@
 #include <time.h>
 #include <getopt.h>
 
-#include <openssl/pem.h>
 #include <openssl/rsa.h>
 #include <openssl/dsa.h>
-#include <openssl/evp.h>
 #include <openssl/bn.h>
 
 #include <libraw1394/raw1394.h>
@@ -312,31 +310,6 @@ int steal_dsa_key(linear_handle lin, Key* key)
 	key->dsa = NULL;
 	printf("\t\t\t" TERM_RED "failed to recover bignums." TERM_RESET "\n");
 	return 0;
-}}}
-
-// save a private key to a file
-int privatekey_to_file(Key* key, char* filename)
-{{{
-	FILE *f;
-	int suc = -1;
-
-	// open file
-	f = fopen(filename, "w");
-	if(f == NULL) {
-		printf("failed to open file \"%s\".\n", filename);
-		return -1;
-	}
-
-	// dump a rsa key
-	if(key->rsa)
-		suc = PEM_write_RSAPrivateKey(f, key->rsa, NULL, NULL, 0, NULL, NULL);
-	// dump a dsa key
-	if(key->dsa)
-		suc = PEM_write_DSAPrivateKey(f, key->dsa, NULL, NULL, 0, NULL, NULL);
-
-printf("dumping done\n"); fflush(stdout);
-	fclose(f);
-	return suc;
 }}}
 
 // create a unique filename, consisting of UUID, ssh-agent's

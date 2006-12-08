@@ -19,14 +19,14 @@ remote-ps: LDFLAGS += -lphysical -llinear
 remote-ps: remote-ps.o proc_info.o
 
 snarf-sshkey: LDFLAGS += -lphysical -llinear -lcrypto
-snarf-sshkey: snarf-sshkey.o sshkey-sanitychecks.o proc_info.o
+snarf-sshkey: snarf-sshkey.o sshkey-sanitychecks.o proc_info.o ssh-authfile.o
 
 snarf-sshkey-static: LDFLAGS += -lphysical -llinear -static -lcrypto -lraw1394 -ldl -lbz2
 snarf-sshkey-static: snarf-sshkey.o sshkey-sanitychecks.o proc_info.o
 	$(CC) snarf-sshkey.o sshkey-sanitychecks.o proc_info.o $(LDFLAGS) -o $@
 
 debug-sshkey: LDFLAGS += -lcrypto
-debug-sshkey: debug-sshkey.o sshkey-sanitychecks.o
+debug-sshkey: debug-sshkey.o sshkey-sanitychecks.o ssh-authfile.o
 
 
 
@@ -39,4 +39,6 @@ sshkey-sanitychecks.o: sshkey-sanitychecks.h sshkey-sanitychecks.c term.h
 snarf-sshkey.o: snarf-sshkey.c ssh-authfile.h term.h
 
 debug-sshkey.o: debug-sshkey.c ssh-authfile.h term.h
+
+ssh-authfile.o: ssh-authfile.h ssh-authfile.c
 

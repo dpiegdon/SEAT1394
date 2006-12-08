@@ -23,68 +23,16 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <openssl/pem.h>
 #include <openssl/rsa.h>
 #include <openssl/dsa.h>
-#include <openssl/evp.h>
 #include <openssl/bn.h>
 
 #include "ssh-authfile.h"
 #include "sshkey-sanitychecks.h"
 #include "term.h"
 
-Key * privatekey_from_file(char* filename)
-{
-	Key *key = NULL;
-	FILE *f;
-	EVP_PKEY *pk = NULL;
-
-	f = fopen(filename, "r");
-	if(f == NULL) {
-		printf("failed to open file \"%s\".\n", filename);
-		return NULL;
-	}
-
-	pk = PEM_read_PrivateKey(f, NULL, NULL, NULL);
-	if(pk == NULL) {
-		printf("failed to read or parse key!\n");
-		goto pff_close;
-	}
-
-	key = malloc(sizeof(Key));
-	key->type = KEY_UNSPEC;
-	key->flags = 0;
-	key->rsa = NULL;
-	key->dsa = NULL;
-
-	switch(pk->type) {
-		case EVP_PKEY_RSA:
-			key->rsa = EVP_PKEY_get1_RSA(pk);
-			if(1 != RSA_blinding_on(key->rsa, NULL))
-				printf("rsa blinding failed\n");
-			key->type = KEY_RSA;
-			break;
-
-		case EVP_PKEY_DSA:
-			key->dsa = EVP_PKEY_get1_DSA(pk);
-			key->type = KEY_DSA;
-			break;
-
-		default:
-			printf("this key is neither RSA nor DSA!\n");
-			free(key);
-			key = NULL;
-			break;
-	}
-
-	EVP_PKEY_free(pk);
-pff_close:
-	fclose(f);
-	return key;
-}
-
 void dump_rsa(RSA* rsa)
-{
+{{{
 	char *bn;
 
 	printf("dumping RSA key:\n");
@@ -127,10 +75,10 @@ void dump_rsa(RSA* rsa)
 	bn = BN_bn2hex(rsa->iqmp);
 	printf("\t\t"TERM_BLUE"iqmp:"TERM_RESET" 0x%s\n", bn);
 	free(bn);
-}
+}}}
 
 void dump_dsa(DSA* dsa)
-{
+{{{
 	char *bn;
 
 	printf("dumping DSA key:\n");
@@ -161,10 +109,10 @@ void dump_dsa(DSA* dsa)
 	bn = BN_bn2hex(dsa->priv_key);
 	printf("\t\t"TERM_BLUE"priv_key:"TERM_RESET" 0x%s\n", bn);
 	free(bn);
-}
+}}}
 
 int main(int argc, char**argv)
-{
+{{{
 	Key* key;
 
 	if(argc != 2) {
@@ -190,5 +138,5 @@ int main(int argc, char**argv)
 		dump_dsa(key->dsa);
 
 	return 0;
-}
+}}}
 
