@@ -1,8 +1,8 @@
 
 =======================================================================
 
-all these programs will only work, if the target system is an IA32
-linux with a 3G1G addresslayout: 3G userspace, 1G kernelspace:
+remote-ps and snarf-sshkey will only work, if the target system is an
+IA32 linux with a 3G1G addresslayout: 3G userspace, 1G kernelspace:
 	kernelconfig: 
 		!CONFIG_HIGHMEM64G (not tested)
 		one of:
@@ -18,16 +18,21 @@ tested but should work. other 2.6 kernels should work, as well.
 
 =======================================================================
 
-remote-ps.c
-	will try to find all processes on a given system that is
-	connected via firewire. give the target number as argument. to
-	find this number (0...CSR), use e.g. 1394csrtool.
-
-
 debug-sshkey.c
 	dump all parameters of an existing ssh private key. used for
 	debugging only.
 
+proc_info.c
+	contains functions that resolve the following from a virtual
+	address space:
+		process binary name
+		arguments of process
+		environment of process
+
+remote-ps.c
+	will try to find all processes on a given system that is
+	connected via firewire. give the target number as argument. to
+	find this number (0...CSR), use e.g. 1394csrtool.
 
 snarf-sshkey.c
 	this will search for ssh-agent processes and dump all private
@@ -38,6 +43,15 @@ snarf-sshkey.c
 	as parameter, -t may be given to test the obtained keys
 	for validity on the fly. this may take up to several seconds
 	per key, depending on key length and type.
+
+ssh-authfile.c
+	contains functions to load and save private keys from/to files
+
+sshkey-sanitychecks.c
+	contains functions to check RSA and DSA keys for obvious errors
+
+term.h
+	some DEFINE's to create colorized output
 
 =======================================================================
 

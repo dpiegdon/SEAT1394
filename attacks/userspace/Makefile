@@ -1,3 +1,22 @@
+#   $Id$
+#   information gathering
+# 
+#   Copyright (C) 2006
+#   losTrace aka "David R. Piegdon"
+# 
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License version 2, as
+#   published by the Free Software Foundation.
+# 
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+# 
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+#
 
 .PHONY: all clean
 
@@ -8,7 +27,7 @@ PREFIX?=$(HOME)
 CFLAGS += -I$(PREFIX)/include -O9 -W -Wall -fPIC -finline-functions -ffast-math -funroll-all-loops -Wpointer-arith -DUSETERM
 LDFLAGS+= -L$(PREFIX)/lib -pie
 
-all:	debug-sshkey remote-ps snarf-sshkey
+all:	remote-ps debug-sshkey snarf-sshkey
 
 clean:
 	-rm -f remote-ps snarf-sshkey debug-sshkey *.o
