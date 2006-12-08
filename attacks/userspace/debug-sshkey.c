@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <openssl/pem.h>
 #include <openssl/rsa.h>
 #include <openssl/dsa.h>
 #include <openssl/evp.h>
@@ -31,6 +32,56 @@
 #include "ssh-authfile.h"
 #include "sshkey-sanitychecks.h"
 #include "term.h"
+
+Key * privatekey_from_file(char* filename)
+{
+	Key *key = NULL;
+	FILE *f;
+	EVP_PKEY *pk = NULL;
+
+	f = fopen(filename, "r");
+	if(f == NULL) {
+		printf("failed to open file \"%s\".\n", filename);
+		return NULL;
+	}
+
+	pk = PEM_read_PrivateKey(f, NULL, NULL, NULL);
+	if(pk == NULL) {
+		printf("failed to read or parse key!\n");
+		goto pff_close;
+	}
+
+	key = malloc(sizeof(Key));
+	key->type = KEY_UNSPEC;
+	key->flags = 0;
+	key->rsa = NULL;
+	key->dsa = NULL;
+
+	switch(pk->type) {
+		case EVP_PKEY_RSA:
+			key->rsa = EVP_PKEY_get1_RSA(pk);
+			if(1 != RSA_blinding_on(key->rsa, NULL))
+				printf("rsa blinding failed\n");
+			key->type = KEY_RSA;
+			break;
+
+		case EVP_PKEY_DSA:
+			key->dsa = EVP_PKEY_get1_DSA(pk);
+			key->type = KEY_DSA;
+			break;
+
+		default:
+			printf("this key is neither RSA nor DSA!\n");
+			free(key);
+			key = NULL;
+			break;
+	}
+
+	EVP_PKEY_free(pk);
+pff_close:
+	fclose(f);
+	return key;
+}
 
 void dump_rsa(RSA* rsa)
 {
@@ -115,7 +166,6 @@ void dump_dsa(DSA* dsa)
 int main(int argc, char**argv)
 {
 	Key* key;
-	char* comment = NULL;
 
 	if(argc != 2) {
 		printf( "please give filename of private key to dump.\n"
@@ -124,15 +174,12 @@ int main(int argc, char**argv)
 	}
 
 	// load private key
-	key = key_load_private(argv[1], NULL, &comment);
+	key = privatekey_from_file(argv[1]);
 
 	if(!key) {
-		printf("failed to load ``%s''!\n(wrong password or permissions?)\n", comment);
+		printf("failed to load ``%s''!\n(wrong password or permissions?)\n", argv[1]);
 		return -1;
 	}
-
-	if(comment == NULL)
-		comment = strdup(argv[1]);
 
 	printf("key ``%s'' loaded successfully\n", argv[1]);
 

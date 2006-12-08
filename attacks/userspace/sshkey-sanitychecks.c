@@ -46,7 +46,7 @@ void test_rsa(RSA* rsa)
 
 	int len;
 	int i;
-	int ret;
+	int ret = 0;
 	BN_CTX* ctx;
 
 	ctx = BN_CTX_new();
@@ -104,7 +104,7 @@ void test_dsa(DSA* dsa)
 
 	int len;
 	int i;
-	int ret;
+	int ret = 0;
 	BN_CTX* ctx;
 	BIGNUM *o,*n;
 

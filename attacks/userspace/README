@@ -24,7 +24,7 @@ remote-ps.c
 	find this number (0...CSR), use e.g. 1394csrtool.
 
 
-dump-sshkey.c
+debug-sshkey.c
 	dump all parameters of an existing ssh private key. used for
 	debugging only.
 

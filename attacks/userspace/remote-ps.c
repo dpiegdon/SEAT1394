@@ -71,8 +71,8 @@ int main(int argc, char**argv)
 	char *p;
 
 	enum memsource memsource = SOURCE_UNDEFINED;
-	char *filename;
-	int nodeid;
+	char *filename = NULL;
+	int nodeid = 0;
 
 	while( -1 != (c = getopt(argc, argv, "n:f:"))) {
 		switch (c) {

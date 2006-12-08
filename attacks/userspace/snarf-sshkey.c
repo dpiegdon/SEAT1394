@@ -566,8 +566,8 @@ int main(int argc, char**argv)
 	char *p;
 
 	enum memsource memsource = SOURCE_UNDEFINED;
-	char *filename;
-	int nodeid;
+	char *filename = NULL;
+	int nodeid = 0;
 
 	uint64_t guid;
 	uint32_t high;
