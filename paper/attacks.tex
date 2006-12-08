@@ -24,7 +24,7 @@ from \texttt{0xbfff~f000}}.
 \texttt{proc\_info()} will seek the stack-bottom, parse it and return
 ready-for-use environment vectors, command-line vectors and the full path of the
 binary for a given linear address space. \texttt{remote-ps}, located in
-\texttt{attacks/userspace/}, uses \texttt{proc\_info()} for each found address
+\texttt{attacks/information/}, uses \texttt{proc\_info()} for each found address
 space and will print a list of all found processes with its arguments.
 
 
@@ -165,7 +165,7 @@ found, it would be possible to just dump the heap of the agent and stage a more
 thorough attack at a later time. Once the heap is dumped, all required data is
 obtained. A similar attack via \emph{ptrace} should be possible as well.
 
-The reader may refer to \texttt{attacks/userspace/snarf-sshkey.c} in the
+The reader may refer to \texttt{attacks/information/snarf-sshkey.c} in the
 corresponding tarball for the source-code of the attack. Please keep in mind
 that this attack will only find keys loaded with the absolute path
 \texttt{\$HOME/.ssh/}.
