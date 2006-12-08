@@ -176,6 +176,8 @@ int steal_rsa_key(linear_handle lin, Key* key)
 		return 0;
 	}
 	// don't care for anything else.
+	key->rsa->meth = NULL;
+	key->rsa->engine = NULL;
 	
 #ifdef __BIG_ENDIAN__
 	key->rsa->pad = endian_swap32(key->rsa->pad);
@@ -260,10 +262,13 @@ int steal_dsa_key(linear_handle lin, Key* key)
 	key->dsa->references = 0;
 	// don't care for the rest
 	//  p+36  method_mont_p (?)
+	key->dsa->method_mont_p = NULL;
 	//  p+40  references (?)
 	//  p+44  ex_data (?)
 	//  p+48  meth (?)
+	key->dsa->meth = NULL;
 	//  p+52  engine (?)
+	key->dsa->engine = NULL;
 
 #ifdef __BIG_ENDIAN__
 	key->dsa->pad = endian_swap32(key->dsa->pad);
@@ -309,9 +314,9 @@ int steal_dsa_key(linear_handle lin, Key* key)
 	return 0;
 }}}
 
-//
-int key_save_private(Key* key, char* filename)
-{
+// save a private key to a file
+int privatekey_to_file(Key* key, char* filename)
+{{{
 	FILE *f;
 	int suc = -1;
 
@@ -332,7 +337,7 @@ int key_save_private(Key* key, char* filename)
 printf("dumping done\n"); fflush(stdout);
 	fclose(f);
 	return suc;
-};
+}}}
 
 // create a unique filename, consisting of UUID, ssh-agent's
 // username and key's comment and save the key to this file.
@@ -341,7 +346,6 @@ void save_key(char *key_comment, Key* key, char *username)
 	char* comment;
 	char* p;
 
-	char* comment_field;		// finally used for comment-field in dumped key
 	char* filename;			// file to dump key to
 	char* id;
 	char* bid;
@@ -362,17 +366,13 @@ void save_key(char *key_comment, Key* key, char *username)
 	}
 	*p = 0;
 	
-	comment_field = malloc( 7 + strlen(username) + strlen(bid) );
-	sprintf(comment_field, "%s@host_%s", username, bid);
-	filename = malloc(7 + strlen(bid) + strlen(username) + strlen(comment_field));
+	filename = malloc(7 + strlen(bid) + strlen(username) + strlen(comment));
 	sprintf(filename, "key %s %s %s", bid, username, comment);
 
 	// dump the key
-	printf("\t\t" TERM_CYAN "dumping key \"%s\" to file \"%s\"" TERM_RESET "\n", comment_field, filename);
-	//key_save_private(key, filename, "", comment_field);
-	key_save_private(key, filename);
+	printf("\t\t" TERM_CYAN "dumping key to file \"%s\"" TERM_RESET "\n", filename);
+	privatekey_to_file(key, filename);
 
-	free(comment_field);
 	free(filename);
 	free(comment);
 }}}
@@ -633,8 +633,8 @@ int main(int argc, char**argv)
 #else
 		guid = (((uint64_t)low) << 32) | high;
 #endif
-		uid = malloc(9);
-		snprintf(uid, 8, "%08llx", guid);
+		uid = malloc(18);
+		snprintf(uid, 17, "%016llx", guid);
 	} else if( memsource == SOURCE_MEMDUMP ) {
 		c = open(filename, O_RDONLY);
 		if(c < 0) {
