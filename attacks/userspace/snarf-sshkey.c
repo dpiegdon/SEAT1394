@@ -324,11 +324,12 @@ int key_save_private(Key* key, char* filename)
 
 	// dump a rsa key
 	if(key->rsa)
-		suc = PEM_write_RSAPrivateKey(f, key->rsa, /*cipher*/ NULL, /*passphrase*/ NULL, /*len of passphrase*/ 0, NULL, NULL);
+		suc = PEM_write_RSAPrivateKey(f, key->rsa, NULL, NULL, 0, NULL, NULL);
 	// dump a dsa key
 	if(key->dsa)
-		suc = PEM_write_DSAPrivateKey(f, key->dsa, /*cipher*/ NULL, /*passphrase*/ NULL, /*len of passphrase*/ 0, NULL, NULL);
+		suc = PEM_write_DSAPrivateKey(f, key->dsa, NULL, NULL, 0, NULL, NULL);
 
+printf("dumping done\n"); fflush(stdout);
 	fclose(f);
 	return suc;
 };
