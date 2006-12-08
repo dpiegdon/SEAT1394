@@ -15,6 +15,9 @@ remote-ps: remote-ps.o proc_info.o
 snarf-sshkey: snarf-sshkey.o sshkey-sanitychecks.o proc_info.o
 	gcc snarf-sshkey.o proc_info.o sshkey-sanitychecks.o   -lcrypto   -L${HOME}/lib -lphysical -llinear   -o snarf-sshkey
 
+snarf-sshkey-static: snarf-sshkey.o sshkey-sanitychecks.o proc_info.o
+	gcc snarf-sshkey.o proc_info.o sshkey-sanitychecks.o   -lcrypto -lraw1394 -ldl -lbz2 -L${HOME}/lib -lphysical -llinear   -static   -o snarf-sshkey
+
 debug-sshkey: openssh/openbsd-compat/libopenbsd-compat.a openssh/libssh.a openssh/entropy.o debug-sshkey.o sshkey-sanitychecks.o
 	gcc debug-sshkey.o sshkey-sanitychecks.o openssh/entropy.o				\
 		-lm -lresolv -lcrypto -lcrypt -lutil -lz -lnsl   -lssh -lopenbsd-compat		\
