@@ -134,8 +134,8 @@ that provide information about the given target node and the capabilities of the
 firewire device.
 
 For more information on the underlying hardware or protocols, please refer to
-\cite{OHCIspecs:2000} or e.g. \cite{fwire_sys_arch:2222} or the
-\texttt{libraw1394} documentation.
+\cite{OHCIspecs:2000,fwire_sys_arch:2222} or the \texttt{libraw1394}
+documentation.
 
 
 
@@ -193,8 +193,9 @@ workstations with onboard-controllers being disturbed by this, sometimes
 resulting in crashes. My desktop PC (with a firewire PCI extension card),
 though, just worked fine during all tests. It could be, that the deeply
 incorporated onboard-controllers interfere with the CPU accessing the main
-memory. This needs to be investigated. FIXME blocksize := 4, ist dann problem
-immer noch da? /FIXME
+memory. This needs to be investigated.
+
+FIXME blocksize 32bit, align 32 bit :: ist dann problem immer noch da? /FIXME
 
 Using \texttt{libraw1394}, it is possible to read different blocksizes of data
 via firewire.  It seems like different hardware does allow bigger blocks to be
