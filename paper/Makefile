@@ -16,21 +16,21 @@ all: paper.pdf
 
 clean:
 	-rm *.log *.lot *.lof *.aux *.toc *.bbl *.blg *.out	> /dev/null 2>&1
-	-rm $(TGIF_FIGURES) 					> /dev/null 2>&1
+#	-rm $(TGIF_FIGURES) 					> /dev/null 2>&1
 	-rm *.pdf *.dvi *.ps					> /dev/null 2>&1
 
 autowindow: paper.pdf
-	xpdf -remote dako paper.pdf&
+	xpdf -remote SEAT1394 paper.pdf&
 
 autoreload:
-	xpdf -remote dako -reload;
+	xpdf -remote SEAT1394 -reload;
 	
 autoupdate: paper.pdf autowindow
 	while true; do										\
 		sleep 1; 									\
 		for FILE in *.tex *.bib *.fig *.obj; do						\
-			if [ -e paper.pdf -a paper.pdf -ot "$$FILE" ]; then	\
-				make paper.pdf < /dev/null;				\
+			if [ -e paper.pdf -a paper.pdf -ot "$$FILE" ]; then			\
+				make paper.pdf < /dev/null;					\
 				if ps aux | grep xpdf | grep -v grep; then			\
 					make autoreload;					\
 				fi;								\
