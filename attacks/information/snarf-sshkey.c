@@ -546,6 +546,13 @@ int main(int argc, char**argv)
 	uint32_t high;
 	uint32_t low;
 
+	fprintf(stderr,
+		"(c) 2006 by losTrace aka ``David R. Piegdon''.\n"
+		"This program is distributed WITHOUT ANY WARRANTY; without even the implied\n"
+		"warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
+		"GNU General Public License for more details.\n\n"
+		);
+
 	// parse arguments
 	while( -1 != (c = getopt(argc, argv, "tn:f:"))) {
 		switch (c) {
