@@ -178,12 +178,12 @@ The search algorithm (2,3,4) is far from perfect but works rather well.  To
 create a better algorithm remains as an exercise to the interested reader. For
 instance, a much better algorithm to find the \emph{identity}-structs is to use
 the ELF-headers of the mapped executable to resolve the symbol of the
-\emph{idtable}\footnote{The \emph{idtable} is a structure holding all keys that
-are loaded into the agent.}. This approach is straight-forward, hits \emph{all}
-keys and would have worked almost always, if not many (almost all) distributions
-distributed programs with their symbols stripped (due to size and security
-reasons); this invalidates the symbol-resolution-approach, as this stripping
-also removes any information of the \emph{idtable} symbol.
+\emph{idtable}\footnote{The \emph{idtable} is a structure referencing all keys
+that are loaded into the agent.}. This approach is straight-forward, hits
+\emph{all} keys and would have worked almost always, if not many (almost all)
+distributions distributed programs with their symbols stripped (due to size and
+security reasons); this invalidates the symbol-resolution-approach, as this
+stripping also removes any information of the \emph{idtable} symbol.
 
 Furthermore once \emph{one} \emph{identity}-struct is found, \emph{all} structs
 of the same keytype (RSA or DSA) could be found by walking the list this key is

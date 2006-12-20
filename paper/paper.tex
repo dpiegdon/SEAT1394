@@ -11,6 +11,9 @@
 \usepackage{stmaryrd,latexsym}
 \usepackage{a4,amsmath,amsfonts,amssymb}
 
+%\usepackage{endnotes}
+%\let\footnote=\endnote
+
 \textwidth 15cm
 \textheight 23cm
 \oddsidemargin 1cm
@@ -124,10 +127,22 @@ implementation of \emph{RFC2795}. Please send fruit to the author. No bananas.
 %\addcontentsline{toc}{section}{List of figures}
 %\listoffigures
 
+%\newpage
+%\begingroup
+%\parindent 0pt
+%\parskip 2ex
+%\def\enotesize{\normalsize}
+%\addcontentsline{toc}{section}{Notes}
+%\theendnotes
+%\endgroup
+
+\newpage
+\begingroup
 %\section{Bibliography}
+\addcontentsline{toc}{section}{References}
 \bibliographystyle{alpha} %acm or alpha
 \bibliography{paper}
-%\addcontentsline{toc}{section}{References}
+\endgroup
 
 % ende
 
