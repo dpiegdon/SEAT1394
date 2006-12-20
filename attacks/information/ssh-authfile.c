@@ -104,7 +104,6 @@ int privatekey_to_file(Key* key, char* filename)
 	if(key->dsa)
 		suc = PEM_write_DSAPrivateKey(f, key->dsa, NULL, NULL, 0, NULL, NULL);
 
-printf("dumping done\n"); fflush(stdout);
 	fclose(f);
 	return suc;
 }}}
