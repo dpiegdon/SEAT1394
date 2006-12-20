@@ -3,7 +3,7 @@
 % $Id$
 %
 
-\section{Attack vectors}
+\section{Attacking}
 
 
 
@@ -12,8 +12,8 @@
 
 \subsubsection{Identifying processes}
 
-Once an address translation table has been found, the question is: what kind of
-process resides in this virtual address space?  For userspace applications on
+Once an address translation table has been found, it is of interest, what kind
+of process resides in this virtual address space.  For userspace applications on
 IA32-linux there is a simple way to identify a process's \emph{filename}, its
 \emph{arguments} and even its full set of \emph{environment variables}: This
 information is often required by a process and thus the kernel will provide it
@@ -149,8 +149,9 @@ the ELF-headers of the mapped executable to resolve the symbol of the
 \emph{idtable}\footnote{the \emph{idtable} is a structure holding all keys that
 are loaded into the agent}. This approach is straight-forward, hits \emph{all}
 keys and would have worked almost always, if not many (almost all) distributions
-distributed programs with stripped symbols to reduce their size.  Sadly this
-stripping also removes any information of the \emph{idtable} symbol.
+distributed programs with stripped symbols to reduce their size; this
+invalidates the symbol-resolution-approach, as this stripping also removes any
+information of the \emph{idtable} symbol.
 
 Furthermore once \emph{one} \emph{identity}-struct is found, \emph{all} structs
 of the same keytype (RSA or DSA) could be found by walking the list this key is
