@@ -10,7 +10,6 @@
 \usepackage{epsf,epsfig,eepic}
 \usepackage{stmaryrd,latexsym}
 \usepackage{a4,amsmath,amsfonts,amssymb}
-
 \usepackage{abstract}
 
 %\usepackage{endnotes}
@@ -20,6 +19,11 @@
 \textheight 23cm
 \oddsidemargin 1cm
 \evensidemargin 0cm
+
+\author{David R. Piegdon}
+\date{\today}
+\title{hacking in physically addressable memory}
+%\thanks{thankthankthank}
 
 % according to lshort, hyperref has to be last in preamble
 \usepackage{hyperref}
@@ -32,6 +36,10 @@
 \begin{document}
 
 \pagestyle{empty}
+
+\begin{titlepage}
+
+\newpage
 
 %----
 \newlength{\centeroffset}
@@ -76,7 +84,10 @@
 	\end{minipage}
 }
 
-\pagebreak
+%\pagebreak
+
+\end{titlepage}
+
 \begin{small}
 
 %
@@ -103,18 +114,16 @@ implementation of \emph{RFC2795}. Please send fruit to the author. No bananas.
 
 \end{small}
 
-\newpage
+\include{abstract}
 
 \pagestyle{headings}
+
 \tableofcontents
-%\newpage
-
-\pagestyle{headings}
-
 
 % anfang des textes:
 
-\include{abstract}
+%\pagestyle{headings}
+%\include{abstract}
 
 \include{memsources}
 
