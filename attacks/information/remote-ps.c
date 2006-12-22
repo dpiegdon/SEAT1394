@@ -58,8 +58,62 @@ enum memsource {
 	SOURCE_IEEE1394
 };
 
-int main(int argc, char**argv)
+void dump_page(FILE *f, uint32_t pn, char* page)
+{{{
+	uint32_t addr;
+	int i,j;
+	char c;
+	fprintf(f, "dump page %x\n", pn);
+
+	addr = pn * 4096;
+	for(i = 0; i<4096; i+=16) {
+		fprintf(f, "page 0x%05x, addr 0x%08x: ", pn, addr+i);
+		for(j = 0; j < 16; j++) {
+			fprintf(f, "%02hhx ", (page+i)[j]);
+			if((j+1)%4 == 0 && j)
+				fputc(' ', f);
+		}
+		fprintf(f, "  |  ");
+		for(j = 0; j < 16; j++) {
+			c = (page+i)[j];
+			if(c < 0x20)
+				c = '.';
+			if(c >= 0x7f)
+				c = '.';
+			fputc(c, f);
+//			if((j+1)%4 == 0 && j)
+//				putchar(' ');
+		}
+		fprintf(f, "\n");
+	}
+}}}
+
+void dump_proc_userspace(linear_handle lin, char *bin)
 {
+	static int pid = 0;
+
+	addr_t lpn;
+	FILE *pfile;
+	char fname[120];
+	char page[4096];
+
+	mkdir("processes", 0700);
+	snprintf(fname, 119, "processes/%03d-%s", pid, basename(bin));
+	printf("dumping this process to %s\n", fname);
+
+	pfile = fopen(fname, "w");
+	// dump a process
+	for(lpn = 0; lpn < 0xc0000; lpn++) {
+		if(0 == linear_read_page(lin, lpn, page))
+			dump_page(pfile, lpn, page);
+	}
+
+	fclose(pfile);
+	pid++;
+}
+
+int main(int argc, char**argv)
+{{{
 	physical_handle phy;
 	union physical_type_data phy_data;
 	linear_handle lin;
@@ -73,8 +127,9 @@ int main(int argc, char**argv)
 	enum memsource memsource = SOURCE_UNDEFINED;
 	char *filename = NULL;
 	int nodeid = 0;
+	int proc_dump = 0;
 
-	while( -1 != (c = getopt(argc, argv, "n:f:"))) {
+	while( -1 != (c = getopt(argc, argv, "n:f:d"))) {
 		switch (c) {
 			case 'n':
 				memsource = SOURCE_IEEE1394;
@@ -88,6 +143,10 @@ int main(int argc, char**argv)
 			case 'f':
 				memsource = SOURCE_MEMDUMP;
 				filename = optarg;
+				break;
+			case 'd':
+				// dump a process to a file
+				proc_dump = 1;
 				break;
 			default:
 				usage(argv[0]);
@@ -171,6 +230,12 @@ int main(int argc, char**argv)
 
 				if(!proc_info(lin, &argc, &argv, &envc, &envv, &bin)) {
 					printf(" "TERM_RED"FAIL"TERM_RESET": %s\n", bin);
+					if(proc_dump && bin) {
+						char *bin2;
+						bin2 = strdup(bin);
+						dump_proc_userspace(lin, bin2);
+						free(bin2);
+					}
 				} else {
 					if(argc>0) {
 						printf(" %40s\t", bin); fflush(stdout);
@@ -186,6 +251,12 @@ int main(int argc, char**argv)
 //							fflush(stdout);
 //							printf("%s\n", envv[i]);
 //						}
+						if(proc_dump) {
+							char *bin2;
+							bin2 = strdup(bin);
+							dump_proc_userspace(lin, bin2);
+							free(bin2);
+						}
 					} else {
 						putchar('\n');
 					}
@@ -200,5 +271,5 @@ int main(int argc, char**argv)
 	physical_handle_release(phy);
 	
 	return 0;
-}
+}}}
 
