@@ -89,7 +89,7 @@ void dump_page(FILE *f, uint32_t pn, char* page)
 }}}
 
 void dump_proc_userspace(linear_handle lin, char *bin)
-{
+{{{
 	static int pid = 0;
 
 	addr_t lpn;
@@ -98,7 +98,7 @@ void dump_proc_userspace(linear_handle lin, char *bin)
 	char page[4096];
 
 	mkdir("processes", 0700);
-	snprintf(fname, 119, "processes/%03d-%s", pid, basename(bin));
+	snprintf(fname, 119, "processes/%03d-%s", pid, bin);
 	printf("dumping this process to %s\n", fname);
 
 	pfile = fopen(fname, "w");
@@ -110,6 +110,26 @@ void dump_proc_userspace(linear_handle lin, char *bin)
 
 	fclose(pfile);
 	pid++;
+}}}
+
+void proc_seek_elf(linear_handle lin)
+{
+	char page[4096];
+
+
+}
+
+void do_analyse_process(linear_handle lin, char *bin, char **envv, char **argc)
+{
+	char *bin2;
+
+	// dump userspace-part of the process to a file
+	bin2 = strdup(bin);
+	dump_proc_userspace(lin, basename(bin2));
+	free(bin2);
+
+	// seek ELF mappings
+	proc_seek_elf(lin);
 }
 
 int main(int argc, char**argv)
@@ -127,9 +147,9 @@ int main(int argc, char**argv)
 	enum memsource memsource = SOURCE_UNDEFINED;
 	char *filename = NULL;
 	int nodeid = 0;
-	int proc_dump = 0;
+	int analyse_process = 0;
 
-	while( -1 != (c = getopt(argc, argv, "n:f:d"))) {
+	while( -1 != (c = getopt(argc, argv, "n:f:i"))) {
 		switch (c) {
 			case 'n':
 				memsource = SOURCE_IEEE1394;
@@ -144,9 +164,9 @@ int main(int argc, char**argv)
 				memsource = SOURCE_MEMDUMP;
 				filename = optarg;
 				break;
-			case 'd':
-				// dump a process to a file
-				proc_dump = 1;
+			case 'i':
+				// give info on process (includes dumping the virtual mem to a file)
+				analyse_process = 1;
 				break;
 			default:
 				usage(argv[0]);
@@ -230,12 +250,8 @@ int main(int argc, char**argv)
 
 				if(!proc_info(lin, &argc, &argv, &envc, &envv, &bin)) {
 					printf(" "TERM_RED"FAIL"TERM_RESET": %s\n", bin);
-					if(proc_dump && bin) {
-						char *bin2;
-						bin2 = strdup(bin);
-						dump_proc_userspace(lin, bin2);
-						free(bin2);
-					}
+					if(analyse_process && bin)
+						do_analyse_process(lin, bin, envv, argv);
 				} else {
 					if(argc>0) {
 						printf(" %40s\t", bin); fflush(stdout);
@@ -251,12 +267,8 @@ int main(int argc, char**argv)
 //							fflush(stdout);
 //							printf("%s\n", envv[i]);
 //						}
-						if(proc_dump) {
-							char *bin2;
-							bin2 = strdup(bin);
-							dump_proc_userspace(lin, bin2);
-							free(bin2);
-						}
+						if(analyse_process)
+							do_analyse_process(lin, bin, envv, argv);
 					} else {
 						putchar('\n');
 					}
