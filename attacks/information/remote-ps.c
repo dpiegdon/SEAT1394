@@ -32,6 +32,9 @@
 #include <errno.h>
 #include <string.h>
 
+#include <elf.h>
+#include <libelf.h>
+
 #include <physical.h>
 #include <linear.h>
 #include <endian_swap.h>
@@ -88,8 +91,21 @@ void dump_page(FILE *f, uint32_t pn, char* page)
 	}
 }}}
 
-void dump_proc_userspace(linear_handle lin, char *bin)
+int is_elf(char *c)
 {{{
+	if(   (c[0] == ELFMAG0)
+	   && (c[1] == ELFMAG1)
+	   && (c[2] == ELFMAG2)
+	   && (c[3] == ELFMAG3) )
+		return 1;
+	else
+		return 0;
+}}}
+
+
+void do_analyse_process(linear_handle lin, char *bin, char **envv, char **argc)
+{
+	char *bin2;
 	static int pid = 0;
 
 	addr_t lpn;
@@ -97,39 +113,27 @@ void dump_proc_userspace(linear_handle lin, char *bin)
 	char fname[120];
 	char page[4096];
 
+	// create the dump-file for this process
+	bin2 = strdup(bin);
 	mkdir("processes", 0700);
-	snprintf(fname, 119, "processes/%03d-%s", pid, bin);
+	snprintf(fname, 119, "processes/%03d-%s", pid, basename(bin2));
+	pfile = fopen(fname, "w");
 	printf("dumping this process to %s\n", fname);
 
-	pfile = fopen(fname, "w");
-	// dump a process
+	// scan full userspace
 	for(lpn = 0; lpn < 0xc0000; lpn++) {
-		if(0 == linear_read_page(lin, lpn, page))
+		if(0 == linear_read_page(lin, lpn, page)) {
 			dump_page(pfile, lpn, page);
+			if(is_elf(page)) {
+				printf("\tELF at 0x%08llx\n", lpn << 12);
+			}
+		}
 	}
 
+	// release
 	fclose(pfile);
 	pid++;
-}}}
-
-void proc_seek_elf(linear_handle lin)
-{
-	char page[4096];
-
-
-}
-
-void do_analyse_process(linear_handle lin, char *bin, char **envv, char **argc)
-{
-	char *bin2;
-
-	// dump userspace-part of the process to a file
-	bin2 = strdup(bin);
-	dump_proc_userspace(lin, basename(bin2));
 	free(bin2);
-
-	// seek ELF mappings
-	proc_seek_elf(lin);
 }
 
 int main(int argc, char**argv)
