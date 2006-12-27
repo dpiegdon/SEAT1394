@@ -42,24 +42,23 @@
 #include "proc_info.h"
 #include "term.h"
 
-char pagedir[4096];
-
-#define NODE_OFFSET     0xffc0
-
-void usage(char* argv0)
-{
-	printf( "%s <"TERM_YELLOW"-n nodeid"TERM_RESET"|"TERM_YELLOW"-f filename"TERM_RESET">\n"
-		"\tprint a process list of\n"
-		"\t\t* the host connected via firewire with the given nodeid\n"
-		"\t\t* the memory dump in the given file\n",
-		argv0);
-}
-
 enum memsource {
 	SOURCE_UNDEFINED,
 	SOURCE_MEMDUMP,
 	SOURCE_IEEE1394
 };
+
+struct addr_list {
+	struct addr_list *next;
+	addr_t adr;
+	int count;
+};
+
+char pagedir[4096];
+int dump_process = 0;
+static struct addr_list *addr_list_head = NULL;
+
+#define NODE_OFFSET     0xffc0
 
 void dump_page(FILE *f, uint32_t pn, char* page)
 {{{
@@ -84,11 +83,46 @@ void dump_page(FILE *f, uint32_t pn, char* page)
 			if(c >= 0x7f)
 				c = '.';
 			fputc(c, f);
-//			if((j+1)%4 == 0 && j)
-//				putchar(' ');
 		}
 		fprintf(f, "\n");
 	}
+}}}
+
+int test_and_remember(addr_t padr)
+{{{
+	struct addr_list *el;
+
+	if(!addr_list_head) {
+		addr_list_head = malloc(sizeof(struct addr_list));
+		addr_list_head->next = NULL;
+		addr_list_head->adr = padr;
+		addr_list_head->count = 1;
+		el = addr_list_head;
+	} else {
+		el = addr_list_head;
+		while(el) {
+			if(el->adr == padr) {
+				el->count++;
+				break;
+			} else {
+				// element does not match
+				if(el->next) {
+					// test next element
+					el = el->next;
+				} else {
+					// end of list. append new element.
+					el->next = malloc(sizeof(struct addr_list));
+					el = el->next;
+					el->next = NULL;
+					el->adr = padr;
+					el->count = 1;
+					break;
+				}
+			}
+		}
+	}
+
+	return (el->count - 1);
 }}}
 
 int is_elf(char *c)
@@ -102,39 +136,122 @@ int is_elf(char *c)
 		return 0;
 }}}
 
-
-void do_analyse_process(linear_handle lin, char *bin, char **envv, char **argc)
-{
-	char *bin2;
-	static int pid = 0;
-
-	addr_t lpn;
-	FILE *pfile;
+void do_analyse_process(linear_handle lin, char *bin)
+{{{
+	char *bin2 = NULL;
 	char fname[120];
+	FILE *pfile = NULL;
+
+	static int pid = 0;
+	addr_t lpn;
 	char page[4096];
 
 	// create the dump-file for this process
-	bin2 = strdup(bin);
-	mkdir("processes", 0700);
-	snprintf(fname, 119, "processes/%03d-%s", pid, basename(bin2));
-	pfile = fopen(fname, "w");
-	printf("dumping this process to %s\n", fname);
+	printf("\n\ndump_process: %d\n\n", dump_process);
+
+	if(dump_process) {
+		bin2 = strdup(bin);
+		snprintf(fname, 119, "processes/%03d-%s", pid, basename(bin2));
+		printf("dumping this process to %s\n", fname);
+		pfile = fopen(fname, "w");
+	}
 
 	// scan full userspace
 	for(lpn = 0; lpn < 0xc0000; lpn++) {
-		if(0 == linear_read_page(lin, lpn, page)) {
-			dump_page(pfile, lpn, page);
+		// if we dump the process, read full page and dump it, for all pages
+		if(dump_process) {
+			if(0 == linear_read_page(lin, lpn, page))
+				dump_page(pfile, lpn, page);
+			else
+				continue;
+		}
+		// if process dumping, page is already loaded; else load first 4 bytes
+		// and test for ELF
+		if(dump_process || (0 == linear_read(lin, lpn << 12, page, 4))) {
 			if(is_elf(page)) {
-				printf("\tELF at 0x%08llx\n", lpn << 12);
-			}
+				if(!dump_process) {
+					// page was not yet loaded
+					linear_read_page(lin, lpn, page);
+				}
+				Elf32_Ehdr *hdr;
+				int correct_byteorder;
+				uint16_t i;
+				addr_t padr;
+
+				printf("\tELF at 0x%08llx: ", lpn << 12);
+
+				hdr = (Elf32_Ehdr*) page;
+				switch (hdr->e_ident[EI_CLASS]) {
+					case ELFCLASS32:
+						break;
+					default:
+						printf("ELF is not 32bit. not analysing this one.\n");
+						continue;
+				}
+				switch (hdr->e_ident[EI_DATA]) {
+					case ELFDATA2LSB:
+						printf("LSB, ");
+#ifdef __BIG_ENDIAN__
+						correct_byteorder = 1;
+#else
+						correct_byteorder = 0;
+#endif
+						break;
+					case ELFDATA2MSB:
+						printf("MSB, ");
+#ifdef __BIG_ENDIAN__
+						correct_byteorder = 0;
+#else
+						correct_byteorder = 1;
+#endif
+						break;
+					default:
+						printf("unknown byteorder. not analysing this one.\n"); 
+						continue;
+				}
+
+				i = hdr->e_type;
+				//printf("%x ", i);
+				if(correct_byteorder) {
+					i = endian_swap16(i);
+				}
+				//printf("%x ", i);
+				switch (i) {
+					case ET_NONE: printf("unknown type. "); break;
+					case ET_REL:  printf("relocatable file. "); break;
+					case ET_EXEC: printf("executable file. "); break;
+					case ET_DYN:  
+						      linear_to_physical(lin, lpn << 12, &padr);
+						      printf("shared object, seen %d times ",
+						             test_and_remember(padr));
+						      break;
+					case ET_CORE: printf("core file. "); break;
+					default:      printf("unknown filetype. "); break;
+				}
+				putchar('\n');
+			}//ENDIF is elf
 		}
 	}
 
 	// release
-	fclose(pfile);
 	pid++;
-	free(bin2);
-}
+	if(pfile)
+		fclose(pfile);
+	if(bin2)
+		free(bin2);
+}}}
+
+void usage(char* argv0)
+{{{
+	printf( "%s [-] <"TERM_YELLOW"-n nodeid"TERM_RESET"|"TERM_YELLOW"-f filename"TERM_RESET">\n"
+		"\tprint a process list of\n"
+		"\t\t* the host connected via firewire with the given nodeid\n"
+		"\t\t* the memory dump in the given file\n"
+		"\t-e : print full environment for each process\n"
+		"\t-i : show some info on each mapped ELF\n"
+		"\t-d : dump virtual address space of each process (only if -i)\n",
+		argv0);
+}}}
 
 int main(int argc, char**argv)
 {{{
@@ -152,10 +269,12 @@ int main(int argc, char**argv)
 	char *filename = NULL;
 	int nodeid = 0;
 	int analyse_process = 0;
+	int print_environment = 0;
 
-	while( -1 != (c = getopt(argc, argv, "n:f:i"))) {
+	while( -1 != (c = getopt(argc, argv, "n:f:ied"))) {
 		switch (c) {
 			case 'n':
+				// phys.source: ieee1394
 				memsource = SOURCE_IEEE1394;
 				nodeid = strtoll(optarg, &p, 10);
 				if((p&&(*p)) || (nodeid > 63) || (nodeid < 0)) {
@@ -165,12 +284,23 @@ int main(int argc, char**argv)
 				}
 				break;
 			case 'f':
+				// phys.source: file
 				memsource = SOURCE_MEMDUMP;
 				filename = optarg;
 				break;
 			case 'i':
-				// give info on process (includes dumping the virtual mem to a file)
+				// give info on mapped ELFs for each process
 				analyse_process = 1;
+				break;
+			case 'e':
+				// print full environment for each process
+				print_environment = 1;
+				break;
+			case 'd':
+				// dump each process's virtual address space to a file
+				printf("dumping all processes to file\n");
+				dump_process = 1;
+				mkdir("processes", 0700);
 				break;
 			default:
 				usage(argv[0]);
@@ -229,9 +359,9 @@ int main(int argc, char**argv)
 		return -5;
 	}
 
-	// search all pages for pagedirs
+	// search all pages in lowmem for pagedirs
 	// then, for each found, print process name
-	for( pn = 0; pn < 0x80000; pn++ ) {
+	for( pn = 0; pn < 0x40000; pn++ ) {
 		if((pn%0x100) == 0) {
 			printf("0x%05llx\r", pn);
 			fflush(stdout);
@@ -255,7 +385,7 @@ int main(int argc, char**argv)
 				if(!proc_info(lin, &argc, &argv, &envc, &envv, &bin)) {
 					printf(" "TERM_RED"FAIL"TERM_RESET": %s\n", bin);
 					if(analyse_process && bin)
-						do_analyse_process(lin, bin, envv, argv);
+						do_analyse_process(lin, bin);
 				} else {
 					if(argc>0) {
 						printf(" %40s\t", bin); fflush(stdout);
@@ -266,18 +396,33 @@ int main(int argc, char**argv)
 						}
 						putchar('\n');
 						// print envv
-//						for(i = 0; i<envc; i++) {
-//							printf("\t\t\t\tENV(%d) %p", i, envv[i]);
-//							fflush(stdout);
-//							printf("%s\n", envv[i]);
-//						}
+						if(print_environment) {
+							for(i = 0; i<envc; i++) {
+								printf("\t\t\t\tENV(%03d) @[%p] ", i, envv[i]);
+								fflush(stdout);
+								printf("\"%s\"\n", envv[i]);
+							}
+						}
 						if(analyse_process)
-							do_analyse_process(lin, bin, envv, argv);
+							do_analyse_process(lin, bin);
 					} else {
 						putchar('\n');
 					}
 				}
 			}
+		}
+	}
+
+	{
+		struct addr_list *el;
+
+		//print list of mapped libs with count
+		printf("\n\nfound the following libs:\n");
+		while(addr_list_head) {
+			el = addr_list_head;
+			printf("\t0x%08llx, count %02d\n", el->adr, el->count);
+			addr_list_head = el->next;
+			free(el);
 		}
 	}
 
