@@ -147,8 +147,6 @@ void do_analyse_process(linear_handle lin, char *bin)
 	char page[4096];
 
 	// create the dump-file for this process
-	printf("\n\ndump_process: %d\n\n", dump_process);
-
 	if(dump_process) {
 		bin2 = strdup(bin);
 		snprintf(fname, 119, "processes/%03d-%s", pid, basename(bin2));
@@ -178,7 +176,8 @@ void do_analyse_process(linear_handle lin, char *bin)
 				uint16_t i;
 				addr_t padr;
 
-				printf("\tELF at 0x%08llx: ", lpn << 12);
+			      linear_to_physical(lin, lpn << 12, &padr);
+				printf("\tELF at 0x%08llx (phys 0x%08llx): ", lpn << 12, padr);
 
 				hdr = (Elf32_Ehdr*) page;
 				switch (hdr->e_ident[EI_CLASS]) {
@@ -413,14 +412,16 @@ int main(int argc, char**argv)
 		}
 	}
 
-	{
+	if(analyse_process) {
 		struct addr_list *el;
 
 		//print list of mapped libs with count
 		printf("\n\nfound the following libs:\n");
 		while(addr_list_head) {
 			el = addr_list_head;
-			printf("\t0x%08llx, count %02d\n", el->adr, el->count);
+			if(el->count > 5)
+				printf(TERM_BLUE);
+			printf("\t0x%08llx, count %02d"TERM_RESET"\n", el->adr, el->count);
 			addr_list_head = el->next;
 			free(el);
 		}
