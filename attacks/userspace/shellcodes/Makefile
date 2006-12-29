@@ -27,7 +27,7 @@ AS=nasm
 all:	testcode print.o
 
 clean:
-	-rm -f *.o *.lst print-test
+	-rm -f *.o *.lst testcode
 
 print.o: print.s
 	nasm -l print.lst -o print.o print.s

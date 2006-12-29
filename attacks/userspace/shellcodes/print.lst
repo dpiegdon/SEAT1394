@@ -1,0 +1,30 @@
+     1                                  BITS 32
+     2                                  
+     3 00000000 E820000000              	call		string_get_address
+     4                                  	;                1234567890123456789012345678901
+     5 00000005 666F6F626172323320-     	db		'foobar23 - marked by SEAT1394', 0xd, 0xa, 0
+     6 0000000E 2D206D61726B656420-
+     7 00000017 627920534541543133-
+     8 00000020 39340D0A00         
+     9                                  string_get_address:
+    10 00000025 31C0                    	xor		eax,eax
+    11 00000027 B004                    	mov		al, 4				; call write
+    12 00000029 31DB                    	xor		ebx,ebx
+    13 0000002B 43                      	inc		ebx				; stdout (1) as FD
+    14 0000002C 59                      	pop		ecx				; string address
+    15 0000002D 31D2                    	xor		edx,edx
+    16 0000002F B220                    	mov		dl,0x20				; size of string
+    17 00000031 CD80                    	int		0x80
+    18                                  
+    19                                  ;	xor		eax,eax
+    20                                  ;	mov		al,6				; close stdin
+    21                                  ;	xor		ebx,ebx
+    22                                  ;	inc		ebx
+    23                                  ;	int		0x80
+    24                                  
+    25 00000033 31C0                    	xor		eax,eax
+    26 00000035 B001                    	mov		al,0x01
+    27 00000037 31DB                    	xor		ebx,ebx				; exit code
+    28 00000039 CD80                    	int		0x80
+    29                                  
+    30 0000003B C3                      	ret

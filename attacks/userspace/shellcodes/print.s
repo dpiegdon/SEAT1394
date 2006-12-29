@@ -4,20 +4,24 @@ BITS 32
 	;                1234567890123456789012345678901
 	db		'foobar23 - marked by SEAT1394', 0xd, 0xa, 0
 string_get_address:
-	pop		esi
 	xor		eax,eax
-
-	mov		ebx,1				; stdout as FD
-	mov		al, 4				; write
-	mov		ecx,esi				; string-address
-	mov		dx,0x20				; size of string
+	mov		al, 4				; call write
+	xor		ebx,ebx
+	inc		ebx				; stdout (1) as FD
+	pop		ecx				; string address
+	xor		edx,edx
+	mov		dl,0x20				; size of string
 	int		0x80
 
-	mov		al,6				; close
-	int		0x80
-
-;	mov		al,0x01				; exit (sigsegv?!)
-;	xor		ebx,ebx				; exit code
+;	xor		eax,eax
+;	mov		al,6				; close stdin
+;	xor		ebx,ebx
+;	inc		ebx
 ;	int		0x80
+
+	xor		eax,eax
+	mov		al,0x01
+	xor		ebx,ebx				; exit code
+	int		0x80
 
 	ret
