@@ -32,9 +32,6 @@
 #include <errno.h>
 #include <string.h>
 
-#include <elf.h>
-#include <libelf.h>
-
 #include <physical.h>
 #include <linear.h>
 #include <endian_swap.h>
@@ -48,35 +45,41 @@ enum memsource {
 	SOURCE_IEEE1394
 };
 
-struct addr_list {
-	struct addr_list *next;
-	addr_t adr;
-	int count;
-};
-
 char pagedir[4096];
-int dump_process = 0;
-static struct addr_list *addr_list_head = NULL;
 
 #define NODE_OFFSET     0xffc0
 
-void dump_page(FILE *f, uint32_t pn, char* page)
+void dump_page_wide(FILE *f, uint32_t pn, char* page, char* diffpage)
 {{{
 	uint32_t addr;
 	int i,j;
-	char c;
 	fprintf(f, "dump page %x\n", pn);
+#define COLUMNCOUNT 56
+	// 56
+#define HEX_ONLY
 
 	addr = pn * 4096;
-	for(i = 0; i<4096; i+=16) {
-		fprintf(f, "page 0x%05x, addr 0x%08x: ", pn, addr+i);
-		for(j = 0; j < 16; j++) {
+	for(i = 0; i<4096; i+=COLUMNCOUNT) {
+		fprintf(f, "(p 0x%05x) 0x%08x: ", pn, addr+i);
+		for(j = 0; j < COLUMNCOUNT; j++) {
+			if( (page+i+j) >= page+4096 )
+				break;
+			if( (page+i)[j] != (diffpage+i)[j])
+				printf(TERM_RED);
 			fprintf(f, "%02hhx ", (page+i)[j]);
+			if( (page+i)[j] != (diffpage+i)[j])
+				printf(TERM_RESET);
+
 			if((j+1)%4 == 0 && j)
 				fputc(' ', f);
 		}
+#ifndef HEX_ONLY
+		char c;
 		fprintf(f, "  |  ");
-		for(j = 0; j < 16; j++) {
+		for(j = 0; j < COLUMNCOUNT; j++) {
+			if( (page+i+j) >= page+4096 )
+				break;
+
 			c = (page+i)[j];
 			if(c < 0x20)
 				c = '.';
@@ -84,171 +87,38 @@ void dump_page(FILE *f, uint32_t pn, char* page)
 				c = '.';
 			fputc(c, f);
 		}
+#endif
 		fprintf(f, "\n");
 	}
 }}}
 
-int test_and_remember(addr_t padr)
+void try_inject(linear_handle lin, char *code, int codelen)
 {{{
-	struct addr_list *el;
+	addr_t stack_bottom;
+	addr_t binary_first;
+	addr_t binary_last;
+	// first seek the stack-page with environment and stuff
+	stack_bottom = linear_seek_mapped_page(lin, 0xbffff, 0x1000, -1);
 
-	if(!addr_list_head) {
-		addr_list_head = malloc(sizeof(struct addr_list));
-		addr_list_head->next = NULL;
-		addr_list_head->adr = padr;
-		addr_list_head->count = 1;
-		el = addr_list_head;
-	} else {
-		el = addr_list_head;
-		while(el) {
-			if(el->adr == padr) {
-				el->count++;
-				break;
-			} else {
-				// element does not match
-				if(el->next) {
-					// test next element
-					el = el->next;
-				} else {
-					// end of list. append new element.
-					el->next = malloc(sizeof(struct addr_list));
-					el = el->next;
-					el->next = NULL;
-					el->adr = padr;
-					el->count = 1;
-					break;
-				}
-			}
-		}
-	}
+	// now seek bounds of mapped binary
+	binary_first = linear_seek_mapped_page(lin, 0x08000, 0x1000, 1);
+	binary_last = linear_seek_unmapped_page(lin, binary_first, 0x1000, 1);
+	binary_last--;
 
-	return (el->count - 1);
-}}}
+	// inject code into stack
 
-int is_elf(char *c)
-{{{
-	if(   (c[0] == ELFMAG0)
-	   && (c[1] == ELFMAG1)
-	   && (c[2] == ELFMAG2)
-	   && (c[3] == ELFMAG3) )
-		return 1;
-	else
-		return 0;
-}}}
 
-void do_analyse_process(linear_handle lin, char *bin)
-{{{
-	char *bin2 = NULL;
-	char fname[120];
-	FILE *pfile = NULL;
+	// replace all interesting pointers on stack with pointer to our code
 
-	static int pid = 0;
-	addr_t lpn;
-	char page[4096];
 
-	// create the dump-file for this process
-	if(dump_process) {
-		bin2 = strdup(bin);
-		snprintf(fname, 119, "processes/%03d-%s", pid, basename(bin2));
-		printf("dumping this process to %s\n", fname);
-		pfile = fopen(fname, "w");
-	}
-
-	// scan full userspace
-	for(lpn = 0; lpn < 0xc0000; lpn++) {
-		// if we dump the process, read full page and dump it, for all pages
-		if(dump_process) {
-			if(0 == linear_read_page(lin, lpn, page))
-				dump_page(pfile, lpn, page);
-			else
-				continue;
-		}
-		// if process dumping, page is already loaded; else load first 4 bytes
-		// and test for ELF
-		if(dump_process || (0 == linear_read(lin, lpn << 12, page, 4))) {
-			if(is_elf(page)) {
-				if(!dump_process) {
-					// page was not yet loaded
-					linear_read_page(lin, lpn, page);
-				}
-				Elf32_Ehdr *hdr;
-				int correct_byteorder;
-				uint16_t i;
-				addr_t padr;
-
-			      linear_to_physical(lin, lpn << 12, &padr);
-				printf("\tELF at 0x%08llx (phys 0x%08llx): ", lpn << 12, padr);
-
-				hdr = (Elf32_Ehdr*) page;
-				switch (hdr->e_ident[EI_CLASS]) {
-					case ELFCLASS32:
-						break;
-					default:
-						printf("ELF is not 32bit. not analysing this one.\n");
-						continue;
-				}
-				switch (hdr->e_ident[EI_DATA]) {
-					case ELFDATA2LSB:
-						printf("LSB, ");
-#ifdef __BIG_ENDIAN__
-						correct_byteorder = 1;
-#else
-						correct_byteorder = 0;
-#endif
-						break;
-					case ELFDATA2MSB:
-						printf("MSB, ");
-#ifdef __BIG_ENDIAN__
-						correct_byteorder = 0;
-#else
-						correct_byteorder = 1;
-#endif
-						break;
-					default:
-						printf("unknown byteorder. not analysing this one.\n"); 
-						continue;
-				}
-
-				i = hdr->e_type;
-				//printf("%x ", i);
-				if(correct_byteorder) {
-					i = endian_swap16(i);
-				}
-				//printf("%x ", i);
-				switch (i) {
-					case ET_NONE: printf("unknown type. "); break;
-					case ET_REL:  printf("relocatable file. "); break;
-					case ET_EXEC: printf("executable file. "); break;
-					case ET_DYN:  
-						      linear_to_physical(lin, lpn << 12, &padr);
-						      printf("shared object, seen %d times ",
-						             test_and_remember(padr));
-						      break;
-					case ET_CORE: printf("core file. "); break;
-					default:      printf("unknown filetype. "); break;
-				}
-				putchar('\n');
-			}//ENDIF is elf
-		}
-	}
-
-	// release
-	pid++;
-	if(pfile)
-		fclose(pfile);
-	if(bin2)
-		free(bin2);
 }}}
 
 void usage(char* argv0)
 {{{
-	printf( "%s [-] <"TERM_YELLOW"-n nodeid"TERM_RESET"|"TERM_YELLOW"-f filename"TERM_RESET">\n"
-		"\tprint a process list of\n"
+	printf( "%s [-] <"TERM_YELLOW"-n nodeid"TERM_RESET"|"TERM_YELLOW"-f filename"TERM_RESET"> -b <binary> -c <codefile>\n"
+		"\ninject -c <codefile> into first process matching the -b <binary>\n"
 		"\t\t* the host connected via firewire with the given nodeid\n"
-		"\t\t* the memory dump in the given file\n"
-		"\t-e : print full environment for each process\n"
-		"\t-i : show some info on each mapped ELF\n"
-		"\t-d : dump virtual address space of each process (only if -i)\n",
+		"\t\t* the memory dump in the given file\n",
 		argv0);
 }}}
 
@@ -263,14 +133,14 @@ int main(int argc, char**argv)
 	float prob;
 	int c;
 	char *p;
+	char *seek_binary = NULL;
+	char *inject_file = NULL;
 
 	enum memsource memsource = SOURCE_UNDEFINED;
 	char *filename = NULL;
 	int nodeid = 0;
-	int analyse_process = 0;
-	int print_environment = 0;
 
-	while( -1 != (c = getopt(argc, argv, "n:f:ied"))) {
+	while( -1 != (c = getopt(argc, argv, "n:f:b:c:"))) {
 		switch (c) {
 			case 'n':
 				// phys.source: ieee1394
@@ -287,19 +157,11 @@ int main(int argc, char**argv)
 				memsource = SOURCE_MEMDUMP;
 				filename = optarg;
 				break;
-			case 'i':
-				// give info on mapped ELFs for each process
-				analyse_process = 1;
+			case 'b':
+				seek_binary = optarg;
 				break;
-			case 'e':
-				// print full environment for each process
-				print_environment = 1;
-				break;
-			case 'd':
-				// dump each process's virtual address space to a file
-				printf("dumping all processes to file\n");
-				dump_process = 1;
-				mkdir("processes", 0700);
+			case 'c':
+				inject_file = optarg;
 				break;
 			default:
 				usage(argv[0]);
@@ -349,6 +211,18 @@ int main(int argc, char**argv)
 		return -2;
 	}
 
+	if(!seek_binary) {
+		printf("missing binary to seek\n");
+		usage(argv[0]);
+		return -2;
+	}
+
+	if(!inject_file) {
+		printf("missing codefile to inject\n");
+		usage(argv[0]);
+		return -2;
+	}
+
 	// associate linear
 	printf("new lin handle..\n"); fflush(stdout);
 	lin = linear_new_handle();
@@ -379,51 +253,40 @@ int main(int argc, char**argv)
 				int argc, envc;
 				char **argv, **envv;
 				char *bin;
-				int i;
 
-				if(!proc_info(lin, &argc, &argv, &envc, &envv, &bin)) {
-					printf(" "TERM_RED"FAIL"TERM_RESET": %s\n", bin);
-					if(analyse_process && bin)
-						do_analyse_process(lin, bin);
-				} else {
-					if(argc>0) {
-						printf(" %40s\t", bin); fflush(stdout);
+				proc_info(lin, &argc, &argv, &envc, &envv, &bin);
+				if(bin) {
+					printf("found <\"%s\">\n", bin);
+					if(0 == strcmp(bin, seek_binary)) {
+						int fd;
+#define CODEBUFFERSIZE 4096
+						char codebuffer[CODEBUFFERSIZE];
+						int codelen;
 
-						// print argv
-						for(i = 0; i<argc; i++) {
-							printf("%s ", argv[i]); fflush(stdout);
+						printf("\tmatching! beginning inject sequence\n");
+
+						fd = open(inject_file, O_RDONLY);
+						if(fd < 0) {
+							printf("failed to open codefile \"%s\"!", inject_file);
+							break;
 						}
-						putchar('\n');
-						// print envv
-						if(print_environment) {
-							for(i = 0; i<envc; i++) {
-								printf("\t\t\t\tENV(%03d) @[%p] ", i, envv[i]);
-								fflush(stdout);
-								printf("\"%s\"\n", envv[i]);
-							}
+						codelen = read(fd, codebuffer, CODEBUFFERSIZE);
+						if(codelen < 1) {
+							printf("failed to read from codefile \"%s\"! (empty file?)", inject_file);
+							break;
 						}
-						if(analyse_process)
-							do_analyse_process(lin, bin);
-					} else {
-						putchar('\n');
+						if(codelen == 4095) {
+							printf("possibly truncated code after byte 4096.\n"
+								"this is the max size for injecting code!\n");
+						}
+
+						try_inject(lin, codebuffer, codelen);
+						close(fd);
+
+						break;
 					}
 				}
 			}
-		}
-	}
-
-	if(analyse_process) {
-		struct addr_list *el;
-
-		//print list of mapped libs with count
-		printf("\n\nfound the following libs:\n");
-		while(addr_list_head) {
-			el = addr_list_head;
-			if(el->count > 5)
-				printf(TERM_BLUE);
-			printf("\t0x%08llx, count %02d"TERM_RESET"\n", el->adr, el->count);
-			addr_list_head = el->next;
-			free(el);
 		}
 	}
 
