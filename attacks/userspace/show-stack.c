@@ -1,7 +1,7 @@
 /*  $Id$
  *  vim: fdm=marker
  *
- *  inject-code: inject some code into a process
+ *  show-stack: dump a stack page of a process
  *
  *  Copyright (C) 2006
  *  losTrace aka "David R. Piegdon"
