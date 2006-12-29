@@ -130,7 +130,7 @@ void try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int codelen
 	uint32_t dest_value;			// the value we wish to write
 	uint32_t mark_value;			// value of the mark
 	addr_t seeker;				// pointer for seeking over the stack
-	int do_sleep = 0;
+//	int do_sleep = 0;
 	int top_of_stack = 0;			// marked, if there was one stack-page unmapped
 
 	seeker = code_location;
@@ -163,17 +163,17 @@ void try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int codelen
 				// could be a value; just overwrite it.
 				if(!pretend)
 					linear_write(lin, seeker, &dest_value, 4);
-				do_sleep = 1;
+//				do_sleep = 1;
 			}
 		} else {
 			printf("\t" TERM_BLUE "process terminated" TERM_RESET "\n");
 			break;
 		}
 		seeker -= 4;
-		if(do_sleep) {
-			do_sleep = 0;
-			sleep(1);
-		}
+//		if(do_sleep) {
+//			do_sleep = 0;
+//			sleep(1);
+//		}
 		linear_read(lin, mark_location, &mark_value, 4);
 	}
 	printf("\t* mark is 0x%08x\n",mark_value);
