@@ -6,7 +6,7 @@
      6                                  string_get_address:
      7 00000009 5A                      	pop		edx
      8 0000000A 8B02                    	mov		eax, [edx]
-     9 0000000C F7DA                    	neg		edx
+     9 0000000C F7D8                    	neg		eax
     10 0000000E 8902                    	mov		[edx], eax
     11                                  
     12                                  ; continue with other shellcode

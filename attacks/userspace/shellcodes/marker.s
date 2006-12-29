@@ -6,7 +6,7 @@ BITS 32
 string_get_address:
 	pop		edx
 	mov		eax, [edx]
-	neg		edx
+	neg		eax
 	mov		[edx], eax
 
 ; continue with other shellcode
