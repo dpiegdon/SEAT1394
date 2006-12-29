@@ -323,3 +323,47 @@ linear_write_page(linear_handle h, addr_t pagenum, void* buf)
 		return -EBADR;
 }
 
+// seek first mapped page from a given start-location in a direction (-1 or +1)
+addr_t __attribute__ ((visibility ("default")))
+seek_mapped_page(linear_handle h, addr_t start_page, int max_distance, int direction)
+{
+	addr_t pn;
+	addr_t foo;
+
+	if(direction == 1) {
+		for(pn = start_page; pn <= start_page + max_distance; pn++)
+			if(0 == linear_to_physical(h, pn * h->phy->pagesize, &foo))
+				return pn;
+	} else if(direction == -1) {
+		for(pn = start_page; pn >= start_page - max_distance; pn--)
+			if(0 == linear_to_physical(h, pn * h->phy->pagesize, &foo))
+				return pn;
+	} else {
+		return -1;
+	}
+
+	return -1;
+}
+
+// seek first unmapped page from a given start-location in a direction (-1 or +1)
+addr_t __attribute__ ((visibility ("default")))
+seek_unmapped_page(linear_handle h, addr_t start_page, int max_distance, int direction)
+{
+	addr_t pn;
+	addr_t foo;
+
+	if(direction == 1) {
+		for(pn = start_page; pn <= start_page + max_distance; pn++)
+			if(0 != linear_to_physical(h, pn * h->phy->pagesize, &foo))
+				return pn;
+	} else if(direction == -1) {
+		for(pn = start_page; pn >= start_page - max_distance; pn--)
+			if(0 != linear_to_physical(h, pn * h->phy->pagesize, &foo))
+				return pn;
+	} else {
+		return -1;
+	}
+
+	return -1;
+}
+

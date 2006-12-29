@@ -128,5 +128,11 @@ int linear_read_page(linear_handle h, addr_t pagenum, void* buf);
 // write a linearly addressed page
 int linear_write_page(linear_handle h, addr_t pagenum, void* buf);
 
+// seek first mapped page from a given start-location in a direction (-1 or +1)
+addr_t seek_mapped_page(linear_handle h, addr_t start_page, int max_distance, int direction);
+
+// seek first unmapped page from a given start-location in a direction (-1 or +1)
+addr_t seek_unmapped_page(linear_handle h, addr_t start_page, int max_distance, int direction);
+
 #endif // __LOGICAL_H__
 
