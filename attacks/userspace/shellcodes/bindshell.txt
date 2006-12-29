@@ -1,0 +1,2 @@
+listenes on 0.0.0.0:60666 and spawns a shell on connect.
+use nc <host> 60666; telnet is broken (sends a \0d)
