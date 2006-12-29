@@ -27,17 +27,16 @@ PREFIX?=$(HOME)
 CFLAGS += -I$(PREFIX)/include -O9 -W -Wall -fPIC -finline-functions -ffast-math -funroll-all-loops -Wpointer-arith -DUSETERM
 LDFLAGS+= -L$(PREFIX)/lib -s
 
-all:	inject-code
+all:	inject-code show-stack
 
 clean:
-	-rm -f *.o inject-code
+	-rm -f *.o inject-code show-stack
 
 
 
 inject-code: LDFLAGS += -lphysical -llinear
 inject-code: inject-code.o proc_info.o
 
-inject-code.o: inject-code.c
-
-proc_info.o: proc_info.c
+show-stack: LDFLAGS += -lphysical -llinear
+show-stack: show-stack.o proc_info.o
 
