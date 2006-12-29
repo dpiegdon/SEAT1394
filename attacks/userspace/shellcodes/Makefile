@@ -27,7 +27,7 @@ AS=nasm
 all:	testcode print.o marker.o
 
 clean:
-	-rm -f *.o *.lst testcode
+	-rm -f marker.o print.o *.lst testcode
 
 print.o: print.s
 	nasm -l print.lst -o print.o print.s
