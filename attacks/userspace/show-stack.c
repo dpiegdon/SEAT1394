@@ -1,4 +1,4 @@
-/*  $Id: inject-code.c 230 2006-12-28 03:27:34Z lostrace $
+/*  $Id$
  *  vim: fdm=marker
  *
  *  inject-code: inject some code into a process
