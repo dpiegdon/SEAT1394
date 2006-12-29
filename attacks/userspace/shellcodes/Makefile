@@ -20,8 +20,15 @@
 
 .PHONY: all clean
 
-all:	inject-code
+CC=gcc
+CFLAGS=-g
+AS=nasm
+
+all:	testcode print.o
 
 clean:
-	-rm -f *.o
+	-rm -f *.o *.lst print-test
+
+print.o: print.s
+	nasm -l print.lst -o print.o print.s
 
