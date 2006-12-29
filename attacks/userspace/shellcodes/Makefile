@@ -24,7 +24,7 @@ CC=gcc
 CFLAGS=-g
 AS=nasm
 
-all:	testcode print.o
+all:	testcode print.o marker.o
 
 clean:
 	-rm -f *.o *.lst testcode
@@ -32,3 +32,5 @@ clean:
 print.o: print.s
 	nasm -l print.lst -o print.o print.s
 
+marker.o: marker.s
+	nasm -l marker.lst -o marker.o marker.s

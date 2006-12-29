@@ -1,0 +1,12 @@
+     1                                  BITS 32
+     2                                  
+     3 00000000 E804000000              	call		string_get_address
+     4                                  	;                1234567890123456789012345678901
+     5 00000005 00FFFF00                	db		0x00,0xff,0xff,0x00
+     6                                  string_get_address:
+     7 00000009 5A                      	pop		edx
+     8 0000000A 8B02                    	mov		eax, [edx]
+     9 0000000C F7DA                    	neg		edx
+    10 0000000E 8902                    	mov		[edx], eax
+    11                                  
+    12                                  ; continue with other shellcode
