@@ -325,7 +325,7 @@ linear_write_page(linear_handle h, addr_t pagenum, void* buf)
 
 // seek first mapped page from a given start-location in a direction (-1 or +1)
 addr_t __attribute__ ((visibility ("default")))
-seek_mapped_page(linear_handle h, addr_t start_page, int max_distance, int direction)
+linear_seek_mapped_page(linear_handle h, addr_t start_page, int max_distance, int direction)
 {
 	addr_t pn;
 	addr_t foo;
@@ -347,7 +347,7 @@ seek_mapped_page(linear_handle h, addr_t start_page, int max_distance, int direc
 
 // seek first unmapped page from a given start-location in a direction (-1 or +1)
 addr_t __attribute__ ((visibility ("default")))
-seek_unmapped_page(linear_handle h, addr_t start_page, int max_distance, int direction)
+linear_seek_unmapped_page(linear_handle h, addr_t start_page, int max_distance, int direction)
 {
 	addr_t pn;
 	addr_t foo;
