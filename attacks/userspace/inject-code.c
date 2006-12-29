@@ -173,6 +173,7 @@ void try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int codelen
 	uint32_t mark_value;			// value of the mark
 	addr_t seeker;				// pointer for seeking over the stack
 	int do_sleep = 0;
+	int top_of_stack = 0;			// marked, if there was one stack-page unmapped
 
 	seeker = code_location;
 	seeker = seeker - (seeker & 3);		// align to 32 bit locations.
@@ -184,8 +185,11 @@ void try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int codelen
 	while(mark_value == MARK_UNCHANGED) {
 		if(linear_is_pagedir_fast(lin, pagedir)) {
 			if(0 > linear_read(lin, seeker, &stackvalue, 4)) {
-				printf("\t" TERM_BLUE "reached top of stack" TERM_RESET "\n");
-				break;
+				printf("\t" TERM_BLUE "possibly reached top of stack." TERM_RESET "trying one more\n");
+				if(top_of_stack)
+					break;
+				else
+					top_of_stack = 1;
 			}
 #ifdef __BIG_ENDIAN__
 			stackvalue = endian_swap32(stackvalue);
