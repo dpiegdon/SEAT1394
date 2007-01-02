@@ -81,11 +81,14 @@ As an example, the following applications are of interest:
 % FIXME: def. "snarfing"? well... is defined in wiktionary but marked with a
 % "request for verification"
 \label{ssh-agent-snarfer} To proof that it is rather easy to obtain secret keys
-from a process I have written a sample attack to obtain (snarf\footnote{to
-snarf: To take something by dubious means, but without the connotation of
-stealing: to take something without regard to etiquette. // To slurp. // To load
-it in entirety; to copy as a whole. (en.wiktionary.org)}) \emph{ssh
-public/private keypairs} from \texttt{ssh-agent}s via \emph{firewire}.
+from a process I have written a sample attack to obtain
+%
+(snarf\footnote{to snarf: To grab, esp. to grab a large document or file for the
+purpose of using it with or without the author's permission. // To acquire, with
+little concern for legal forms or politesse (but not quite by stealing).
+(source: \href{http://catb.org/jargon/html/S/snarf.html}{Jargon Files})})
+%
+\emph{ssh public/private keypairs} from \texttt{ssh-agent}s via \emph{firewire}.
 
 When using \texttt{ssh} for accessing remote computers it is possible to
 authenticate via passwords, public/private keypairs and various other methods.
@@ -152,10 +155,11 @@ To obtain a keypair from an agent via firewire, a staged attack is required:
 	been found, one can determine wheather the found key is a RSA or a DSA
 	key.  The key-struct contains a type-field and two pointers to either
 	the RSA or the DSA key. These referenced structures are the
-	\emph{openssl}\footnote{OpenSSL is a free open-source implementation of
-	the secure socket layer protocol also providing a general purpose
-	cryptography library (\text{libcrypto}).}-structures \texttt{RSA} and
-	\texttt{DSA}.
+	\emph{openssl}\footnote{OpenSSL
+	(\href{http://openssl.org}{http://openssl.org}) is a free open-source
+	implementation of the secure socket layer protocol also providing a
+	general purpose cryptography library (\text{libcrypto}).}-structures
+	\texttt{RSA} and \texttt{DSA}.
 	
 	\item For both RSA and DSA structures, all important fields need to be
 	recovered to obtain valid keypairs. \cite{applied_crypto:1996,
