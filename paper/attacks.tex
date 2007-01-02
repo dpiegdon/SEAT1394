@@ -71,14 +71,21 @@ As an example, the following applications are of interest:
 	with a BIOS password or the harddisk can be encrypted. For a sample
 	attack, see \cite{rux2k6firewire:2006}.
 
+% ATA-password? (hersteller mit hardware-crypto solition ueber ata-pw)
+
 \end{itemize}
 
 
 \subsubsection{Example attack: ssh-agent snarfer}
 
+% FIXME: def. "snarfing"? well... is defined in wiktionary but marked with a
+% "request for verification"
 \label{ssh-agent-snarfer} To proof that it is rather easy to obtain secret keys
-from a process I have written a sample attack to obtain \emph{ssh public/private
-keypairs} from \texttt{ssh-agent}s via \emph{firewire}.
+from a process I have written a sample attack to obtain (snarf\footnote{to
+snarf: To take something by dubious means, but without the connotation of
+stealing: to take something without regard to etiquette. // To slurp. // To load
+it in entirety; to copy as a whole. (en.wiktionary.org)}) \emph{ssh
+public/private keypairs} from \texttt{ssh-agent}s via \emph{firewire}.
 
 When using \texttt{ssh} for accessing remote computers it is possible to
 authenticate via passwords, public/private keypairs and various other methods.
@@ -107,8 +114,8 @@ a \emph{read}-systemcall until this query and thus can not wipe the key. That
 makes it possible to obtain long overdue keys from \texttt{ssh-agent}s, although
 their owners believed them to be safe. A simple timer could have prevented this
 -- I hereby strongly encourage the developers to implement such a timer. But
-even with such a time enabled it would be possible to acquire the key during its
-lifetime.
+even with such a timer enabled it would be possible to acquire the key during
+its lifetime.
 
 To obtain a keypair from an agent via firewire, a staged attack is required:
 
@@ -228,9 +235,55 @@ require the public key.
 
 \subsection{Userspace Modifications}
 
-\subsubsection{Overwriting process code}
+It is important to know a few details about executables, libraries and processes
+to understand this section.
 
-\subsubsection{Overwriting library code}
+Each executable object, including libraries and executables, can be separated
+into code and data, where the code should be read-only during execution. The
+data can further be separated into read-only data, read-write data and
+uninitialized global variables (local variables will be allocated from the
+stack, runtime-allocated memory is allocated from the heap).  Thus an executable
+object may be split into four regions: \emph{code}, \emph{rodata} (constants),
+\emph{rwdata} and \emph{dynamic data} (rwdata may be implemented by copying the
+initial data from rodata to dynamic data); stack and heap are process-specific.
+
+As many different processes may use the same executable objects, it would be a
+vaste of memory if the operating system created a copy of the object for each
+reference to it.
+
+Code and rodata may not be written to by a process, thus the operating system
+can share these two regions among processes that are using the same objects
+(binaries or libraries).  Thus, once an operating system \emph{ensures} that a
+process can not write to code-regions and read-only data-regions, it can map
+these once loaded regions into multiple virtual address spaces. This enforcement
+is done in hardware, on IA32 by setting a flag in the pagedirectory or a
+pagetable referencing the specific physical memory pages containing the region.
+
+Newer CPUs provide \emph{page-level no-execute enforcements} (AMD's NX \emph{No
+eXecute bit}, Intel's EXB \emph{EXecute disable Bit}); equal segment-level
+enforcements exist for years but never have been used in mainstream as linux and
+many other operating-systems use a flat memory-model (with only one big segment
+spanning the full virtual address space).  Once these page-level enforcements
+are used in mainstream systems, attacks that inject code into data-regions or
+the stack are rendered useless completely. With access to the data-structures
+\footnote{pagedir and pagetables} containing the information, which pages are
+executable and which not, one can change this information before injecting code
+e.g. into an applications stack. 
+
+On linux, programs and libraries are in \emph{Executable and Linker Format}
+(ELF).  This format is roughly described in the manpage \texttt{elf(5)}. When a
+binary is mapped into a process's memory, it is mapped including the full ELF
+header containing all information that is required to link all references
+between different objects; ELFs are always mapped at page-bounds. Due to this,
+all mapped ELFs (that includes executables and libraries) can be found by
+scanning all pages for the ELF Magic (0x7f E L F) at offset 0 of the page.
+Libraries, executables and other ELF objects can be distinguished by evaluating
+the \texttt{e\_type} field of the ELF header.
+
+\subsubsection{Overwriting process or library code}
+
+When code of executables or libraries are changed, all programs using these ELF
+objects are influenced at the same time.
 
 \subsubsection{Overwriting stack and return addresses}
 

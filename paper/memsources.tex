@@ -50,7 +50,7 @@ Swapped pages will and mapped pages may be loaded only on demand (i.e. when the
 process tries to access the page), as access to a non-mapped page by a process
 will generate a pagefault and the operating system then may map the demanded
 page.  Access to completely unused pages, via this mechanism, will create the
-well-known segmentation fault.
+well known segmentation fault.
 
 When one obtains access to physically addressed memory, that is a set of pages,
 each page may be a page of memory of a random process, a buffer page of a
@@ -109,6 +109,8 @@ CPU.  For a detailed discussion, see section \ref{address_translation}.
 
 \subsection{IEEE1394}
 
+% 1394a vs 1394b ?
+
 IEEE1394, also known as firewire (Apple) or iLink (Sony), is an extension bus
 available on many modern computer systems and devices.  In opposition to USB,
 which is a serial periphery bus, firewire is a highspeed serial expansion bus
@@ -151,6 +153,7 @@ care of physical security, even if the object of interest is a pure virtual one
 access to the underlying hardware of a running computer system, is often
 forgotten and thus weak.
 
+% FIXME: weakest "link" of ... ?? Yes. see schneier.
 In general, a professional attacker will most likely choose the weakest link of
 security for his attacks. If he finds that going straight to the computer and
 stealing it, or plugging an embedded device like the iPod into it is easier than
@@ -195,11 +198,11 @@ maskable interrupts (NMI) on the target system and even leave the operating
 system (linux 2.6.17) in a non-usable state. I have seen some laptops and
 workstations with onboard-controllers being disturbed by this, sometimes
 resulting in crashes. My desktop PC (with a firewire PCI extension card),
-though, just worked fine during all tests. It could be, that the deeply
+though, just worked fine during all tests. It is possible that the deeply
 incorporated onboard-controllers interfere with the CPU accessing the main
 memory. This needs to be investigated.
 
-FIXME blocksize 32bit, align 32 bit :: ist dann problem immer noch da? /FIXME
+% FIXME blocksize 32bit, align 32 bit :: ist dann problem immer noch da? /FIXME
 
 Using \texttt{libraw1394}, it is possible to read different blocksizes of data
 via firewire.  It seems like different hardware does allow bigger blocks to be
@@ -259,8 +262,8 @@ global descriptor tables)\label{linuxATTinlowmem}), the kernel will normally
 only use this lowmem.  The \texttt{/dev/mem} driver will access this lowmem,
 when a userspace process utilizes it. But if the process tries to read more than
 the mapped lowmem, \texttt{/dev/mem} will fail to return this, as it is not
-mapped in the process.  Thus, when using \texttt{/dev/mem}, only approx.  the
-lower 900GiB physical RAM will be accessible.
+mapped in the process.  Thus, when using \texttt{/dev/mem}, only approx. 900GiB
+lower physical RAM will be accessible.
 
 It may be possible to work around this restriction: as stated, all address
 translation tables are located in the accessible memory. A process could try to
@@ -289,9 +292,9 @@ system may overwrite the manipulated pagetable with a new, adjusted one.
 
 The ideas described in this paper should be easily adoptable to all memory
 sources giving access to physically addressable memory, this may e.g. include
-suspend-2-disk images or virtual machines that have an interface to access the
-virtual machines` memory.  \texttt{qemu} is such a virtual machine, providing a
-\texttt{gdb} remote stub to attach a debugger.
+remote management cards, suspend-2-disk images or virtual machines that have an
+interface to access the virtual machines` memory.  \texttt{qemu} is such a
+virtual machine, providing a \texttt{gdb} remote stub to attach a debugger.
 
 To use a new physical source with the methods introduced in the later sections,
 it is only required to write a new backend for \texttt{libphysical}.
