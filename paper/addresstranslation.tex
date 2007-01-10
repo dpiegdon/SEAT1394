@@ -23,7 +23,7 @@ addressable memory:
 \end{itemize}
 
 The first scenario will not work between different operating systems and
-architectures, it will be neccessary to write a parser for each combination of
+architectures, it will be necessary to write a parser for each combination of
 them, possibly even for different versions of the same operating system.
 
 The latter uses an information structure that only changes between different
@@ -38,15 +38,15 @@ structures, while using the second approach we only can enter virtual address
 spaces of processes.
 
 \cite{finding_digital_evidence_in_physical_memory:2006} is parsing
-kernel-structs of windows and linux kernels. I will in the following use the
+kernel-structs of windows and Linux kernels. I will in the following use the
 second approach for most attacks, as this seems to be more robust and
-automatiseable. As the above mentioned paper is about \emph{finding an attacker}
-and not \emph{attacking}, the forensic personell does know about the
+automatable.  As the above mentioned paper is about \emph{finding an attacker}
+and not \emph{attacking}, the forensic personal does know about the
 architecture, the operating system and version and can build a copy of the
 system to test its tools, while an attacker only can guess the architecture and
 operating system and needs more robust tools for his attacks.  (Obviously this
 is only a short-term argument, as an attacker can also write such tools for
-\emph{all} OS version and architecture combinations... but the heck with
+\emph{all} OS version and architecture combinations\ldots but the heck with
 this...).
 
 \subsection{Basic address translations}
@@ -63,7 +63,7 @@ the \emph{code segment} contains all the code that may be run; the \emph{data
 segment} contains the static data that is known at compile time, global
 structures or deliberately allocated memory (including the heap); the
 \emph{stack segment} contains the stack, including local variables.  On some
-architectures, it is possible to assign segment descriptors, reffering to
+architectures, it is possible to assign segment descriptors, referring to
 defined memory regions, to segment registers.  This assignment will influence
 the further behaviour of address translation: all addresses will from there on
 be taken to be relative to the bound of the memory region specified by the
@@ -75,11 +75,11 @@ Virtual addresses can be split into frame number and frame offset; the frame
 number is translated (mapped) via a translation table into a physical page
 number and the frame offset is used as an offset into this physical page. If a
 frame does not have a corresponding physical page, is is called to be unmapped.
-Unmapped pages can be non-existing pages or can e.g, be swapped to slower media
+Unmapped pages can be non-existing pages or can e.g., be swapped to slower media
 like harddisks.
 
 For a detailed description and discussion of these two important mechanisms, the
-reader may reffer to a course on system programming, e.g.
+reader may refer to a course on system programming, e.g.
 \cite{rwth_syspro_scriptum:2002}.
 
 \texttt{liblinear} provides a software solution for address translation. The
@@ -102,16 +102,16 @@ offset to the \emph{linear address}.  The linear address is then translated via
 paging to the \emph{physical address}. (The paging translation is optional and
 needs to be enabled by setting a special flag in a control register of the CPU.)
 
-\label{linux_gdt} A linux process runs in a simple 4GiB flat virtual address
-space; no segmentation is required. Thus, linux will create (among others that
+\label{linux_gdt} A Linux process runs in a simple 4GiB flat virtual address
+space; no segmentation is required. Thus, Linux will create (among others that
 are not of interest for us) four special segments during boot-up: for each
 privilege level (i.e. kernelspace and userspace), it will create segments for
 both code and data. These four so called \emph{flat} segments will span the full
-virtual address space of 4GiB, thus effectively elliminating segmentation. The
+virtual address space of 4GiB, thus effectively eliminating segmentation. The
 address of the \emph{global descriptor table}, holding the description of these
 segments, is then loaded into the \emph{global descriptor table register} (GDTR)
-and the specific segment registers are loaded with segment selectors refering to
-the segments\footnote{This initialization is done in
+and the specific segment registers are loaded with segment selectors referring
+to the segments\footnote{This initialization is done in
 \texttt{linux/arch/i386/kernel/head.S}, GDTs are defined at symbols
 \texttt{boot\_gdt\_table} and \texttt{cpu\_gdt\_table}}.
 
@@ -143,8 +143,8 @@ especially \cite{IA32_SDM_3a:2006}.
 \subsection{Finding address translation tables}
 \label{findingATT}
 
-When accessing a range of memory via physical addressing, it is neccessary to
-find address translation tables to make sence out of the vast, unsorted number
+When accessing a range of memory via physical addressing, it is necessary to
+find address translation tables to make sense out of the vast, unsorted number
 of pages. Typically, translation tables are not marked as such and as we can not
 access the processor or the operating system to ask, where these are, we have to
 search them. The following methods have proven themselves when being combined:
@@ -159,10 +159,10 @@ for all pages: make a quick guess if a page could be a pagedirectory
 \label{ATTguess} Obviously, address translation tables are architecture and
 operating system specific; but within an architecture and an operating system,
 they will often share data or specific patterns that are identifiable. For
-instance, when searching for linux IA32 address translation tables, one can omit
+instance, when searching for Linux IA32 address translation tables, one can omit
 searching the segment descriptor tables (see section \ref{linux_gdt}) and
 concentrate on finding pagedirectories. There are several special patterns that
-can be found in a typical pagedirectory of a linux process running on IA32.
+can be found in a typical pagedirectory of a Linux process running on IA32.
 Following is a layout of the typical virtual address space of a userspace
 process:
 
@@ -205,7 +205,7 @@ because typically the PDE for 4MiB-page no.\@ \texttt{0x300} will point to the
 PDE entry \texttt{0x300} and does sort out a vast majority of non-pagedirectory
 pages.
 
-Furthermore in the combination linux/IA32 we only have to search the lower 1GB
+Furthermore in the combination Linux/IA32 we only have to search the lower 1GB
 of RAM for pagetables (see first paragraph of section \ref{kerneluserdivision}).
 
 
@@ -213,12 +213,12 @@ of RAM for pagetables (see first paragraph of section \ref{kerneluserdivision}).
 \subsubsection{Matching via statistics: NCD (normalized compression distance)}
 
 \label{ATTstatistics} The \emph{normalized information distance} (NID), a form
-of parameterfree similarity distance measurement, can be understood as a
+of parameter-free similarity distance measurement, can be understood as a
 measurement for the minimal amount of changes required to change one information
 into another one.  A NID of 1 means that two informations are totally unrelated;
 a NID of 0 means that they are the same.  Due to its relation to the
 \emph{Kolmogorov complexity} (a measurement for an information`s shortest
-description in a fixed description language) it is incalculateable.  As an
+description in a fixed description language) it is incalculatable.  As an
 approximation, it is possible to use data compressors instead of the Kolmogorov
 complexity to measure the size of a minimal representation of information. The
 resulting \emph{normalized compression distance} has proven to be useful in a
@@ -226,8 +226,8 @@ vast area of applications; for instance, it has shown its usefulness during
 analysis of DNA sequences or languages for relatedness
 (\cite{clustering_by_compression:2005,similarity_matrix:2004}), MIDI music files
 for relations in style and creator (\cite{clustering_by_compression:2005}) and
-attack schemes of virii and worms (\cite{analysing_worms_with_ncd:2006}).  For a
-detailed introduction to and analysis of the NCD and sample applications, the
+attack schemes of viruses and worms (\cite{analysing_worms_with_ncd:2006}).  For
+a detailed introduction to and analysis of the NCD and sample applications, the
 reader may refer to \cite{kolmogorov:1997} and the above texts.
 
 As the NCD is only an approximation of the NID based on compression, its
@@ -236,14 +236,14 @@ reach $0$.
 
 \texttt{liblinear} uses the NCD to measure the distance between a known true
 pagedirectory and a page of unknown data to determine whether this page could be
-a pagedirectory. The NCD has been chosen, because it is a \emph{parameterfree}
+a pagedirectory. The NCD has been chosen, because it is a \emph{parameter-free}
 measurement, i.e. it does not depend on specific, known structures of the data
 in question. As different architectures will have significantly different
 address translation schemes, even depending on the operating systems used, this
 choice should be adequate. The \texttt{complearn}-toolkit
 \footnote{\texttt{complearn}-toolkit:
 \href{http://complearn.org/}{http://complearn.org/}} provides a suite of
-functions for generating NCD distance matrixes between information, generating
+functions for generating NCD distance matrices between information, generating
 relational trees from these and more.  As we only need to compare two pages,
 this set of functions is far too big and the interface far too complex for this
 application.  Thus, I implemented my own, very short version of the NCD

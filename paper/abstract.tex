@@ -8,11 +8,11 @@
 %\section{Abstract}
 
 Accessing memory via physical addressing, one will miss all the addressing- and
-memoryfeatures provided by a CPU to a process that accesses the same memory: all
-kinds of address translations, caching and alike.
+memory features provided by a CPU to a process that accesses the same memory:
+all kinds of address translations, caching and alike.
 
 This paper will give an overview of these problems in general and subsequently,
-mostly limited to the IA32 architecture running a linux 2.6 kernel with no more
+mostly limited to the IA32 architecture running a Linux 2.6 kernel with no more
 than 4GB RAM (\texttt{CONFIG\_NOHIGHMEM} or \texttt{CONFIG\_HIGHMEM4G}) and 3GB
 userspace/1GB kernelspace mapping (\texttt{CONFIG\_VMSPLIT\_3G},
 \texttt{CONFIG\_PAGE\_OFFSET=0xC0000000}), discuss these in detail and give some

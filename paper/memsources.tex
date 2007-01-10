@@ -9,7 +9,7 @@ Typically, processes and users are never granted access to physically addressed
 memory, as this addressing mode normally circumvents any protection methods.
 Only a running operating system may use physical addressing to prepare address
 spaces for each running process, manage these, access special memory of
-extension cards and alike, or even only during bootstrapping as linux does. But
+extension cards and alike, or even only during bootstrapping as Linux does. But
 there are several ways of obtaining access to physical addressed memory. As
 stated, physical addressing will circumvent protection mechanisms. Thus access
 to it should require system administrator rights or physical access to the
@@ -20,7 +20,7 @@ implemented a simple interface, where backends for new memory sources may be
 plugged in. This interface is called \texttt{libphysical} and includes so far
 backends for IEEE1394 and filedescriptors.
 
-Modern computer hardware provides many protection- and memorymanagement
+Modern computer hardware provides many protection and memory management
 mechanisms in hardware. This includes hardware to provide a virtual address
 space for each process, protection mechanisms to restrict a process to its own
 resources only, paging to extend memory to harddisks and fragment available
@@ -48,7 +48,7 @@ pages. Each page in this virtual address space may be
 
 Swapped pages will and mapped pages may be loaded only on demand (i.e. when the
 process tries to access the page), as access to a non-mapped page by a process
-will generate a pagefault and the operating system then may map the demanded
+will generate a page fault and the operating system then may map the demanded
 page.  Access to completely unused pages, via this mechanism, will create the
 well known segmentation fault.
 
@@ -83,20 +83,20 @@ will be performed and thus override the other one (actually it depends on timing
 and caching, but we have no way of knowing, when the systems CPU accesses a page
 and if it is cached). Also, reading and writing at the same time may be
 impossible via the given method; thus many atomic commands used for process
-syncronisation, like ``test and set'', will not exist.  Caching may also prevent
-these.
+synchronization, like ``test and set'', will not exist.  Caching may also
+prevent these.
 
 If a page is cached in another, faster memory, a copy of it will typically
-reside in physical memory. In most cases we will not know if a page is cached
-or not; on ia32 however the address translation tables contain a flag for each
-page telling the CPU if it may be cached or not. Depending on the way used to
-access the memory, it may circumvent the cache or not have access to it at all.
-When thus accessing a page, changes made by a task running in parallel may not
-be visible to us immediately and changes made by us may be invisible to a
-parallel task or maybe even overwritten by the cache at any time. Special care
-needs to be taken to minimize this risk. When writing to pages, only choose
-pages that are not cached or unlikely to be cached while writing; when reading
-pages, consider that the data may change at any time or may have changed yet.
+reside in physical memory. In most cases we will not know if a page is cached or
+not; on IA32 however the address translation tables contain a flag for each page
+telling the CPU if it may be cached or not. Depending on the way used to access
+the memory, it may circumvent the cache or not have access to it at all.  When
+thus accessing a page, changes made by a task running in parallel may not be
+visible to us immediately and changes made by us may be invisible to a parallel
+task or maybe even overwritten by the cache at any time. Special care needs to
+be taken to minimize this risk. When writing to pages, only choose pages that
+are not cached or unlikely to be cached while writing; when reading pages,
+consider that the data may change at any time or may have changed yet.
 
 As stated above, on systems using paging, physical memory will mostly be a
 concatenation of random pages, each one either used by a random process or the
@@ -113,15 +113,15 @@ CPU.  For a detailed discussion, see section \ref{address_translation}.
 
 IEEE1394, also known as firewire (Apple) or iLink (Sony), is an extension bus
 available on many modern computer systems and devices.  In opposition to USB,
-which is a serial periphery bus, firewire is a highspeed serial expansion bus
-with features like guaranteed bandwith (which is of interest for many real-time
+which is a serial periphery bus, firewire is a high-speed serial expansion bus
+with features like guaranteed bandwidth (which is of interest for many real-time
 applications, mostly media crunching), DMA and the ability to connect multiple
 nodes with one firewire-bus. The concept of bus master and bus slaves, as known
 from USB, is only virtual. Typically when plugging together a firewire bus, a
 node is randomly selected to be the master and manages this bus. Most of these
 nodes have the ability to be bus master.
 
-DMA (Direct Memory Access) is implemented in hardware by the OHCI chipset; it
+DMA (Direct Memory Access) is implemented in hardware by the OHCI chip set; it
 is used to release the CPU from plain I/O. Mechanisms of preventing unwanted
 access exist, but many drivers do not activate these methods by default. In the
 case of windows, the operating system can be fooled into giving us DMA (see
@@ -131,7 +131,7 @@ Up to 64 devices may be plugged into one bus. Each one will choose a bus-unique
 node ID $[0..63]$; the bus master will have the highest node ID. All node IDs
 will be sequential, starting with 0. Access to memory of a node will require a
 10 bit field for the bus ID, a 6 bit field for the node ID and a 48 bit address
-field.  On linux, \texttt{libraw1394}\footnote{\texttt{libraw1394}:
+field.  On Linux, \texttt{libraw1394}\footnote{\texttt{libraw1394}:
 \href{http://www.linux1394.org/}{http://www.linux1394.org/}} provides an easy
 and portable interface to do this. Ideally, the full physical memory is
 accessible via the 48 bit address field, mapped in this address space starting
@@ -169,7 +169,7 @@ Typical physical attacks on computer systems are:
 
 	\item stealing the whole system or its harddisks
 
-	\item installing cameras, microphones and keyloggers
+	\item installing cameras, microphones and key-loggers
 
 	\item installing specially crafted PCMCIA cards
 
@@ -184,22 +184,22 @@ unplugging it.
 %Imagine an IT professional, visiting a conference, stands with his laptop at a
 %table.  Imagine an attacker coming from the other side of the table, so that the
 %attackers hands are invisible to the owner due to the laptops screen. And now
-%imagine the attacker owns an iPod running linux and the laptop has a firewire
+%imagine the attacker owns an iPod running Linux and the laptop has a firewire
 %port at its back.
 
 
 
 \subsubsection{Problems with IEEE1394 DMA, solutions}
 
-Plugging in firewire devices will generate syslog messaged on linux systems.
+Plugging in firewire devices will generate syslog messaged on Linux systems.
 
 Using firewire to access the memory of a running system \emph{may} generate non
 maskable interrupts (NMI) on the target system and even leave the operating
-system (linux 2.6.17) in a non-usable state. I have seen some laptops and
-workstations with onboard-controllers being disturbed by this, sometimes
+system (Linux 2.6.17) in a non-usable state. I have seen some laptops and
+workstations with on board controllers being disturbed by this, sometimes
 resulting in crashes. My desktop PC (with a firewire PCI extension card),
 though, just worked fine during all tests. It is possible that the deeply
-incorporated onboard-controllers interfere with the CPU accessing the main
+incorporated on board controllers interfere with the CPU accessing the main
 memory. This needs to be investigated.
 
 % FIXME blocksize 32bit, align 32 bit :: ist dann problem immer noch da? /FIXME
@@ -225,39 +225,39 @@ implemented a simple script to do this. I have written my own tool in C using
 \subsection{Filedescriptor: \texttt{/dev/mem}, memory dumps}
 
 Another source for physical memory may be given to an attacker via a
-filedescriptor. This filedescriptor may refer to a memory dump or the linux
-\texttt{/dev/mem} device. In case of a plain memorydump, many of the mentioned
+filedescriptor. This filedescriptor may refer to a memory dump or the Linux
+\texttt{/dev/mem} device. In case of a plain memory dump, many of the mentioned
 problems lapse: no caching will be performed, no concurrent process will change
-the dumped data. In the case of a filedescriptor refering to \texttt{/dev/mem},
-other accessors will exist, as \texttt{/dev/mem} is refering to the systems
+the dumped data. In the case of a filedescriptor referring to \texttt{/dev/mem},
+other accessors will exist, as \texttt{/dev/mem} is referring to the systems
 memory; caching on the other hand should not be a problem as we are not
 circumventing any caching system (like the CPU), but directly using it.
 
 \subsubsection{Problems with \texttt{/dev/mem}, solutions}
 
-\texttt{/dev/mem} on linux has one other, major problem:
+\texttt{/dev/mem} on Linux has one other, major problem:
 
 \label{kerneluserdivision} On 32 bit systems, the virtual address space has a
-size of $2^{32}$ bytes, i.e.  4GiB.  The virtual address space of a linux
+size of $2^{32}$ bytes, i.e.  4GiB.  The virtual address space of a Linux
 process is divided into a userspace-part, where code, libraries and stack are
 mapped, and a kernelspace-part, where the complete kernel, data structures and
 the kernel-stack of this process are located. The userspace thread will never be
 able to access the kernelspace pages; but when the userspace process calls a
 system call, the CPU will jump into a different protection level and execute the
-syscall entry code, which is part of the kernel. At this time the kernel runs in
-the same virtual address space, just at a different protection level. Default
-kernel configs divide the 4GiB virtual address space into a 3GiB userspace-part
-(\texttt{0x0000~0000} - \texttt{0xbfff~ffff}) and a 1GiB kernelspace-part
-(\texttt{0xc000~0000 - 0xffff~ffff}).  Different kernel config options
-(\texttt{CONFIG\_VMSPLIT\_3G}, \texttt{CONFIG\_PAGE\_OFFSET}) can change the
-split ratio, but the splitting is a basic design decision and thus a requirement
-for linux to work. In the upper kernelspace-part, the lower physical memory will
-be fully mapped (up to about 900MiB), the kernel will - in this case - be
-located at roughly \texttt{0xc100~0000}, i.e. at the physical address
+system call entry code, which is part of the kernel. At this time the kernel
+runs in the same virtual address space, just at a different protection level.
+Default kernel configs divide the 4GiB virtual address space into a 3GiB
+userspace-part (\texttt{0x0000~0000} - \texttt{0xbfff~ffff}) and a 1GiB
+kernelspace-part (\texttt{0xc000~0000 - 0xffff~ffff}).  Different kernel config
+options (\texttt{CONFIG\_VMSPLIT\_3G}, \texttt{CONFIG\_PAGE\_OFFSET}) can change
+the split ratio, but the splitting is a basic design decision and thus a
+requirement for Linux to work. In the upper kernelspace-part, the lower physical
+memory will be fully mapped (up to about 900MiB), the kernel will - in this case
+- be located at roughly \texttt{0xc100~0000}, i.e. at the physical address
 \texttt{0x0100~0000}. During kernel configuration, these 900MiB are called
 ``precious lowmem'', because it is the only memory accessible by the kernel in a
 simple manner. When allocating kernelspace structures (this includes all address
-translation tables (on ia32, these are: pagedirectories, pagetables, local- and
+translation tables (on IA32, these are: pagedirectories, pagetables, local- and
 global descriptor tables)\label{linuxATTinlowmem}), the kernel will normally
 only use this lowmem.  The \texttt{/dev/mem} driver will access this lowmem,
 when a userspace process utilizes it. But if the process tries to read more than
@@ -270,7 +270,7 @@ translation tables are located in the accessible memory. A process could try to
 find its own pagetable and manipulate it to map other regions of physical memory
 into its userspace section; then, no further access to \texttt{/dev/mem} would
 be required. As the reader will see in section \ref{findingATT}, identifying
-processes in linux can mostly be as easy as looking at the upper userspace stack
+processes in Linux can mostly be as easy as looking at the upper userspace stack
 page.  Research on a system with 1.5GiB RAM has shown that most of these pages
 will be in the unmapped area, thus many of the processes will not be
 identifiable by this method. To make its own pagedirectory identifiable from the
@@ -281,7 +281,7 @@ in all found pagedirectories. When found, it may map this pagedirectory at a
 special location and directly manipulate it. It should be taken care of the
 problem that a manipulated pagedirectory will only be reloaded into the CPU
 after a re-scheduling of the process, but a simple \texttt{usleep()} should
-suffice. The author is not sure, under which circumstances the linux kernel does
+suffice. The author is not sure, under which circumstances the Linux kernel does
 manipulate a process's pagedirectory; but obvious things like mapping new
 regions or unmapping mapped regions by system calls should be avoided, as the
 system may overwrite the manipulated pagetable with a new, adjusted one.

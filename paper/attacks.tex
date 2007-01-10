@@ -14,7 +14,7 @@
 
 Once an address translation table has been found, it is of interest, what kind
 of process resides in this virtual address space.  For userspace applications on
-IA32-linux there is a simple way to identify a process's \emph{filename}, its
+IA32-Linux there is a simple way to identify a process's \emph{filename}, its
 \emph{arguments} and even its full set of \emph{environment variables}: This
 information is often required by a process and thus the kernel will provide it
 to the process by copying it to the bottom pages of the application's
@@ -99,7 +99,7 @@ somewhere in \texttt{\$HOME/.ssh/}, e.g.  \texttt{/root/.ssh/id\_dsa} and
 passphrase to prevent attackers from using them, if they were able to obtain
 them somehow. Thus to use a keypair it is required to enter this passphrase each
 time. This can be disturbing during frequent usage, e.g. when using
-\texttt{ssh+svn} or \texttt{scp} with remote-tab-completition (\texttt{zsh} is
+\texttt{ssh+svn} or \texttt{scp} with remote-tab-completion (\texttt{zsh} is
 capable of this).
 
 For these and other reasons, the \texttt{ssh-agent} has been developed. This
@@ -110,9 +110,9 @@ wiped from memory on demand and also be loaded only for a specified period of
 time.
 
 Actually, here begins the fun. During my tests I found that the key is
-\emph{not} wiped from memory when the timelimit is hit. It will be wiped the
+\emph{not} wiped from memory when the time limit is hit. It will be wiped the
 next time the ssh-agent is queried (via its socket), but the agent is stalled in
-a \emph{read}-systemcall until this query and thus can not wipe the key. That
+a \emph{read} system call until this query and thus can not wipe the key. That
 makes it possible to obtain long overdue keys from \texttt{ssh-agent}s, although
 their owners believed them to be safe. A simple timer could have prevented this
 -- I hereby strongly encourage the developers to implement such a timer. But
@@ -129,17 +129,17 @@ To obtain a keypair from an agent via firewire, a staged attack is required:
 	\texttt{proc\_info()}, if the found userspace belongs to a
 	\texttt{ssh-agent} process. If not, seek next pagetable.
 
-	\item Use the obtained environment to resolve the users homedirectory
+	\item Use the obtained environment to resolve the users home directory
 	(\texttt{\$HOME}) and construct a path where keypairs most likely reside
-	in the filesystem (e.g.  ``\texttt{\$HOME/.ssh/}'') and seek this string
-	in the heap.  This approach will only find keypairs that have been
-	loaded with this keylocation.\footnote{Actually this field is the key's
-	comment-field that is mostly unused and overwritten with the filename of
-	the key. Keypairs that are used with SSH protocol version 2 (virtually
-	all) do not have a comment-field; during loading, the comment-field is
-	always initialized with the keys pathname.} Keypairs loaded from
-	different locations or via a relative path can thus not be found by this
-	search.
+	in the file system (e.g.  ``\texttt{\$HOME/.ssh/}'') and seek this
+	string in the heap.  This approach will only find keypairs that have
+	been loaded with this key-location.\footnote{Actually this field is the
+	key's comment-field that is mostly unused and overwritten with the
+	filename of the key. Keypairs that are used with SSH protocol version 2
+	(virtually all) do not have a comment-field; during loading, the
+	comment-field is always initialized with the keys pathname.} Keypairs
+	loaded from different locations or via a relative path can thus not be
+	found by this search.
 	
 	\item All loaded keypairs have a corresponding
 	\emph{identity-struct}\footnote{\texttt{struct identity} is defined in
@@ -151,7 +151,7 @@ To obtain a keypair from an agent via firewire, a staged attack is required:
 	
 	\item Once the \emph{key-struct}\footnote{\texttt{struct key} is defined
 	in \texttt{openssh/key.h}} that is linked to by the identity-struct has
-	been found, one can determine wheather the found key is a RSA or a DSA
+	been found, one can determine whether the found key is a RSA or a DSA
 	key.  The key-struct contains a type-field and two pointers to either
 	the RSA or the DSA key. These referenced structures are the
 	\emph{openssl}\footnote{OpenSSL
@@ -196,7 +196,7 @@ security reasons); this invalidates the symbol-resolution-approach, as this
 stripping also removes any information of the \emph{idtable} symbol.
 
 Furthermore once \emph{one} \emph{identity}-struct is found, \emph{all} structs
-of the same keytype (RSA or DSA) could be found by walking the list this key is
+of the same key-type (RSA or DSA) could be found by walking the list this key is
 linked into.
 
 As stated above, the keypairs reside decrypted in the memory of the agent (even
@@ -251,7 +251,7 @@ object may be split into four regions: \emph{code}, \emph{rodata} (constants),
 initial data from rodata to dynamic data); stack and heap are process-specific.
 
 As many different processes may use the same executable objects, it would be a
-vaste of memory if the operating system created a copy of the object for each
+waste of memory if the operating system created a copy of the object for each
 reference to it.
 
 Code and rodata may not be written to by a process, thus the operating system
@@ -264,7 +264,7 @@ pagetable referencing the specific physical memory pages containing the region.
 
 Newer CPUs provide \emph{page-level no-execute enforcements} (AMD's NX \emph{No
 eXecute bit}, Intel's EXB \emph{EXecute disable Bit}); equal segment-level
-enforcements exist for years but never have been used in mainstream as linux and
+enforcements exist for years but never have been used in mainstream as Linux and
 many other operating-systems use a flat memory-model (with only one big segment
 spanning the full virtual address space).  Once these page-level enforcements
 are used in mainstream systems, attacks that inject code into data-regions or
@@ -273,7 +273,7 @@ the stack are rendered useless completely. With access to the data-structures
 executable and which not, one can change this information before injecting code
 e.g. into an applications stack. 
 
-On linux, programs and libraries are in \emph{Executable and Linker Format}
+On Linux, programs and libraries are in \emph{Executable and Linker Format}
 (ELF).  This format is roughly described in the manpage \texttt{elf(5)}. When a
 binary is mapped into a process's memory, it is mapped including the full ELF
 header containing all information that is required to link all references
