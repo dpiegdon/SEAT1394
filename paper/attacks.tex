@@ -121,6 +121,37 @@ its lifetime.
 
 To obtain a keypair from an agent via firewire, a staged attack is required:
 
+% show a tree with the structure of the data that is obtained
+\texttt{ \small
+		\Tree [.{struct identity}
+			[.{Key\\ *key}
+				{RSA\\ *rsa} !{\qframesubtree}
+				{int\\type}
+				{int\\flags}
+				{DSA\\ *dsa} !{\qframesubtree}
+			] !{\qsetw{3cm}}
+			{char\\ *comment} !{\qframesubtree}
+			{int\\death}
+		]
+} \\ [3ex]
+
+\texttt{ \small
+		\Tree [.RSA
+			{BN\\ *n} {BN\\ *e} {BN\\ *d} {BN\\ *p} {BN\\ *q}
+		]
+		\Tree [.DSA
+			{BN\\ *p} {BN\\ *q} {BN\\ *g}
+					{BN\\ *pub\_key}
+					{BN\\ *priv\_key}
+		]
+}
+
+\texttt{ \small
+		\Tree [.BIGNUM
+			{ulong\\ *d} {int\\ top} {int\\ dmax} {int\\ neg} {int\\ flags}
+		]
+}
+
 \begin{enumerate}
 
 	\item Seek the first GiB of physical memory for pagetables.
@@ -154,7 +185,7 @@ To obtain a keypair from an agent via firewire, a staged attack is required:
 	been found, one can determine whether the found key is a RSA or a DSA
 	key.  The key-struct contains a type-field and two pointers to either
 	the RSA or the DSA key. These referenced structures are the
-	\emph{openssl}\footnote{OpenSSL
+	\emph{OpenSSL}\footnote{OpenSSL
 	(\href{http://openssl.org}{http://openssl.org}) is a free open-source
 	implementation of the secure socket layer protocol also providing a
 	general purpose cryptography library (\text{libcrypto}).}-structures
@@ -165,12 +196,13 @@ To obtain a keypair from an agent via firewire, a staged attack is required:
 	handbook_applied_crypto:2001} give an overview of both cryptographic
 	algorithms, \cite{openssl_book:2002} introduces openssl concepts and
 	implementation details. Openssl's arbitrary precision integer
-	implementation is the \texttt{BIGNUM}-struct. It consists of a
-	variable-length array of bit-vectors forming the value and a
-	length-field defining the length of this array. As RSA and DSA both
-	operate on finite fields, both are implemented with \texttt{BIGNUM}s.
-	Therefore, the RSA and DSA structures contain several \texttt{BIGNUM}s
-	that need to be recovered to obtain a valid copy of the keypair.
+	implementation is the \texttt{BIGNUM}-struct (abbreviated ``BN'' in the
+	trees above). It consists of a variable-length array of bit-vectors
+	forming the value and a length-field defining the length of this array.
+	As RSA and DSA both operate on finite fields, both are implemented with
+	\texttt{BIGNUM}s.  Therefore, the RSA and DSA structures contain several
+	\texttt{BIGNUM}s that need to be recovered to obtain a valid copy of the
+	keypair.
 
 	\item Some validity tests may be done to verify that the acquired
 	\texttt{BIGNUM}s fulfill algorithm-specific properties\footnote{During
