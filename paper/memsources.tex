@@ -110,16 +110,16 @@ CPU.  For a detailed discussion, see section \ref{address_translation}.
 \subsection{IEEE1394}
 
 % 1394a vs 1394b ?
-
-IEEE1394, also known as firewire (Apple) or iLink (Sony), is an extension bus
-available on many modern computer systems and devices.  In opposition to USB,
-which is a serial periphery bus, firewire is a high-speed serial expansion bus
-with features like guaranteed bandwidth (which is of interest for many real-time
-applications, mostly media crunching), DMA and the ability to connect multiple
-nodes with one firewire-bus. The concept of bus master and bus slaves, as known
-from USB, is only virtual. Typically when plugging together a firewire bus, a
-node is randomly selected to be the master and manages this bus. Most of these
-nodes have the ability to be bus master.
+IEEE1394, also known as \epsfysize 0.3cm \epsfbox{logo-firewire-black.eps}
+firewire (Apple) or iLink (Sony), is an extension bus available on many modern
+computer systems and devices.  In opposition to USB, which is a serial periphery
+bus, firewire is a high-speed serial expansion bus with features like guaranteed
+bandwidth (which is of interest for many real-time applications, mostly media
+crunching), DMA and the ability to connect multiple nodes with one firewire-bus.
+The concept of bus master and bus slaves, as known from USB, is only virtual.
+Typically when plugging together a firewire bus, a node is randomly selected to
+be the master and manages this bus. Most of these nodes have the ability to be
+bus master.
 
 DMA (Direct Memory Access) is implemented in hardware by the OHCI chip set; it
 is used to release the CPU from plain I/O. Mechanisms of preventing unwanted
