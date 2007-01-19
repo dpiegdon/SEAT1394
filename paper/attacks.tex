@@ -121,36 +121,119 @@ its lifetime.
 
 To obtain a keypair from an agent via firewire, a staged attack is required:
 
-% show a tree with the structure of the data that is obtained
-\texttt{ \small
-		\Tree [.{struct identity}
-			[.{Key\\ *key}
-				{RSA\\ *rsa} !{\qframesubtree}
-				{int\\type}
-				{int\\flags}
-				{DSA\\ *dsa} !{\qframesubtree}
-			] !{\qsetw{3cm}}
-			{char\\ *comment} !{\qframesubtree}
-			{int\\death}
-		]
-} \\ [3ex]
+%\lstset{numbers=left, numberstyle=\tiny, stepnumber=2, numbersep=5pt}
+\lstset{language=C, numbers=left, numberstyle=\tiny, frame=lines}
 
-\texttt{ \small
-		\Tree [.RSA
-			{BN\\ *n} {BN\\ *e} {BN\\ *d} {BN\\ *p} {BN\\ *q}
-		]
-		\Tree [.DSA
-			{BN\\ *p} {BN\\ *q} {BN\\ *g}
-					{BN\\ *pub\_key}
-					{BN\\ *priv\_key}
-		]
-}
+\begin{figure}[ht] \begin{center}
+	\tiny
+	\begin{lstlisting}
+		typedef struct identity {
+			TAILQ_ENTRY(identity) next;
+			Key *key;
+			char *comment;
+			u_int death;
+			u_int confirm;
+		} Identity;
 
-\texttt{ \small
-		\Tree [.BIGNUM
-			{ulong\\ *d} {int\\ top} {int\\ dmax} {int\\ neg} {int\\ flags}
-		]
-}
+		typedef struct {
+			int nentries;
+			TAILQ_HEAD(idqueue, identity) idlist;
+		} Idtab;
+
+		/* private key table, one per protocol version */
+		Idtab idtable[3];
+	\end{lstlisting}
+	\caption{\texttt{openssh/ssh-agent.c}: Identity structure and \texttt{idtable}}
+	\label{fig:code:identity-struct}
+\end{center}\end{figure}
+
+\begin{figure}[ht] \begin{center}
+	\tiny
+	\begin{lstlisting}
+		enum types {
+			KEY_RSA1,
+			KEY_RSA,
+			KEY_DSA,
+			KEY_UNSPEC
+		};
+
+		struct Key {
+			int      type;
+			int      flags;
+			RSA     *rsa;
+			DSA     *dsa;
+		};
+	\end{lstlisting}
+	\caption{\texttt{openssh/key.h}: Key-structure}
+	\label{fig:code:key-struct}
+\end{center}\end{figure}
+
+\begin{figure}[ht] \begin{center}
+	\tiny
+	\begin{lstlisting}
+		/* Declared already in ossl_typ.h */
+		/* typedef struct rsa_st RSA; */
+		struct rsa_st {
+			int pad;
+			long version;
+			const RSA_METHOD *meth;
+			ENGINE *engine;
+			BIGNUM *n;
+			BIGNUM *e;
+			BIGNUM *d;
+			BIGNUM *p;
+			BIGNUM *q;
+			BIGNUM *dmp1;
+			BIGNUM *dmq1;
+			BIGNUM *iqmp;
+			int flags;
+		};
+	\end{lstlisting}
+	\caption{\texttt{openssl/crypto/rsa/rsa.h}: RSA structure (stripped down)}
+	\label{fig:code:rsa-struct}
+\end{center}\end{figure}
+
+\begin{figure}[ht] \begin{center}
+	\tiny
+	\begin{lstlisting}
+		/* Already defined in ossl_typ.h */
+		/* typedef struct dsa_st DSA; */
+		struct dsa_st {
+			int pad;
+			long version;
+			int write_params;
+			BIGNUM *p;
+			BIGNUM *q;      /* == 20 */
+			BIGNUM *g;
+			BIGNUM *pub_key;  /* y public key */
+			BIGNUM *priv_key; /* x private key */
+			int flags;
+			const DSA_METHOD *meth;
+			ENGINE *engine;
+		};
+	\end{lstlisting}
+	\caption{\texttt{openssl/crypto/dsa/dsa.h}: DSA structure (stripped down)}
+	\label{fig:code:dsa-struct}
+\end{center}\end{figure}
+
+\begin{figure}[ht] \begin{center}
+	\tiny
+	\begin{lstlisting}
+		/* Already declared in ossl_typ.h */
+		/* typedef struct bignum_st BIGNUM; */
+		struct bignum_st {
+			BN_ULONG *d;    /* Pointer to an array of 'BN_BITS2' bit chunks. */
+			int top;        /* Index of last used d +1. */
+			/* The next are internal book keeping for bn_expand. */
+			int dmax;       /* Size of the d array. */
+			int neg;        /* one if the number is negative */
+			int flags;
+		};
+	\end{lstlisting}
+	\caption{\texttt{openssl/crypto/bn/bn.h}: BIGNUM structure (stripped down)}
+	\label{fig:code:bignum-struct}
+\end{center}\end{figure}
+
 
 \begin{enumerate}
 
@@ -172,37 +255,40 @@ To obtain a keypair from an agent via firewire, a staged attack is required:
 	loaded from different locations or via a relative path can thus not be
 	found by this search.
 	
-	\item All loaded keypairs have a corresponding
-	\emph{identity-struct}\footnote{\texttt{struct identity} is defined in
-	\texttt{openssh/ssh-agent.c}} in an agent. Among other fields, this
-	identity-struct contains a link to a key struct, the above mentioned
-	path/comment-field and the lifetime of the key. Thus to find the
-	identity struct corresponding to a found comment-field, one has to
-	search the address of the comment-field in the heap of the agent.
+	\item All loaded keypairs have a corresponding \emph{identity-struct} in
+		an agent (see figure \ref{fig:code:identity-struct}). Among
+		other fields, this identity-struct contains a link to a key
+		struct, the above mentioned path/comment-field and the lifetime
+		of the key. Thus to find the identity struct corresponding to a
+		found comment-field, one has to search the address of the
+		comment-field in the heap of the agent.
 	
-	\item Once the \emph{key-struct}\footnote{\texttt{struct key} is defined
-	in \texttt{openssh/key.h}} that is linked to by the identity-struct has
-	been found, one can determine whether the found key is a RSA or a DSA
-	key.  The key-struct contains a type-field and two pointers to either
-	the RSA or the DSA key. These referenced structures are the
-	\emph{OpenSSL}\footnote{OpenSSL
-	(\href{http://openssl.org}{http://openssl.org}) is a free open-source
-	implementation of the secure socket layer protocol also providing a
-	general purpose cryptography library (\text{libcrypto}).}-structures
-	\texttt{RSA} and \texttt{DSA}.
+	\item Once the \emph{key-struct} (figure \ref{fig:code:key-struct}),
+		that is linked to by the identity-struct, has been found, one
+		can determine whether the found key is a RSA or a DSA key.  The
+		key-struct contains a type-field and two pointers to either the
+		RSA or the DSA key.  These referenced structures are the
+		\emph{OpenSSL}\footnote{OpenSSL
+		(\href{http://openssl.org}{http://openssl.org}) is a free
+		open-source implementation of the secure socket layer protocol
+		also providing a general purpose cryptography library
+		(\text{libcrypto}).}-structures \texttt{RSA} and \texttt{DSA}.
 	
-	\item For both RSA and DSA structures, all important fields need to be
-	recovered to obtain valid keypairs. \cite{applied_crypto:1996,
-	handbook_applied_crypto:2001} give an overview of both cryptographic
-	algorithms, \cite{openssl_book:2002} introduces openssl concepts and
-	implementation details. Openssl's arbitrary precision integer
-	implementation is the \texttt{BIGNUM}-struct (abbreviated ``BN'' in the
-	trees above). It consists of a variable-length array of bit-vectors
-	forming the value and a length-field defining the length of this array.
-	As RSA and DSA both operate on finite fields, both are implemented with
-	\texttt{BIGNUM}s.  Therefore, the RSA and DSA structures contain several
-	\texttt{BIGNUM}s that need to be recovered to obtain a valid copy of the
-	keypair.
+	\item For both RSA and DSA structures (figure \ref{fig:code:rsa-struct}
+		and \ref{fig:code:dsa-struct}), all important fields need to be
+		recovered to obtain valid keypairs.  \cite{applied_crypto:1996,
+		handbook_applied_crypto:2001} give an overview of both
+		cryptographic algorithms, \cite{openssl_book:2002} introduces
+		openssl concepts and implementation details. Openssl's arbitrary
+		precision integer implementation is the \texttt{BIGNUM}-struct
+		(often abbreviated ``BN'').  It consists of a variable-length
+		array of bit-vectors forming the value and a length-field
+		defining the length of this array (see figure
+		\ref{fig:code:bignum-struct}).  As RSA and DSA both operate on
+		finite fields, both are implemented with \texttt{BIGNUM}s.
+		Therefore, the RSA and DSA structures contain several
+		\texttt{BIGNUM}s that need to be recovered to obtain a valid
+		copy of the keypair.
 
 	\item Some validity tests may be done to verify that the acquired
 	\texttt{BIGNUM}s fulfill algorithm-specific properties\footnote{During

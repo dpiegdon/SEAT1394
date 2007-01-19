@@ -12,7 +12,7 @@
 \usepackage{a4,amsmath,amsfonts,amssymb}
 \usepackage{abstract}
 
-\usepackage{qtree}
+\usepackage{listings}
 
 %\usepackage{endnotes}
 %\let\footnote=\endnote
@@ -150,10 +150,6 @@ author. No bananas.
 
 \include{acknowledgements}
 
-%\newpage 
-%\addcontentsline{toc}{section}{List of figures}
-%\listoffigures
-
 %\newpage
 %\begingroup
 %\parindent 0pt
@@ -165,10 +161,14 @@ author. No bananas.
 
 \newpage
 \begingroup
-%\section{Bibliography}
+
+\addcontentsline{toc}{section}{List of figures}
+\listoffigures
+
 \addcontentsline{toc}{section}{References}
 \bibliographystyle{alpha} %acm or alpha
 \bibliography{paper}
+
 \endgroup
 
 % ende
