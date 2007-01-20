@@ -365,8 +365,9 @@ data can further be separated into read-only data, read-write data and
 uninitialized global variables (local variables will be allocated from the
 stack, runtime-allocated memory is allocated from the heap).  Thus an executable
 object may be split into four regions: \emph{code}, \emph{rodata} (constants),
-\emph{rwdata} and \emph{dynamic data} (rwdata may be implemented by copying the
-initial data from rodata to dynamic data); stack and heap are process-specific.
+\emph{rwdata} and \emph{dynamic data} (rwdata may also be implemented by copying
+the initial data from rodata to dynamic data); stack and heap are
+process-specific.
 
 As many different processes may use the same executable objects, it would be a
 waste of memory if the operating system created a copy of the object for each
@@ -377,17 +378,17 @@ can share these two regions among processes that are using the same objects
 (binaries or libraries).  Thus, once an operating system \emph{ensures} that a
 process can not write to code-regions and read-only data-regions, it can map
 these once loaded regions into multiple virtual address spaces. This enforcement
-is done in hardware, on IA32 by setting a flag in the pagedirectory or a
-pagetable referencing the specific physical memory pages containing the region.
+is done in hardware, on IA32 by setting a flag in the page directory or a page
+table referencing the specific physical memory pages containing the region.
 
 Newer CPUs provide \emph{page-level no-execute enforcements} (AMD's NX \emph{No
 eXecute bit}, Intel's EXB \emph{EXecute disable Bit}); equal segment-level
 enforcements exist for years but never have been used in mainstream as Linux and
 many other operating-systems use a flat memory-model (with only one big segment
 spanning the full virtual address space).  Once these page-level enforcements
-are used in mainstream systems, attacks that inject code into data-regions or
-the stack are rendered useless completely. With access to the data-structures
-\footnote{pagedir and pagetables} containing the information, which pages are
+are used in systems, attacks that inject code into data-regions or the stack are
+rendered completely useless. However with access to the data-structures (page
+directory and page tables) containing the information, which pages are
 executable and which not, one can change this information before injecting code
 e.g. into an applications stack. 
 
@@ -397,16 +398,57 @@ binary is mapped into a process's memory, it is mapped including the full ELF
 header containing all information that is required to link all references
 between different objects; ELFs are always mapped at page-bounds. Due to this,
 all mapped ELFs (that includes executables and libraries) can be found by
-scanning all pages for the ELF Magic (0x7f E L F) at offset 0 of the page.
+scanning all pages for the ELF Magic (0x7f E L F) at offset $0$ in the page.
 Libraries, executables and other ELF objects can be distinguished by evaluating
 the \texttt{e\_type} field of the ELF header.
 
-\subsubsection{Overwriting process or library code}
+\subsubsection{Overwriting executable or library code}
 
 When code of executables or libraries are changed, all programs using these ELF
-objects are influenced at the same time.
+objects are influenced at the same time. An attacker thus has the ability, but
+also the burden, to possibly infect several processes at the same time. Such an
+attack has to be carefully prepared and conducted, as each system may have a
+different version of a binary and overwriting the wrong parts of an ELF or
+writing the wrong code may result in an almost immediate crash of all processes
+using the ELF. Though this is a rather interesting approach, there are easier
+ways to inject code into a \emph{single} process (see \ref{overwriting_stack}).
 
-\subsubsection{Overwriting stack and return addresses}
+For example, such an attack could be conducted by parsing a single virtual
+address space, until the glibc is found and then parsing the ELF-headers and
+searching for the entry-point of the \texttt{printf}-function (or some other,
+less frequently used function). Then a piece of code could be injected into the
+unused fragment of the last page of the libc-mapping. The intention is to
+overwrite the \texttt{printf} functions code with a \emph{relative}\footnote{An
+ELF may be mapped at different locations in different processes, if it is
+``PIC'' or ``PIE'' (Position Independant Code/Executable) and the kernel
+supports this.  Thus, unless the ELF is only mapped in one process or the
+overwritten function is only used in one process, the jumps target has to be
+addressed relative to the current position.} jump to this injected code.  But as
+we need to overwrite some instructions inside the function, we need to parse the
+functions code to separate each instruction\footnote{on IA32, different machine
+instructions can have different length}, so that after our code is executed, it
+executes a copy of the overwritten instructions and jumps to a fully intact
+instruction right after the injected jump. After this has been done, the jump
+can be injected into the functions code. This last write has to be as atomic as
+possible, as a process may just be executing these bytes and thus get astray.
+On IA32, entry-points of functions are most likely aligned to 32-bit
+addresses\footnote{due to optimizations by the compiler}.  Firewire also
+provides an interface to write 32-bit aligned 32-bit values (``quads'')
+atomically.  Unfortunately, a \emph{relative short} jump ($2$ bytes) can only
+jump within $\pm256$ bytes from the jump itself and \emph{relative long} and
+\emph{absolute} jumps are $5$ bytes wide ($1$ byte command + $4$ bytes address).
+A short jump is most likely incapable of reaching the last page of the ELF and
+writing a long relative jump is not atomic.
+
+A lot of other methods to inject code into a running process have been
+developed; \cite{phrack59.8:2002} gives an introduction into using
+\emph{ptrace}, including injecting whole shared objects using the runtime linker
+\emph{libdl}. The usability of this approach has not yet been analysed.
+
+
+\subsubsection{Overwriting the stack and return addresses}
+
+\label{overwriting_stack}
 
 
 
