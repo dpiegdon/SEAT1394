@@ -233,9 +233,17 @@ a NID of 0 means that they are the same.  Due to its relation to the
 \emph{Kolmogorov complexity} (a measurement for an information`s shortest
 description in a fixed description language) it is incalculatable.  As an
 approximation, it is possible to use data compressors instead of the Kolmogorov
-complexity to measure the size of a minimal representation of information. The
-resulting \emph{normalized compression distance} has proven to be useful in a
-vast area of applications; for instance, it has shown its usefulness during
+complexity to measure the size of a minimal representation of information.
+
+%Let $C$ be a compressor and $K(x)$ be the Kolmogorov-complexity of $x$.  $ \big(
+%\forall x : C(x) = K(x) \big) \Rightarrow \big( \forall x,y : \mbox{NCD}(x,y) =
+%\mbox{NID}(x,y) \big) $
+%
+%$$ \mbox{NCD}(x,y) = \frac{ C(xy) - \min \left\{ C(x),C(y) \right\} } { \max
+%\left\{ C(x),C(y) \right\} } $$
+
+The resulting \emph{normalized compression distance} has proven to be useful in
+a vast area of applications; for instance, it has shown its usefulness during
 analysis of DNA sequences or languages for relatedness
 (\cite{clustering_by_compression:2005,similarity_matrix:2004}), MIDI music files
 for relations in style and creator (\cite{clustering_by_compression:2005}) and
@@ -243,7 +251,7 @@ attack schemes of viruses and worms (\cite{analysing_worms_with_ncd:2006}).  For
 a detailed introduction to and analysis of the NCD and sample applications, the
 reader may refer to \cite{kolmogorov:1997} and the above texts.
 
-As the NCD is only an approximation of the NID based on compression, its
+As the NCD is only an approximation of the NID based on compressors, its
 resulting ``normalized'' value can be slightly larger that $1.0$ and will never
 reach $0$.
 
