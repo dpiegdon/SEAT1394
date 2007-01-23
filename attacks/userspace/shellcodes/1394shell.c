@@ -16,6 +16,55 @@
 
 #define RB_SIZE 512
 
+/*
+ * http://www.lxhp.in-berlin.de/lhpsyscal.html
+ *
+ * all necessary system calls:
+ * ===========================
+ *
+ * close:	eax: 6
+ * 		ebx: fd to close
+ *
+ * dup2:	eax: 63
+ * 		ebx: fd 2 dup
+ * 		ecx: fd to assign the dup to
+ *
+ * execve:	eax: 11
+ * 		ebx: ptr to string of program path&name
+ * 		ecx: ptr to argv[]
+ * 		edx: ptr to envv[]
+ *
+ * exit:	eax: 1
+ * 		ebx: exit code
+ *
+ * fcntl:	eax: 55
+ * 		ebx: fd
+ * 		ecx: command code
+ * 		edx: file locks: ptr to writable struct flock
+ *
+ * fork:	eax: 2
+ * 		ebx... are passed to forked process.
+ *
+ * nanosleep:	eax: 162
+ * 		ebx: ptr to struct timespec
+ * 		ecx: ptr to alterable struct timespec
+ *
+ * read:	eax: 3
+ * 		ebx: fd
+ * 		ecx: ptr to buffer
+ * 		edx: count
+ *
+ * write:	eax: 4
+ * 		ebx: fd
+ * 		ecx: ptr to buffer
+ * 		edx: count
+ *
+ * pipe:	eax: 42
+ * 		ebx: ptr to dword[2]
+ *
+ */
+
+
 struct ringbuffer {
 	volatile int	writer_pos;		// init to 0
 	volatile int	reader_pos;		// init to 0
@@ -32,8 +81,8 @@ int main()
 	volatile int	child_is_dead_ACK = 0;
 
 	// flags inidacing, wheather the pipes to/from the child are ok
-	int		to_slave_ok = 1;
-	int		from_slave_ok = 1;
+	int		to_child_ok = 1;
+	int		from_child_ok = 1;
 
 	// ringbuffer for communication with master
 	struct ringbuffer from_master;
@@ -76,10 +125,10 @@ int main()
 			// loop with read/write relayed via ringbuffer and nanosleep
 			// 	(signal-handler -> ret and O_ASYNC for nanosleep?)
 			// when both FD are closed:
-			while(to_slave_ok || from_slave_ok) {
+			while(to_child_ok || from_child_ok) {
 				// cache the volatile value...
 				rb_position = from_master.writer_pos;
-				if(to_slave_ok) {
+				if(to_child_ok) {
 					// unless buffer is empty
 					if(rb_position != from_master.reader_pos) {
 						// do write...
@@ -87,20 +136,20 @@ int main()
 				}
 
 				rb_position = to_master.reader_pos;
-				if(from_slave_ok) {
+				if(from_child_ok) {
 					// unless buffer is full
 					if( !(to_master.writer_pos == rb_position) ) {
 						// do read...
 					}
 				}
 			}
-			goto child_dead;
-
+			/* fall through: */
 		case -1:
 			goto child_dead;
 	}
 
 child_dead:
+	// wait at most 3 seconds for master to realize this.
 	while(child_is_dead <= 2 && child_is_dead_ACK == 0) {
 		child_is_dead++;
 		sleep(1);
