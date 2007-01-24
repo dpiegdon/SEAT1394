@@ -16,6 +16,11 @@
  * all necessary system calls:
  * ===========================
  *
+ * clone:	eax: 120
+ * 		ebx: clone-flags
+ * 		ecx: ptr to top of (distinct) stack space
+ * 		edx: ptr to pt_regs or NULL
+ *
  * close:	eax: 6
  * 		ebx: fd to close
  *

