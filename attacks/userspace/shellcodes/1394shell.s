@@ -145,10 +145,18 @@ reader_while_fds_ok:
 	cmp	al,0
 	je	do_terminate_child
 
+	; if ringbuffer is EMPTY ( _reader == _writer ), do nothing.
+	mov	eax,[ebp+rfrm_writer_pos]
+	sub	eax,[ebp+rfrm_reader_pos]
+	jz	reader_sleep
+
+	; write a chunk to the child.
 
 
 
 
+reader_sleep:
+	; sleep some time...
 
 	jmp	reader_while_fds_ok
 
@@ -183,10 +191,19 @@ writer_while_fds_ok:
 	cmp	al,2
 	jne	child_dead
 
+	; if ringbuffer is FULL ( _reader == _writer+1 ), do nothing.
+	mov	eax,[ebp+rto_writer_pos]
+	inc	eax
+	sub	eax,[ebp+rto_reader_pos]
+	jz	writer_sleep
+
+	; read ONE SINGLE BYTE and pass it into the buffer.
 
 
 
 
+writer_sleep:
+	; sleep some time... BUT NOT TOO LONG...!
 
 	jmp	writer_while_fds_ok
 
@@ -241,6 +258,9 @@ to_child_ok EQU $ - data_start
 	db		1
 from_child_ok EQU $ - data_start
 	db		1
+
+; a ringbuffer is EMPTY, if both _writer and _reader point to the same location.
+; a ringbuffer is FULL, if _reader == _writer+1
 
 ; ringbuffer from_master:
 
