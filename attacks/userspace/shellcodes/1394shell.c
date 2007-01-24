@@ -10,64 +10,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-/*
- * http://www.lxhp.in-berlin.de/lhpsyscal.html
- *
- * all necessary system calls:
- * ===========================
- *
- * clone:	eax: 120
- * 		ebx: clone-flags
- * 		ecx: ptr to top of (distinct) stack space
- * 		edx: ptr to pt_regs or NULL
- *
- * close:	eax: 6
- * 		ebx: fd to close
- *
- * dup2:	eax: 63
- * 		ebx: fd 2 dup
- * 		ecx: fd to assign the dup to
- *
- * execve:	eax: 11
- * 		ebx: ptr to string of program path&name
- * 		ecx: ptr to argv[]
- * 		edx: ptr to envv[]
- *
- * exit:	eax: 1
- * 		ebx: exit code
- *
- * fcntl:	eax: 55
- * 		ebx: fd
- * 		ecx: command code
- * 		edx: file locks: ptr to writable struct flock
- *
- * fork:	eax: 2
- * 		ebx... are passed to forked process.
- *
- * kill:	eax: 37
- * 		ebx: pid (?)
- * 		ecx: signal (?)
- * 		SIGKILL = 9
- *
- * nanosleep:	eax: 162
- * 		ebx: ptr to struct timespec
- * 		ecx: ptr to alterable struct timespec
- *
- * read:	eax: 3
- * 		ebx: fd
- * 		ecx: ptr to buffer
- * 		edx: count
- *
- * write:	eax: 4
- * 		ebx: fd
- * 		ecx: ptr to buffer
- * 		edx: count
- *
- * pipe:	eax: 42
- * 		ebx: ptr to dword[2]
- *
- */
-
 
 struct ringbuffer {
 	volatile uint8_t	writer_pos;		// init to 0
