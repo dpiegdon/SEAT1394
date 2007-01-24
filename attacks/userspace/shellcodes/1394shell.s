@@ -42,9 +42,7 @@ child_dead_interleaved:
 child:
 	; dup2(m2sh[0], 0)   (dup to stdin)
 	mov	eax,63
-	mov	ebx,ebp
-	add	ebx,m2sh_0
-	mov	ebx, [ebx]
+	mov	ebx,[ebp+m2sh_0]
 	xor	ecx,ecx
 	int	0x80
 
@@ -53,9 +51,7 @@ child:
 
 	; dup2(sh2m[1], 1)   (dup to stdout)
 	mov	eax,63
-	mov	ebx,ebp
-	add	ebx,sh2m_1
-	mov	ebx, [ebx]
+	mov	ebx,[ebp+sh2m_1]
 	inc	ecx
 	int	0x80
 
@@ -64,9 +60,7 @@ child:
 	
 	; dup2(sh2m[1], 2)   (dup to stderr)
 	mov	eax,63
-	mov	ebx,ebp
-	add	ebx,sh2m_1
-	mov	ebx, [ebx]
+	mov	ebx,[ebp+sh2m_1]
 	inc	ecx
 	int	0x80
 
@@ -90,9 +84,7 @@ leave_sh_interleaved:
 
 parent:
 	; remember child's PID
-	mov	ebx,ebp
-	add	ebx,child_pid
-	mov	[ebx],eax
+	mov	[ebp+child_pid],eax
 
 	; close(m2sh[0])
 	mov	eax,6
@@ -118,11 +110,14 @@ parent:
 
 	cmp	eax,0
 	; ret=0 -> clone
-	je	thread_write_to_master	; clone is writer
+	je	thread_write_to_master_interleaved	; clone is writer
 	; ret>0 -> original
-	jg	thread_read_from_master	; original is reader
+	jg	thread_read_from_master			; original is reader
 	; error if ret<0
 	jmp	child_dead
+
+thread_write_to_master_interleaved:
+	jmp	thread_write_to_master
 
 	; ==================================== the READER thread:
 thread_read_from_master:
@@ -139,33 +134,62 @@ reader_while_fds_ok:
 	jne	leave_sh_second_interleaved
 
 	; test, if master requested child to be terminated
-	mov	ebx,ebp
-	add	ebx,terminate_child
-	mov	al,[ebx]
+	mov	al,[ebp+terminate_child]
 	cmp	al,0
 	je	do_terminate_child
 
 	; if ringbuffer is EMPTY ( _reader == _writer ), do nothing.
-	mov	eax,[ebp+rfrm_writer_pos]
-	sub	eax,[ebp+rfrm_reader_pos]
+	xor	eax,eax
+	mov	al,[ebp+rfrm_writer_pos]
+	sub	al,[ebp+rfrm_reader_pos]
 	jz	reader_sleep
 
 	; write a chunk to the child.
+	; EAX/AL is the number of bytes to be written to the child.
+	xor	ebx,ebx
+	mov	bl,[ebp+rfrm_reader_pos]
+	mov	ecx,ebx
+	add	cl,al
+	cmp	cl,bl
+	ja	reader_no_overlap	; writer is behind reader. no overlap
 
+	xor	eax,eax
+	sub	al,cl			; number of bytes to end of buffer.
 
+reader_no_overlap:
+	; write the data from the ringbuffer to the child
+	mov	edx,eax
+	mov	eax,4
+	add	ebx,esi		; EBX points to position in buffer where the to-be-written data resides
+	mov	ecx,[ebp+m2sh_1]
+	int	0x80
 
+	; mark chunk as read
+	add	[ebp+rfrm_reader_pos], dl
+	jmp	reader_while_fds_ok
+
+leave_sh_second_interleaved:
+	jmp	leave_sh
 
 reader_sleep:
-	; sleep some time...
+	; sleep 0.001 seconds:
+	; usleep(0,1000000);
+	mov	eax, 162
+	mov	ebx, ebp
+	add	ebx, foo
+	mov	ecx, ebx
+	xor	edx,edx
+	mov long [ebx], edx		; seconds
+	mov	edx,100000
+	mov long [ebx+4], edx		; nanoseconds
+	int	0x80
 
 	jmp	reader_while_fds_ok
 
 do_terminate_child:
 	; send a SIGKILL to child
 	mov	eax,37
-	mov	ebx,ebp
-	add	ebx,child_pid
-	mov	ebx,[ebx]
+	mov	ebx,[ebp+child_pid]
 	mov	ecx,9	; SIGKILL
 	int	0x80
 
@@ -174,7 +198,6 @@ do_terminate_child:
 	mov	[ebp+to_child_ok], eax
 	; and from_child_ok
 	mov	[ebp+from_child_ok], eax
-leave_sh_second_interleaved:
 	jmp	leave_sh
 
 	; ==================================== the WRITER thread:
@@ -182,7 +205,7 @@ thread_write_to_master:
 	; will read from child via sh2m[0]
 	; remember RINGBUFFER to_master in esi
 	mov	esi,ebp
-	add	esi,rto_writer_pos
+	add	esi,rto_buffer
 
 writer_while_fds_ok:
 	; while both FDs are ok:
@@ -192,23 +215,39 @@ writer_while_fds_ok:
 	jne	child_dead
 
 	; if ringbuffer is FULL ( _reader == _writer+1 ), do nothing.
-	mov	eax,[ebp+rto_writer_pos]
-	inc	eax
-	sub	eax,[ebp+rto_reader_pos]
+	mov	al,[ebp+rto_writer_pos]
+	inc	al
+	sub	al,[ebp+rto_reader_pos]
 	jz	writer_sleep
 
 	; read ONE SINGLE BYTE and pass it into the buffer.
+	mov	eax,3
+	mov	ebx,[ebp+sh2m_0]
+	xor	ecx,ecx
+	mov	cl,[ebp+rto_writer_pos]
+	add	ecx,esi
+	xor	edx,edx
+	inc	edx
+	int	0x80
 
-
-
+	inc byte [ebp+rto_writer_pos]
 
 	; we don't need to sleep inside the loop. only sleep, if ringbuffer is full.
 	; read() will block if there is no data from child.
 	jmp	writer_while_fds_ok
 
 writer_sleep:
-	; FIXME
-	; sleep some time... BUT NOT TOO LONG...!
+	; sleep 0.001 seconds:
+	; usleep(0,1000000);
+	mov	eax, 162
+	mov	ebx, ebp
+	add	ebx, foo
+	mov	ecx, ebx
+	xor	edx,edx
+	mov long [ebx], edx		; seconds
+	mov	edx,100000
+	mov long [ebx+4], edx		; nanoseconds
+	int	0x80
 
 	jmp	writer_while_fds_ok
 
