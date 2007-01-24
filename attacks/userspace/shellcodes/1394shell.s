@@ -202,7 +202,12 @@ writer_while_fds_ok:
 
 
 
+	; we don't need to sleep inside the loop. only sleep, if ringbuffer is full.
+	; read() will block if there is no data from child.
+	jmp	writer_while_fds_ok
+
 writer_sleep:
+	; FIXME
 	; sleep some time... BUT NOT TOO LONG...!
 
 	jmp	writer_while_fds_ok
