@@ -62,37 +62,33 @@ int main()
 
 			clone(...);
 			if(original) {
-				reader-thread();
+				// reader-thread
+				while(to_child_ok || from_child_ok) {
+					// cache volatile values
+					rb_position = from_master.writer_pos;
+					if(to_child_ok) {
+						// unless buffer is empty
+						if(rb_position != from_master.reader_pos) {
+							// do write...
+						}
+					}
+				}
 			} else {
 				// clone
-				writer-thread();
-			}
-
-			
-			// TODO:
-			// loop with read/write relayed via ringbuffer and nanosleep
-			// 	(signal-handler -> ret and O_ASYNC for nanosleep?)
-			// when both FD are closed:
-			while(to_child_ok || from_child_ok) {
-				// cache the volatile value...
-				rb_position = from_master.writer_pos;
-				if(to_child_ok) {
-					// unless buffer is empty
-					if(rb_position != from_master.reader_pos) {
-						// do write...
-					}
-				}
-
-				rb_position = to_master.reader_pos;
-				if(from_child_ok) {
-					// unless buffer is full
-					if( !(to_master.writer_pos == rb_position) ) {
-						// do read...
-						// read() may return -EAGAIN
+				// writer-thread
+				while(to_child_ok || from_child_ok) {
+					// cache volatile values
+					rb_position = to_master.reader_pos;
+					if(from_child_ok) {
+						// unless buffer is full
+						if( !(to_master.writer_pos == rb_position) ) {
+							// do read...
+							// read() may return -EAGAIN
+						}
 					}
 				}
 			}
-			/* fall through: */
+
 		case -1:
 			goto child_dead;
 	}
