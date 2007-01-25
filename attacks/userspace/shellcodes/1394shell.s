@@ -218,7 +218,8 @@ reader_while_fds_ok:
 	xor	eax,eax
 	mov	al,[ebp+rfrm_writer_pos]
 	sub	al,[ebp+rfrm_reader_pos]
-	jz	reader_sleep
+	cmp	al,0
+	je	reader_sleep
 
 	; write a chunk to the child.
 	; EAX/AL is the number of bytes to be written to the child.
@@ -237,8 +238,10 @@ reader_no_overlap:
 	mov	edx,eax
 	xor	eax,eax
 	mov	al,4
-	add	ebx,esi		; EBX points to position in buffer where the to-be-written data resides
-	mov	ecx,[ebp+m2sh_1]
+	xor	ecx,ecx
+	mov	cl,[ebp+rfrm_reader_pos]
+	add	ecx,esi			; ECX := reader_pos + buffer_base
+	mov	ebx,[ebp+m2sh_1]
 	int	0x80
 
 	; mark chunk as read
@@ -384,7 +387,7 @@ from_child_ok EQU $ - data_start
 ; ringbuffer from_master:
 
 rfrm_writer_pos EQU $ - data_start
-	db		0
+	db		7
 rfrm_reader_pos EQU $ - data_start
 	db		0
 
@@ -403,18 +406,41 @@ execve_command EQU $ - data_start
 align 4
 
 child_pid EQU $ - data_start
+	dd	0
+m2sh_0 EQU $ - data_start
+	dd	0
+m2sh_1 EQU $ - data_start
+	dd	0
+sh2m_0 EQU $ - data_start
+	dd	0
+sh2m_1 EQU $ - data_start
+	dd	0
 
-; pipes middleman<->shell
-m2sh_0 EQU $ - data_start + 4			; shell reads
-m2sh_1 EQU $ - data_start + 8			; master writes
-sh2m_0 EQU $ - data_start + 12			; master reads
-sh2m_1 EQU $ - data_start + 16			; shell writes
+	db	'||'
+rfrm_buffer EQU $ - data_start
+	db	'ls -la',0xa
+	resb	249
+	db	'||'
+rto_buffer EQU $ - data_start
+	resb	256
+	db	'||'
 
-rfrm_buffer EQU $ - data_start + 20		; FROM master
-rto_buffer EQU $ - data_start + 276		; TO master
+foo EQU $ - data_start
+	dd	0
+bar EQU $ - data_start
+	dd	0
 
-foo EQU $ - data_start + 532
-bar EQU $ - data_start + 536
-baz EQU $ - data_start + 540
-qux EQU $ - data_start + 544
-
+;child_pid EQU $ - data_start
+;
+;; pipes middleman<->shell
+;m2sh_0 EQU $ - data_start + 4			; shell reads
+;m2sh_1 EQU $ - data_start + 8			; master writes
+;sh2m_0 EQU $ - data_start + 12			; master reads
+;sh2m_1 EQU $ - data_start + 16			; shell writes
+;
+;rfrm_buffer EQU $ - data_start + 20		; FROM master
+;rto_buffer EQU $ - data_start + 276		; TO master
+;
+;foo EQU $ - data_start + 532
+;bar EQU $ - data_start + 536
+;
