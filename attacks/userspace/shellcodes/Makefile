@@ -18,7 +18,7 @@
 #   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #
 
-.PHONY: all clean
+.PHONY: all clean minimal
 
 CC=gcc
 CFLAGS=-g
@@ -34,6 +34,9 @@ print.o: print.s
 
 marker.o: marker.s
 	nasm -l marker.lst -o marker.o marker.s
+
+minimal: 1394shell.s
+	nasm -D OPTIMIZE_FOR_SIZE_HARD -l 1394shell.lst -o 1394shell.o 1394shell.s
 
 1394shell.o: 1394shell.s
 	nasm -l 1394shell.lst -o 1394shell.o 1394shell.s
