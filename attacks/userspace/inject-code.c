@@ -146,7 +146,13 @@ void try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int codelen
 	//insert code
 	printf("\tinserting code into the stack at 0x%08llx\n", code_location);
 	if(aggressiveness & 1)
-		linear_write(lin, code_location, code, codelen);
+		if(linear_write(lin, code_location, code, codelen)) {
+			printf(TERM_RED"failed to inject code!"TERM_RESET"\n");
+			return;
+		}
+
+	printf("\tdone. press key to overwrite pointers on stack...\n");
+	getchar();
 
 	// replace all interesting pointers on stack with pointer to our code
 	// this part is tricky... we will overwrite value by value. if one of
