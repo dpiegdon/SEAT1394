@@ -64,9 +64,9 @@ void dump_page_wide(FILE *f, uint32_t pn, char* page, char* diffpage)
 	uint32_t addr;
 	int i,j;
 	fprintf(f, "dump page %x\n", pn);
-#define COLUMNCOUNT 56
+#define COLUMNCOUNT 32
 	// 56
-#define HEX_ONLY
+//#define HEX_ONLY
 
 	addr = pn * 4096;
 	for(i = 0; i<4096; i+=COLUMNCOUNT) {
