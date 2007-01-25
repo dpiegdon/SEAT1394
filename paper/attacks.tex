@@ -32,14 +32,14 @@ space and will print a list of all found processes with its arguments.
 
 Many applications keep secrets in their memory, some of them even locking them
 into the main memory\footnote{e.g. via the \emph{mlock} function} to prevent the
-operating system from swapping them to slower media. ``Secrets'' includes, among
-other information, \emph{authentication data}, \emph{cryptographic key
-material}, \emph{random data} (e.g. to seed a cryptographic algorithm) and
-sometimes even \emph{algorithms} (\emph{proprietary software}). Authentication
-data can be e.g.  passwords or private keys for signature algorithms;
-cryptographic key material, as the name says, are keys for usage with
-cryptographic algorithms (like the above signature algorithms). These two will
-be of main interest in this section.
+operating system from swapping them to slower (permanent) media.  ``Secrets''
+includes, among other information, \emph{authentication data},
+\emph{cryptographic key material}, \emph{random data} (e.g. to seed a
+cryptographic algorithm) and sometimes even \emph{algorithms} (\emph{proprietary
+software}). Authentication data can be e.g.  passwords or private keys for
+signature algorithms; cryptographic key material, as the name says, are keys for
+usage with cryptographic algorithms (like the above signature algorithms). These
+two will be of main interest in this section.
 
 Many applications using a cryptographic infrastructure for communications will
 keep once loaded passwords or keys in their main memory for successive usage.
