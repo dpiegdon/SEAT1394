@@ -273,10 +273,10 @@ void use_shell(linear_handle lin, uint32_t base)
 			linear_read_in_page(lin, base + RTO_BUFFER + rto_reader_pos, rto_buffer, 1);
 			rto_reader_pos++;
 			SET_rto_reader_pos;
-			rfrm_active = 1;
+			rto_active = 1;
 			putchar(rto_buffer[0]);
 		} else {
-			rfrm_active = 0;
+			rto_active = 0;
 		}
 
 		if(!rfrm_active && !rto_active)
@@ -320,7 +320,7 @@ int main(int argc, char**argv)
 	int pretend = 0;
 	int aggressive = 0;
 
-	uint32_t base;
+	uint32_t base = 0;
 
 	enum memsource memsource = SOURCE_UNDEFINED;
 	char *filename = NULL;
@@ -507,11 +507,6 @@ int main(int argc, char**argv)
 				if(bin) {
 					printf("found <\"%s\">\n", bin);
 					if(0 == strcmp(bin, seek_binary)) {
-						int fd;
-#define CODEBUFFERSIZE 4096
-						char codebuffer[CODEBUFFERSIZE];
-						int codelen;
-
 						printf("\tmatching once again.\n");
 
 						use_shell(lin, base);
