@@ -448,8 +448,40 @@ developed; e.g. \cite{phrack59.8:2002} gives an introduction into using
 
 \subsubsection{Overwriting the stack and return addresses}
 
-\label{overwriting_stack}
+\label{overwriting_stack} I have put most of my efforts into injecting code into
+the stack and overwriting return-addresses on the stack to point to the injected
+code.
 
+This modification of the classic \emph{stack overflow} method has some
+advantages over the previous approach:
+
+\begin{itemize}
+
+	\item Each process, even each thread, has its own stack. Thus only a
+		single thread will be affected by the attack.
+
+	\item If the attack fails and the thread dies, only a \emph{single}
+		thread will fail on the target system, not e.g. \emph{all}
+		processes using the glibc or \emph{all} instances of $/bin/sh$.
+
+	\item The process can write to the stack as well, thus we can
+		communicate with the injected shell-code in a rather easy way.
+
+	\item During the attack we do not need to modify parts of the code of
+		the target-process, reducing the risc of an astray process.
+
+\end{itemize}
+
+An attack can be as simple as injecting the code into a location on the stack
+that is known to be unused and then changing all doubles on the stack that look
+like a return-address into the heap (\texttt{0x08**~****}, see figure
+\ref{fig:linux_virtual_address_space}) to point to the injected shell code. Once
+the attacked process leaves the current stack-frame, it will use the
+return-address on the stack and, as this has been changed by us, execute the
+injected shell code.
+
+% FIXME: mehr infos zu ``3.1.1:Identifying processes'', danach hier darauf
+% aufbauen. Mehr infos zu stack-frames?
 
 
 
