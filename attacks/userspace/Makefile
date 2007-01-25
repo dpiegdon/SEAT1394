@@ -37,6 +37,9 @@ clean:
 inject-code: LDFLAGS += -lphysical -llinear
 inject-code: inject-code.o proc_info.o
 
+rawshell: LDFLAGS += -lphysical -llinear
+rawshell: rawshell.o proc_info.o
+
 show-stack: LDFLAGS += -lphysical -llinear
 show-stack: show-stack.o proc_info.o
 

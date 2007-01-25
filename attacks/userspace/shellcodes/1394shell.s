@@ -425,6 +425,8 @@ rto_buffer EQU $ - data_start
 	resb	256
 	db	'||'
 
+align 4
+
 foo EQU $ - data_start
 	dd	0
 bar EQU $ - data_start

