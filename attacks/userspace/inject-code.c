@@ -114,7 +114,7 @@ uint32_t try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int cod
 	if( ((int64_t)stack_bottom == -1) || ((int64_t)binary_first == -1) || ((int64_t)binary_last == -1) ) {
 		printf("\tfailed to find stack or binary bounds!\n"
 			"\taborting!\n");
-		return;
+		return -1;
 	}
 
 	binary_last--;				// go to last mapped
@@ -148,7 +148,7 @@ uint32_t try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int cod
 	if(aggressiveness & 1)
 		if(linear_write(lin, code_location, code, codelen)) {
 			printf(TERM_RED"failed to inject code!"TERM_RESET"\n");
-			return;
+			return -1;
 		}
 
 	printf("\tdone. press key to overwrite pointers on stack...\n");
