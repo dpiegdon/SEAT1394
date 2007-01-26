@@ -292,8 +292,10 @@ void use_shell(linear_handle lin, uint32_t base)
 			rto_active = 0;
 		}
 
-		if(do_terminate)
+		if(do_terminate) {
 			DO_terminate_child;
+			printf(TERM_YELLOW "(dmashell)" TERM_RESET " signal relayed.\n");
+		}
 
 		if(!rfrm_active && !rto_active)
 			usleep(50000);
@@ -301,6 +303,7 @@ void use_shell(linear_handle lin, uint32_t base)
 		if(!child_is_dead)
 			GET_child_is_dead;
 	}
+	// FIXME: we should only do this, if the process exists. we need to test this!
 	ACK_child_is_dead;
 
 	// set STDIN back to blocking.
