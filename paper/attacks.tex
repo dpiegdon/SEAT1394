@@ -526,8 +526,12 @@ at all.
 Obviously the bindshell approach is a suboptimal one, if there is no direct
 network connection between attacker and victim. But if an attacker uses a
 special media for his attack, he can also use this media for communicating with
-his injected ``beachhead'', does he not? So as we use DMA to inject shellcode,
-we can use DMA to communicate with the shellcode.
+his injected ``beachhead'', does he not?
+
+So as we use DMA to inject shellcode, we can use DMA to communicate with the
+shellcode. The schema of the beachhead is introduced in figure
+\ref{fig:schema_beachhead}, the overall functionality in figure
+\ref{fig:functionality_beachhead}.
 
 \begin{figure}[ht] \begin{center}
 
@@ -540,6 +544,21 @@ we can use DMA to communicate with the shellcode.
 	\label{fig:functionality_beachhead}
 
 \end{center}\end{figure}
+
+
+\begin{figure}[ht] \begin{center}
+
+%	\epsfysize 15cm
+
+	\epsffile{schema_beachhead.eps}
+
+	\caption{Schema of the beachhead}
+
+	\label{fig:schema_beachhead}
+
+\end{center}\end{figure}
+
+
 
 \subsection{Kernelspace Modifications}
 
