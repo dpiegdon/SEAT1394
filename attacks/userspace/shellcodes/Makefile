@@ -24,10 +24,10 @@ CC=gcc
 CFLAGS=-g
 AS=nasm
 
-all:	testcode print.o marker.o 1394shell.o
+all:	testcode print.o marker.o rawshell.o
 
 clean:
-	-rm -f marker.o print.o 1394shell.o *.lst testcode
+	-rm -f marker.o print.o rawshell.o *.lst testcode
 
 print.o: print.s
 	nasm -l print.lst -o print.o print.s
@@ -35,6 +35,6 @@ print.o: print.s
 marker.o: marker.s
 	nasm -l marker.lst -o marker.o marker.s
 
-1394shell.o: 1394shell.s
-	nasm -l 1394shell.lst -o 1394shell.o 1394shell.s
+rawshell.o: rawshell.s
+	nasm -l rawshell.lst -o rawshell.o rawshell.s
 
