@@ -600,22 +600,22 @@ shellcode and communicate with it is \texttt{attacks/userspace/dmashell.c}.
 					child_pid = returnvalue of fork;
 					close(ToShell[0]);
 					close(FromShell[1]);
-					// create a second thread "writerThread"
-					clone(writerThread);
-					// current thread becomes "readerThread"
-					goto readerThread;
+					// create a second thread "WriterThread"
+					clone(WriterThread);
+					// current thread becomes "ReaderThread"
+					goto ReaderThread;
 					;;
 			}
 
 
-		readerThread:
-			// the readerThread will read from the master and relay to the shell
+		ReaderThread:
+			// the ReaderThread will read from the master and relay to the shell
 			while( pipes_ok ) {
 				if(terminate_child) {
 					// attacker requested shell to be terminated
 					kill(child_pid, SIGKILL);
 					pipes_ok = 0;
-					// readerThread terminates, writerThread will do cleanup
+					// ReaderThread terminates, WriterThread will do cleanup
 					exit();
 				}
 				if( isEmpty(FromMaster) ) {
@@ -631,8 +631,8 @@ shellcode and communicate with it is \texttt{attacks/userspace/dmashell.c}.
 			}
 			exit();
 
-		writerThread:
-			// the writerThread will read from the shell and relay to the master
+		WriterThread:
+			// the WriterThread will read from the shell and relay to the master
 			while( pipes_ok ) {
 				if( isFull(ToMaster) ) {
 					sleep(0.001 seconds);
