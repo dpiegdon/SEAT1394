@@ -1,7 +1,7 @@
 # $Id$
 
 TEX = /usr/bin/latex
-.PHONY : all install clean autowindow autoupdate autoreload
+.PHONY : all install clean autowindow autoupdate autoreload final
 
 TGIFS = $(shell echo *.obj)
 TGIF_FIGURES = $(patsubst %.obj,%.eps,$(TGIFS))
@@ -12,7 +12,11 @@ BIBS = $(shell echo *.bib)
 
 
 
-all: paper.pdf
+all: final
+
+final: paper.pdf
+	pdfopt paper.pdf paper-opt.pdf
+	mv paper-opt.pdf paper.pdf
 
 clean:
 	-rm *.log *.lot *.lof *.aux *.toc *.bbl *.blg *.out	> /dev/null 2>&1
