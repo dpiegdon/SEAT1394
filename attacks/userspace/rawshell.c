@@ -207,17 +207,17 @@ uint32_t try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int inj
 void use_shell(linear_handle lin, uint32_t base)
 {{{
 	// these depend on the used shellcode:
-#define CHILD_IS_DEAD	0x20f
-#define CHILD_IS_DEAD_ACK 0x210
-#define TERMINATE_CHILD	0x211
+#define CHILD_IS_DEAD	0x22f
+#define CHILD_IS_DEAD_ACK 0x230
+#define TERMINATE_CHILD	0x231
 
-#define RFRM_WRITER_POS	0x214
-#define RFRM_READER_POS	0x215
-#define RFRM_BUFFER	(0x220 + 20)
+#define RFRM_WRITER_POS	0x234
+#define RFRM_READER_POS	0x235
+#define RFRM_BUFFER	(0x240 + 20)
 
-#define RTO_WRITER_POS	0x216
-#define RTO_READER_POS	0x217
-#define RTO_BUFFER	(0x220 + 276)
+#define RTO_WRITER_POS	0x236
+#define RTO_READER_POS	0x237
+#define RTO_BUFFER	(0x240 + 276)
 
 	const uint8_t true_value = 0x1;
 
