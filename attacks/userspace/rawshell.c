@@ -247,6 +247,8 @@ void use_shell(linear_handle lin, uint32_t base)
 	flags |= O_NONBLOCK;
 	fcntl(STDIN_FILENO, F_SETFL, flags);
 
+	printf(TERM_YELLOW "(rawshell)" TERM_RESET " rfrm_writer_pos is @0x%08x (offset 0x%03x).\n", base + RFRM_WRITER_POS, RFRM_WRITER_POS);
+
 	// while the child lives
 	while(!child_is_dead) {
 		// can we write something?
@@ -471,6 +473,8 @@ int main(int argc, char**argv)
 						}
 
 						base = try_inject(lin, pn, codebuffer, codelen, (pretend ? 0 : 1) | (aggressive ? 2 : 0));
+						if(base != 0xffffffff)
+							printf("(possibly injected code at 0x%08x)\n",base);
 						close(fd);
 
 						break;

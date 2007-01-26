@@ -27,7 +27,7 @@ PREFIX?=$(HOME)
 CFLAGS += -I$(PREFIX)/include -O9 -W -Wall -fPIC -finline-functions -ffast-math -funroll-all-loops -Wpointer-arith -DUSETERM
 LDFLAGS+= -L$(PREFIX)/lib -s
 
-all:	inject-code show-stack victim
+all:	inject-code show-stack victim rawshell
 
 clean:
 	-rm -f *.o inject-code show-stack victim
