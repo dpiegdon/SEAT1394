@@ -12,14 +12,14 @@
 
 \subsubsection{Identifying processes}
 
-Once an address translation table has been found, it is of interest, what kind
-of process resides in this virtual address space.  For userspace applications on
-IA32-Linux there is a simple way to identify a process's \emph{filename}, its
-\emph{arguments} and even its full set of \emph{environment variables}: This
-information is often required by a process and thus the kernel will provide it
-to the process by copying it to the bottom pages of the application's
-stack\footnote{i.e.  the stack-pages that are found first when seeking downward
-from virtual address \texttt{0xbfff~f000}}.
+\label{identifying_processes}  Once an address translation table has been found,
+it is of interest, what kind of process resides in this virtual address space.
+For userspace applications on IA32-Linux there is a simple way to identify a
+process's \emph{filename}, its \emph{arguments} and even its full set of
+\emph{environment variables}: This information is often required by a process
+and thus the kernel will provide it to the process by copying it to the bottom
+pages of the application's stack\footnote{i.e.  the stack-pages that are found
+first when seeking downward from virtual address \texttt{0xbfff~f000}}.
 
 \texttt{proc\_info()} will seek the stack-bottom, parse it and return
 ready-for-use environment vectors, command-line vectors and the full path of the
@@ -404,7 +404,7 @@ the \texttt{e\_type} field of the ELF header.
 
 \subsubsection{Overwriting executable or library code}
 
-When code of executables or libraries are changed, all programs using these ELF
+When code of executables or libraries is changed, all programs using these ELF
 objects are influenced at the same time. An attacker thus has the ability, but
 also the burden, to possibly infect several processes at the same time. Such an
 attack has to be carefully prepared and conducted, as each system may have a
@@ -413,46 +413,46 @@ writing the wrong code may result in an almost immediate crash of all processes
 using the ELF. Though this is a rather interesting approach, there are easier
 ways to inject code into a \emph{single} process (see \ref{overwriting_stack}).
 
-For example, such an attack could be conducted by parsing a single virtual
-address space, until the glibc is found and then parsing the ELF-headers and
-searching for the entry-point of the \texttt{printf}-function (or some other,
-less frequently used function). Then a piece of code could be injected into the
-unused fragment of the last page of the libc-mapping. The intention is to
-overwrite the \texttt{printf} functions code with a \emph{relative}\footnote{An
-ELF may be mapped at different locations in different processes, if it is
-``PIC'' or ``PIE'' (Position Independant Code/Executable) and the kernel
-supports this.  Thus, unless the ELF is only mapped in one process or the
-overwritten function is only used in one process, the jumps target has to be
-addressed relative to the current position.} jump to this injected code.  But as
-we need to overwrite some instructions inside the function, we need to parse the
-functions code to separate each instruction\footnote{on IA32, different machine
-instructions can have different length}, so that after our code is executed, it
-executes a copy of the overwritten instructions and jumps to a fully intact
-instruction right after the injected jump. After this has been done, the jump
-can be injected into the functions code. This last write has to be as atomic as
-possible, as a process may just be executing these bytes and thus get astray.
-On IA32, entry-points of functions are most likely aligned to 32-bit
-addresses\footnote{due to optimizations by the compiler}.  Firewire also
-provides an interface to write 32-bit aligned 32-bit values (``quads'')
-atomically.  Unfortunately, a \emph{relative short} jump ($2$ bytes) can only
-jump within $\pm256$ bytes from the jump itself and \emph{relative long} and
-\emph{absolute} jumps are $5$ bytes wide ($1$ byte command + $4$ bytes address).
-A short jump is most likely incapable of reaching the last page of the ELF and
-writing a long relative jump is not atomic.
+Such an attack could be conducted by searching a single virtual address space
+for the glibc and then parsing the ELF-headers and searching for the entry-point
+of the \texttt{printf}-function (or some other, less frequently used function).
+Then a piece of code could be injected into the unused fragment of the last page
+of the libc-mapping. It is important to inject the shellcode into the mapping,
+as all processes that will be affected have to be able to reach the shellcode.
+The intention is to overwrite the \texttt{printf} functions code with a
+\emph{relative}\footnote{An ELF may be mapped at different locations in
+different processes, if it is ``PIC'' or ``PIE'' (Position Independant
+Code/Executable) and the kernel supports this.  Thus, unless the ELF is only
+mapped in one process or the overwritten function is only used in one process,
+the jumps target has to be addressed relative to the current position.} jump to
+this injected code.  But as we need to overwrite some instructions inside the
+function, we need to parse the functions code to separate each
+instruction\footnote{on IA32, different machine instructions can have different
+length}, so that after our code is executed, it executes a copy of the
+overwritten instructions and jumps to a fully intact instruction right after the
+injected jump. After this has been done, the jump can be injected into the
+functions code. This last write has to be as atomic as possible, as a process
+may just be executing these bytes and thus get astray.  On IA32, entry-points of
+functions are most likely aligned to 32-bit addresses\footnote{due to
+optimizations by the compiler}.  Firewire also provides an interface to write
+32-bit aligned 32-bit values (``quads'') atomically.  Unfortunately, a
+\emph{relative short} jump ($2$ bytes) can only jump within $\pm256$ bytes from
+the jump itself and \emph{relative long} and \emph{absolute} jumps are $5$ bytes
+wide ($1$ byte command + $4$ bytes address).  A short jump is most likely
+incapable of reaching the last page of the ELF and writing a long relative jump
+is not atomic.
 
-A lot of other methods to inject code into a running process have been
-developed; e.g. \cite{phrack59.8:2002} gives an introduction into using
+A lot of interesting methods to inject code into a running process have been
+developed; e.g.  \cite{phrack59.8:2002} gives an introduction into using
 \emph{ptrace}, including injecting whole shared objects using the runtime linker
-\emph{libdl}. The usability of this approach has not yet been analysed.
+\emph{libdl}.  The usability of this approach has not yet been analysed.
 
 
 \subsubsection{Overwriting the stack and return addresses}
 
 \label{overwriting_stack} I have put most of my efforts into injecting code into
 the stack and overwriting return-addresses on the stack to point to the injected
-code.
-
-This modification of the classic \emph{stack overflow} method has some
+code. This modification of the classic \emph{stack overflow} method has some
 advantages over the previous approach:
 
 \begin{itemize}
@@ -464,26 +464,82 @@ advantages over the previous approach:
 		thread will fail on the target system, not e.g. \emph{all}
 		processes using the glibc or \emph{all} instances of $/bin/sh$.
 
-	\item The process can write to the stack as well, thus we can
+	\item The process can read and write to the stack as well, thus we can
 		communicate with the injected shell-code in a rather easy way.
 
 	\item During the attack we do not need to modify parts of the code of
-		the target-process, reducing the risc of an astray process.
+		the target-process, reducing the risc of an astray process. The
+		final part consists of overwriting 4 byte wide return-addresses
+		on the stack and this can be done atomically almost always.
 
 \end{itemize}
 
-An attack can be as simple as injecting the code into a location on the stack
-that is known to be unused and then changing all doubles on the stack that look
-like a return-address into the heap (\texttt{0x08**~****}, see figure
-\ref{fig:linux_virtual_address_space}) to point to the injected shell code. Once
-the attacked process leaves the current stack-frame, it will use the
-return-address on the stack and, as this has been changed by us, execute the
-injected shell code.
+The attack consists of the following steps:
+
+\begin{enumerate}
+
+	\item Search a free location in the stack-pages. If the shellcode is
+		small, we can use the zero-padded area of the pages containing
+		the environment and argument vectors (see section
+		\ref{identifying_processes}). If the shellcode does not fit into
+		this area, we could try to just overwrite these vectors. Most
+		programs will parse environment and arguments only once during
+		startup of the program, thus this should be rather safe.
+
+	\item Scan the stack for stack-frames and for each found: overwrite the
+		return address. This can be simplified into: overwrite all
+		32-bit aligned 32-bit values that contain a value that might be
+		a pointer into the main code area (\texttt{0x08**~****}, see
+		figure \ref{fig:linux_virtual_address_space}) with a pointer to
+		the injected code.  A more agressive approach might also
+		overwrite return-values pointing into the library section
+		(\texttt{0xB7**~****}).
+
+\end{enumerate}
+
+Once the attacked process leaves a stack frame with an overwritten return value,
+it will jump to the injected code and execute it.
+
+An implementation of this attack, including some sample shellcodes like a
+bindshell and a simple printf can be found in
+\texttt{attacks/userspace/inject-code.c} and \linebreak
+\texttt{attacks/userspace/shellcodes/}.
 
 % FIXME: mehr infos zu ``3.1.1:Identifying processes'', danach hier darauf
 % aufbauen. Mehr infos zu stack-frames?
 
+\subsubsection{Direct communication with shellcode via DMA}
 
+The masterpiece of shellcode-writing is a shellcode that spawns an interactive
+shell and yet is as invisible on the target system as possible. An interactive
+shell has to communicate with its user, thus typically a network-based bindshell
+is used for this attack. The downside is the visibility of the communication on
+the network-layer: an administrator can easily spot the network connection by
+either sniffing on the network or by asking the system what kind of sockets and
+files a process is using\footnote{e.g. by using \texttt{lsof -i} (LiSt Open
+Files)}. A network intrusion system (NIS) can easily spot bindshell connections
+in an automated way or firewalls could be configured in a way that a network
+connection is impossible. When using e.g. firewire to attack a host it is even
+possible that there is no network connection between the attacker and the victim
+at all.
+
+Obviously the bindshell approach is a suboptimal one, if there is no direct
+network connection between attacker and victim. But if an attacker uses a
+special media for his attack, he can also use this media for communicating with
+his injected ``beachhead'', does he not? So as we use DMA to inject shellcode,
+we can use DMA to communicate with the shellcode.
+
+\begin{figure}[ht] \begin{center}
+
+	\epsfysize 6cm
+
+	\epsffile{functionality_beachhead.eps}
+
+	\caption{Functionality of the beachhead}
+
+	\label{fig:functionality_beachhead}
+
+\end{center}\end{figure}
 
 \subsection{Kernelspace Modifications}
 
