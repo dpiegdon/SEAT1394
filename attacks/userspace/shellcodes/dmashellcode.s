@@ -410,29 +410,6 @@ execve_command EQU $ - data_start
 ; stuff that is not required to be initialized:
 align 4
 
-;child_pid EQU $ - data_start
-;	dd	0
-;m2sh_0 EQU $ - data_start
-;	dd	0
-;m2sh_1 EQU $ - data_start
-;	dd	0
-;sh2m_0 EQU $ - data_start
-;	dd	0
-;sh2m_1 EQU $ - data_start
-;	dd	0
-;
-;rfrm_buffer EQU $ - data_start
-;	resb	256
-;rto_buffer EQU $ - data_start
-;	resb	256
-;
-;align 4
-;
-;foo EQU $ - data_start
-;	dd	0
-;bar EQU $ - data_start
-;	dd	0
-
 child_pid EQU $ - data_start
 
 ; pipes middleman<->shell
