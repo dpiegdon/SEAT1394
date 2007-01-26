@@ -1,7 +1,7 @@
 /*  $Id$
  *  vim: fdm=marker
  *
- *  rawshell: inject shellcode and use it via DMA
+ *  dmashell: inject shellcode and use it via 
  *
  *  Copyright (C) 2006
  *  losTrace aka "David R. Piegdon"
@@ -210,7 +210,7 @@ volatile int do_terminate = 0;
 
 void handle_sigint(int __attribute__ ((__unused__)) signal)
 {{{
-	printf(TERM_YELLOW "\n(rawshell)" TERM_RESET " received SIGINT. telling shellcode to kill the child...\n");
+	printf(TERM_YELLOW "\n(dmashell)" TERM_RESET " received SIGINT. telling shellcode to kill the child...\n");
 	do_terminate = 1;
 }}}
 
@@ -257,7 +257,7 @@ void use_shell(linear_handle lin, uint32_t base)
 	flags |= O_NONBLOCK;
 	fcntl(STDIN_FILENO, F_SETFL, flags);
 
-	printf(TERM_YELLOW "(rawshell)" TERM_RESET " rfrm_writer_pos is @0x%08x (offset 0x%03x).\n", base + RFRM_WRITER_POS, RFRM_WRITER_POS);
+	printf(TERM_YELLOW "(dmashell)" TERM_RESET " rfrm_writer_pos is @0x%08x (offset 0x%03x).\n", base + RFRM_WRITER_POS, RFRM_WRITER_POS);
 
 	signal(SIGINT, handle_sigint);
 

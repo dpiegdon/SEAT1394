@@ -30,7 +30,7 @@ LDFLAGS+= -L$(PREFIX)/lib -s
 all:	inject-code show-stack victim rawshell
 
 clean:
-	-rm -f *.o inject-code show-stack victim
+	-rm -f *.o inject-code show-stack victim dmashell
 
 
 
