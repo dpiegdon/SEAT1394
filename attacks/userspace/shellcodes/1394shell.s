@@ -221,27 +221,17 @@ reader_while_fds_ok:
 	cmp	al,0
 	je	reader_sleep
 
-	; write a chunk to the child.
 	; EAX/AL is the number of bytes to be written to the child.
-	xor	ebx,ebx
-	mov	bl,[ebp+rfrm_reader_pos]
-	mov	ecx,ebx
-	add	cl,al
-	cmp	cl,bl
-	ja	reader_no_overlap	; writer is behind reader. no overlap
 
-	xor	eax,eax
-	sub	al,cl			; number of bytes to end of buffer.
-
-reader_no_overlap:
-	; write the data from the ringbuffer to the child
-	mov	edx,eax
+	; write a single byte to the child.
 	xor	eax,eax
 	mov	al,4
+	mov	ebx,[ebp+m2sh_1]	; EBX := m2sh[1]
 	xor	ecx,ecx
 	mov	cl,[ebp+rfrm_reader_pos]
 	add	ecx,esi			; ECX := reader_pos + buffer_base
-	mov	ebx,[ebp+m2sh_1]
+	xor	edx,edx
+	inc	edx			; EDX := 1
 	int	0x80
 
 	; mark chunk as read
@@ -387,7 +377,7 @@ from_child_ok EQU $ - data_start
 ; ringbuffer from_master:
 
 rfrm_writer_pos EQU $ - data_start
-	db		7
+	db		0
 rfrm_reader_pos EQU $ - data_start
 	db		0
 
@@ -405,44 +395,40 @@ execve_command EQU $ - data_start
 ; stuff that is not required to be initialized:
 align 4
 
-child_pid EQU $ - data_start
-	dd	0
-m2sh_0 EQU $ - data_start
-	dd	0
-m2sh_1 EQU $ - data_start
-	dd	0
-sh2m_0 EQU $ - data_start
-	dd	0
-sh2m_1 EQU $ - data_start
-	dd	0
-
-	db	'||'
-rfrm_buffer EQU $ - data_start
-	db	'ls -la',0xa
-	resb	249
-	db	'||'
-rto_buffer EQU $ - data_start
-	resb	256
-	db	'||'
-
-align 4
-
-foo EQU $ - data_start
-	dd	0
-bar EQU $ - data_start
-	dd	0
-
 ;child_pid EQU $ - data_start
+;	dd	0
+;m2sh_0 EQU $ - data_start
+;	dd	0
+;m2sh_1 EQU $ - data_start
+;	dd	0
+;sh2m_0 EQU $ - data_start
+;	dd	0
+;sh2m_1 EQU $ - data_start
+;	dd	0
 ;
-;; pipes middleman<->shell
-;m2sh_0 EQU $ - data_start + 4			; shell reads
-;m2sh_1 EQU $ - data_start + 8			; master writes
-;sh2m_0 EQU $ - data_start + 12			; master reads
-;sh2m_1 EQU $ - data_start + 16			; shell writes
+;rfrm_buffer EQU $ - data_start
+;	resb	256
+;rto_buffer EQU $ - data_start
+;	resb	256
 ;
-;rfrm_buffer EQU $ - data_start + 20		; FROM master
-;rto_buffer EQU $ - data_start + 276		; TO master
+;align 4
 ;
-;foo EQU $ - data_start + 532
-;bar EQU $ - data_start + 536
-;
+;foo EQU $ - data_start
+;	dd	0
+;bar EQU $ - data_start
+;	dd	0
+
+child_pid EQU $ - data_start
+
+; pipes middleman<->shell
+m2sh_0 EQU $ - data_start + 4			; shell reads
+m2sh_1 EQU $ - data_start + 8			; master writes
+sh2m_0 EQU $ - data_start + 12			; master reads
+sh2m_1 EQU $ - data_start + 16			; shell writes
+
+rfrm_buffer EQU $ - data_start + 20		; FROM master
+rto_buffer EQU $ - data_start + 276		; TO master
+
+foo EQU $ - data_start + 532
+bar EQU $ - data_start + 536
+
