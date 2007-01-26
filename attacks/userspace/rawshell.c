@@ -1,7 +1,7 @@
-/*  $Id: inject-code.c 290 2007-01-25 12:11:20Z lostrace $
+/*  $Id$
  *  vim: fdm=marker
  *
- *  inject-code: inject some code into a process
+ *  rawshell: inject shellcode and use it via DMA
  *
  *  Copyright (C) 2006
  *  losTrace aka "David R. Piegdon"
