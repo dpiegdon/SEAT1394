@@ -332,7 +332,7 @@ int main(int argc, char**argv)
 	int c;
 	char *p;
 	char *seek_binary = NULL;
-	char *inject_file = "shellcodes/1394shell.o";
+	char *inject_file = "shellcodes/rawshell.o";
 	int pretend = 0;
 	int aggressive = 0;
 
