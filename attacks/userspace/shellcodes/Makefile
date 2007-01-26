@@ -24,10 +24,10 @@ CC=gcc
 CFLAGS=-g
 AS=nasm
 
-all:	testcode print.o marker.o dmashell.o
+all:	testcode print.o marker.o dmashellcode.o
 
 clean:
-	-rm -f marker.o print.o dmashell.o *.lst testcode
+	-rm -f marker.o print.o dmashellcode.o *.lst testcode
 
 print.o: print.s
 	nasm -l print.lst -o print.o print.s
@@ -35,6 +35,6 @@ print.o: print.s
 marker.o: marker.s
 	nasm -l marker.lst -o marker.o marker.s
 
-dmashell.o: dmashell.s
-	nasm -l dmashell.lst -o dmashell.o dmashell.s
+dmashellcode.o: dmashellcode.s
+	nasm -l dmashellcode.lst -o dmashellcode.o dmashellcode.s
 

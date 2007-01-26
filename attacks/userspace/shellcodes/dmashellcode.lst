@@ -410,40 +410,17 @@
    410                                  ; stuff that is not required to be initialized:
    411                                  align 4
    412                                  
-   413                                  ;child_pid EQU $ - data_start
-   414                                  ;	dd	0
-   415                                  ;m2sh_0 EQU $ - data_start
-   416                                  ;	dd	0
-   417                                  ;m2sh_1 EQU $ - data_start
-   418                                  ;	dd	0
-   419                                  ;sh2m_0 EQU $ - data_start
-   420                                  ;	dd	0
-   421                                  ;sh2m_1 EQU $ - data_start
-   422                                  ;	dd	0
-   423                                  ;
-   424                                  ;rfrm_buffer EQU $ - data_start
-   425                                  ;	resb	256
-   426                                  ;rto_buffer EQU $ - data_start
-   427                                  ;	resb	256
-   428                                  ;
-   429                                  ;align 4
-   430                                  ;
-   431                                  ;foo EQU $ - data_start
-   432                                  ;	dd	0
-   433                                  ;bar EQU $ - data_start
-   434                                  ;	dd	0
-   435                                  
-   436                                  child_pid EQU $ - data_start
-   437                                  
-   438                                  ; pipes middleman<->shell
-   439                                  m2sh_0 EQU $ - data_start + 4			; shell reads
-   440                                  m2sh_1 EQU $ - data_start + 8			; master writes
-   441                                  sh2m_0 EQU $ - data_start + 12			; master reads
-   442                                  sh2m_1 EQU $ - data_start + 16			; shell writes
-   443                                  
-   444                                  rfrm_buffer EQU $ - data_start + 20		; FROM master
-   445                                  rto_buffer EQU $ - data_start + 276		; TO master
-   446                                  
-   447                                  foo EQU $ - data_start + 532
-   448                                  bar EQU $ - data_start + 536
-   449                                  
+   413                                  child_pid EQU $ - data_start
+   414                                  
+   415                                  ; pipes middleman<->shell
+   416                                  m2sh_0 EQU $ - data_start + 4			; shell reads
+   417                                  m2sh_1 EQU $ - data_start + 8			; master writes
+   418                                  sh2m_0 EQU $ - data_start + 12			; master reads
+   419                                  sh2m_1 EQU $ - data_start + 16			; shell writes
+   420                                  
+   421                                  rfrm_buffer EQU $ - data_start + 20		; FROM master
+   422                                  rto_buffer EQU $ - data_start + 276		; TO master
+   423                                  
+   424                                  foo EQU $ - data_start + 532
+   425                                  bar EQU $ - data_start + 536
+   426                                  
