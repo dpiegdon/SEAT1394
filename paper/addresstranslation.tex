@@ -124,6 +124,19 @@ a pagetable dividing this virtual 4MiB frame further into 4KiB frames. A
 \emph{pagetable} is again consisting of 1024 4-byte \emph{pagetable entries}
 (PTEs), each corresponding to a 4KiB frame.
 
+\begin{figure}[ht] \begin{center}
+
+%	\epsfysize 9.5cm
+
+	\epsffile{ia32_segmentation_paging.eps}
+
+	\caption{IA32 Segmentation and Paging process (image taken from
+	\cite{IA32_SDM_3a:2006})}
+
+	\label{fig:ia32_segmentation_paging}
+
+\end{center}\end{figure}
+
 As newer IA32 CPU features like \emph{36 bit page size extension} (PSE-36) and
 \emph{physical address extension} (PSE) are not used in case of the proposed
 circumstances (see section \ref{ia32_config_options}), their reflection is
