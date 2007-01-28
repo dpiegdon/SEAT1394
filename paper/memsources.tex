@@ -88,15 +88,15 @@ prevent these.
 
 If a page is cached in another, faster memory, a copy of it will typically
 reside in physical memory. In most cases we will not know if a page is cached or
-not; on IA32 however the address translation tables contain a flag for each page
-telling the CPU if it may be cached or not. Depending on the way used to access
-the memory, it may circumvent the cache or not have access to it at all.  When
-thus accessing a page, changes made by a task running in parallel may not be
-visible to us immediately and changes made by us may be invisible to a parallel
-task or maybe even overwritten by the cache at any time. Special care needs to
-be taken to minimize this risk. When writing to pages, only choose pages that
-are not cached or unlikely to be cached while writing; when reading pages,
-consider that the data may change at any time or may have changed yet.
+not; on IA-32 however the address translation tables contain a flag for each
+page telling the CPU if it may be cached or not. Depending on the way used to
+access the memory, it may circumvent the cache or not have access to it at all.
+When thus accessing a page, changes made by a task running in parallel may not
+be visible to us immediately and changes made by us may be invisible to a
+parallel task or maybe even overwritten by the cache at any time. Special care
+needs to be taken to minimize this risk. When writing to pages, only choose
+pages that are not cached or unlikely to be cached while writing; when reading
+pages, consider that the data may change at any time or may have changed yet.
 
 As stated above, on systems using paging, physical memory will mostly be a
 concatenation of random pages, each one either used by a random process or the
@@ -153,7 +153,7 @@ care of physical security, even if the object of interest is a pure virtual one
 access to the underlying hardware of a running computer system, is often
 forgotten and thus weak.
 
-% FIXME: weakest "link" of ... ?? Yes. see schneier.
+% NOTE: weakest "link" of ... ?? Yes. see schneier.
 In general, a professional attacker will most likely choose the weakest link of
 security for his attacks. If he finds that going straight to the computer and
 stealing it, or plugging an embedded device like the iPod into it is easier than
@@ -250,14 +250,14 @@ Default kernel configs divide the 4GiB virtual address space into a 3GiB
 userspace-part (\texttt{0x0000~0000} - \texttt{0xbfff~ffff}) and a 1GiB
 kernelspace-part (\texttt{0xc000~0000 - 0xffff~ffff}).  Different kernel config
 options (\texttt{CONFIG\_VMSPLIT\_3G}, \texttt{CONFIG\_PAGE\_OFFSET}) can change
-the split ratio, but the splitting is a basic design decision and thus a
+the split ratio, but the splitting itself is a basic design decision and thus a
 requirement for Linux to work. In the upper kernelspace-part, the lower physical
 memory will be fully mapped (up to about 900MiB), the kernel will - in this case
 - be located at roughly \texttt{0xc100~0000}, i.e. at the physical address
 \texttt{0x0100~0000}. During kernel configuration, these 900MiB are called
 ``precious lowmem'', because it is the only memory accessible by the kernel in a
 simple manner. When allocating kernelspace structures (this includes all address
-translation tables (on IA32, these are: pagedirectories, pagetables, local- and
+translation tables (on IA-32, these are: pagedirectories, pagetables, local- and
 global descriptor tables)\label{linuxATTinlowmem}), the kernel will normally
 only use this lowmem.  The \texttt{/dev/mem} driver will access this lowmem,
 when a userspace process utilizes it. But if the process tries to read more than

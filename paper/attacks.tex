@@ -14,7 +14,7 @@
 
 \label{identifying_processes}  Once an address translation table has been found,
 it is of interest, what kind of process resides in this virtual address space.
-For userspace applications on IA32-Linux there is a simple way to identify a
+For userspace applications on IA-32-Linux there is a simple way to identify a
 process's \emph{filename}, its \emph{arguments} and even its full set of
 \emph{environment variables}: This information is often required by a process
 and thus the kernel will provide it to the process by copying it to the bottom
@@ -379,7 +379,7 @@ can share these two regions among processes that are using the same objects
 (binaries or libraries).  Thus, once an operating system \emph{ensures} that a
 process can not write to code-regions and read-only data-regions, it can map
 these once loaded regions into multiple virtual address spaces. This enforcement
-is done in hardware, on IA32 by setting a flag in the page directory or a page
+is done in hardware, on IA-32 by setting a flag in the page directory or a page
 table referencing the specific physical memory pages containing the region.
 
 Newer CPUs provide \emph{page-level no-execute enforcements} (AMD's NX \emph{No
@@ -428,13 +428,13 @@ mapped in one process or the overwritten function is only used in one process,
 the jumps target has to be addressed relative to the current position.} jump to
 this injected code.  But as we need to overwrite some instructions inside the
 function, we need to parse the functions code to separate each
-instruction\footnote{on IA32, different machine instructions can have different
+instruction\footnote{on IA-32, different machine instructions can have different
 length}, so that after our code is executed, it executes a copy of the
 overwritten instructions and jumps to a fully intact instruction right after the
 injected jump. After this has been done, the jump can be injected into the
 functions code. This last write has to be as atomic as possible, as a process
-may just be executing these bytes and thus get astray.  On IA32, entry-points of
-functions are most likely aligned to 32-bit addresses\footnote{due to
+may just be executing these bytes and thus get astray.  On IA-32, entry-points
+of functions are most likely aligned to 32-bit addresses\footnote{due to
 optimizations by the compiler}.  Firewire also provides an interface to write
 32-bit aligned 32-bit values (``quads'') atomically.  Unfortunately, a
 \emph{relative short} jump ($2$ bytes) can only jump within $\pm256$ bytes from

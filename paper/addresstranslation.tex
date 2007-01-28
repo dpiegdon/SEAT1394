@@ -91,9 +91,9 @@ address space.
 
 
 
-\subsection{Example implementation: IA32 backend for \texttt{liblinear}}
+\subsection{Example implementation: IA-32 backend for \texttt{liblinear}}
 
-On the IA32 architecture, the CPU can run in various modes of operation; for
+On the IA-32 architecture, the CPU can run in various modes of operation; for
 modern multitasking operating systems the \emph{protected mode} is the preferred
 one.  The protected mode can use a two-level address translation: first it will
 translate the \emph {logical address}, consisting of a segment selector (which
@@ -115,7 +115,7 @@ to the segments\footnote{This initialization is done in
 \texttt{linux/arch/i386/kernel/head.S}, GDTs are defined at symbols
 \texttt{boot\_gdt\_table} and \texttt{cpu\_gdt\_table}}.
 
-The IA32 architecture divides the 4GiB virtual address space into 1024
+The IA-32 architecture divides the 4GiB virtual address space into 1024
 4MiB-frames. This splitting is defined by the \emph{pagedirectory}. Each entry
 of a pagedirectory is 4 bytes long, thus the pagedirectory is $4 \cdot 1024 =
 4096$ Bytes long. Each of these \emph{pagedirectory entries} (PDEs), if present
@@ -130,14 +130,14 @@ a pagetable dividing this virtual 4MiB frame further into 4KiB frames. A
 
 	\epsffile{ia32_segmentation_paging.eps}
 
-	\caption{IA32 Segmentation and Paging process (image taken from
+	\caption{IA-32 Segmentation and Paging process (image taken from
 	\cite{IA32_SDM_3a:2006})}
 
 	\label{fig:ia32_segmentation_paging}
 
 \end{center}\end{figure}
 
-As newer IA32 CPU features like \emph{36 bit page size extension} (PSE-36) and
+As newer IA-32 CPU features like \emph{36 bit page size extension} (PSE-36) and
 \emph{physical address extension} (PSE) are not used in case of the proposed
 circumstances\footnote{\texttt{CONFIG\_NOHIGHMEM} or \texttt{CONFIG\_HIGHMEM4G},
 \texttt{CONFIG\_VMSPLIT\_3G}}, their reflection is omitted here.  Furthermore it
@@ -147,7 +147,7 @@ informations.  Also, PAE and PSE-36 are not yet implemented in
 \texttt{liblinear}. PSE though (not PSE-36) is enabled with the given options
 (and implemented), as one can determine by the use of 4MiB-pages.
 
-For an extensive documentation of the IA32 architecture one should refer to the
+For an extensive documentation of the IA-32 architecture one should refer to the
 \emph{Intel 64 and IA-32 Architectures Software Developer's Manual}
 (\cite{IA32_SDM_1:2006,IA32_SDM_2a:2006,IA32_SDM_2b:2006,IA32_SDM_3a:2006,IA32_SDM_3b:2006}),
 especially \cite{IA32_SDM_3a:2006}.
@@ -173,10 +173,10 @@ for all pages: make a quick guess if a page could be a pagedirectory
 \label{ATTguess} Obviously, address translation tables are architecture and
 operating system specific; but within an architecture and an operating system,
 they will often share data or specific patterns that are identifiable. For
-instance, when searching for Linux IA32 address translation tables, one can omit
-searching the segment descriptor tables (see section \ref{linux_gdt}) and
+instance, when searching for Linux IA-32 address translation tables, one can
+omit searching the segment descriptor tables (see section \ref{linux_gdt}) and
 concentrate on finding pagedirectories. There are several special patterns that
-can be found in a typical pagedirectory of a Linux process running on IA32.
+can be found in a typical pagedirectory of a Linux process running on IA-32.
 Following is a layout of the typical virtual address space of a userspace
 process:
 
@@ -232,7 +232,7 @@ because typically the PDE for 4MiB-page no.\@ \texttt{0x300} will point to the
 PDE entry \texttt{0x300} and does sort out a vast majority of non-pagedirectory
 pages.
 
-Furthermore in the combination Linux/IA32 we only have to search the lower 1GB
+Furthermore in the combination Linux/IA-32 we only have to search the lower 1GB
 of RAM for pagetables (see first paragraph of section \ref{kerneluserdivision}).
 
 
