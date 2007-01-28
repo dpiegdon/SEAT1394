@@ -1,0 +1,42 @@
+% vim: tw=80 ai fdl=99 fo+=a
+%
+% $Id$
+%
+
+\section{Future prospects}
+
+\subsection{Kernelspace Modifications}
+
+The linux character device \texttt{/dev/kmem} gives a process read and write
+access to its virtual address space, including the kernel-space area.
+\texttt{/dev/kmem} has not only been used for its legitimate purpose (i.e.
+debugging the kernel) but also to inject code into the running kernel and
+install kernel-based rootkits. \cite{phrack58.7:2001} describes an attack using
+\texttt{/dev/kmem} to inject a new syscall-handler (a regularly used rootkit
+technique).
+
+\subsubsection{Emulating \texttt{/dev/kmem}}
+
+As \texttt{/dev/kmem} gives a process access to its virtual address space
+without any restrictions, it is yet emulated by \texttt{liblinear}, as
+\texttt{liblinear} provides the same funcionality, once it has been loaded with
+a pagetable of a random process.  A pagetable of any process will include the
+fully mapped kernel space (``lowmem'', see section \ref{linuxATTinlowmem} and
+section \ref{ATTguess}).
+
+On the other hand, some new problems come up, if the attacker can not access
+CPU-registers like the IDT\footnote{Interrupt Descriptor Table}, but wishes to
+know the location of the system call table. If it is necessary to resolve kernel
+symbols and the to-be-attacked kernel is LKM\footnote{Loadable Kernel Module}
+capable, an attacker could inject a special shellcode to resolve all required
+symbols via \texttt{get\_kernel\_syms} or inject a LKM and let the kernel do the
+job. If however an active approach is impossible or the kernel is not LKM
+capable, statistic approaches might be necessary.
+
+\subsection{Bootstrapping custom operating systems}
+
+As an attacker has complete access to a systems memory, it will easily possible
+to take over the complete system, reset it to a known state and boot a custom
+operating system on it (and e.g. using firewire storage as the root-device for
+the new system). 
+

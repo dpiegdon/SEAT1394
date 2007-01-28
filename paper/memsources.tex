@@ -206,9 +206,9 @@ memory. This needs to be investigated.
 
 Using \texttt{libraw1394}, it is possible to read different blocksizes of data
 via firewire.  It seems like different hardware does allow bigger blocks to be
-read at different addresses. 4 byte blocks should always work; 1024 byte blocks
+read at different addresses. 4~byte blocks should always work; 1024~byte blocks
 may be read with some hardware, if the address resolves to the physical memory.
-Control state registers are likely to be readable only in 4 byte blocks.
+Control state registers are likely to be readable only in 4~byte blocks.
 
 \label{windows-dma} Windows XP does use OHCI features to implement protection
 mechanisms to prevent random devices from reading any memory location.  Adam

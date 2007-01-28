@@ -240,20 +240,21 @@ To obtain a keypair from an agent via firewire, a staged attack is required:
 	\item Seek the first GiB of physical memory for pagetables.
 
 	\item For each pagetable: check with the introduced
-	\texttt{proc\_info()}, if the found userspace belongs to a
-	\texttt{ssh-agent} process. If not, seek next pagetable.
+		\texttt{proc\_info()}, if the found userspace belongs to a
+		\texttt{ssh-agent} process. If not, seek next pagetable.
 
 	\item Use the obtained environment to resolve the users home directory
-	(\texttt{\$HOME}) and construct a path where keypairs most likely reside
-	in the file system (e.g.  ``\texttt{\$HOME/.ssh/}'') and seek this
-	string in the heap.  This approach will only find keypairs that have
-	been loaded with this key-location.\footnote{Actually this field is the
-	key's comment-field that is mostly unused and overwritten with the
-	filename of the key. Keypairs that are used with SSH protocol version 2
-	(virtually all) do not have a comment-field; during loading, the
-	comment-field is always initialized with the keys pathname.} Keypairs
-	loaded from different locations or via a relative path can thus not be
-	found by this search.
+		(\texttt{\$HOME}) and create a path where keypairs most likely
+		reside in the file system (e.g.  ``\texttt{\$HOME/.ssh/}'') and
+		seek this string in the heap.  This approach will only find
+		keypairs that have been loaded with this
+		key-location.\footnote{Actually this field is the key's
+		comment-field that is mostly unused and overwritten with the
+		filename of the key. Keypairs that are used with SSH protocol
+		version 2 (virtually all) do not have a comment-field; during
+		loading, the comment-field is always initialized with the keys
+		pathname.} Keypairs loaded from different locations or via a
+		relative path can thus not be found by this search.
 	
 	\item All loaded keypairs have a corresponding \emph{identity-struct} in
 		an agent (see figure \ref{fig:code:identity-struct}). Among
@@ -291,14 +292,16 @@ To obtain a keypair from an agent via firewire, a staged attack is required:
 		copy of the keypair.
 
 	\item Some validity tests may be done to verify that the acquired
-	\texttt{BIGNUM}s fulfill algorithm-specific properties\footnote{During
-	development it was useful to test obtained keys for some properties that
-	are required. These tests are implemented in
-	\texttt{attacks/information/sshkey-sanitychecks.c}} and thus form a
-	valid keypair.
+		\texttt{BIGNUM}s fulfill algorithm-specific
+		properties\footnote{During development it was useful to test
+		obtained keys for some properties that are required. These tests
+		are implemented in
+		\texttt{attacks/information/sshkey-sanitychecks.c}} and thus
+		form a valid keypair.
 
 	\item Attach the obtained \texttt{BIGNUM}s back into valid RSA or DSA
-	structures and save these keys to a file using openssl-functions.
+		structures and save these keys to a file using
+		openssl-functions.
 	
 \end{enumerate}
 	
@@ -561,7 +564,7 @@ shellcode and communicate with it is \texttt{attacks/userspace/dmashell.c}.
 \end{center}\end{figure}
 
 
-\begin{figure}[ht] \begin{center}
+\begin{figure}[htp] \begin{center} \tiny \begin{lstlisting} // ringbuffer for
 	\tiny
 	\begin{lstlisting}
 		// ringbuffer for data from beachhead to master
@@ -657,31 +660,4 @@ shellcode and communicate with it is \texttt{attacks/userspace/dmashell.c}.
 	\caption{Beachhead shellcode (\texttt{dmashellcode.s}), pseudocode}
 	\label{fig:beachhead_pseudocode}
 \end{center} \end{figure}
-
-
-%\begin{figure}[ht] \begin{center}
-%
-%%	\epsfysize 15cm
-%
-%	\epsffile{schema_beachhead.eps}
-%
-%	\caption{Schema of the beachhead}
-%
-%	\label{fig:schema_beachhead}
-%
-%\end{center}\end{figure}
-
-
-
-\subsection{Kernelspace Modifications}
-
-\subsubsection{Emulating \texttt{/dev/kmem}}
-
-\subsubsection{Resolving kernel addresses}
-
-
-
-
-
-\subsection{Bootstrapping custom operating systems}
 
