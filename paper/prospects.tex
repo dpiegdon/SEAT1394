@@ -19,7 +19,7 @@ technique).
 
 As \texttt{/dev/kmem} gives a process access to its virtual address space
 without any restrictions, it is yet emulated by \texttt{liblinear}, as
-\texttt{liblinear} provides the same funcionality, once it has been loaded with
+\texttt{liblinear} provides the same functionality, once it has been loaded with
 a pagetable of a random process.  A pagetable of any process will include the
 fully mapped kernel space (``lowmem'', see section \ref{linuxATTinlowmem} and
 section \ref{ATTguess}).
@@ -35,8 +35,10 @@ capable, statistic approaches might be necessary.
 
 \subsection{Bootstrapping custom operating systems}
 
-As an attacker has complete access to a systems memory, it will easily possible
-to take over the complete system, reset it to a known state and boot a custom
-operating system on it (and e.g. using firewire storage as the root-device for
-the new system). 
+As an attacker has complete access to a systems memory, it is possible to take
+over the system completely, reset it to a known state and boot a custom
+operating system on it (and e.g. use firewire storage as the root-device for the
+new system). A special bootloader would be required to do this and it might also
+be necessary to reset the system and attached hardware in a special way,
+depending on the operating system running on it before the approach.
 

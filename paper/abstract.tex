@@ -5,18 +5,21 @@
 
 \begin{abstract}
 
-%\section{Abstract}
+Several advances in hacking via DMA will be introduced, including stealing ssh
+private keys, injecting code and obtaining an interactive shell via firewire
+only.
 
-Accessing memory via physical addressing, one will miss all the addressing- and
-memory features provided by a CPU to a process that accesses the same memory:
-all kinds of address translations, caching and alike.
+All of these advances are based on data structures that are required by the CPU
+to provide virtual address spaces for each process running on the system.  These
+data structures are searched and then parsed to solve the puzzle of randomly
+scattered pages in the physical memory, thus being able to read and write in
+each processes virtual address space.
 
-This paper will give an overview of these problems in general and subsequently,
-mostly limited to the IA32 architecture running a Linux 2.6 kernel with no more
-than 4GB RAM (\texttt{CONFIG\_NOHIGHMEM} or \texttt{CONFIG\_HIGHMEM4G}) and 3GB
-userspace/1GB kernelspace mapping (\texttt{CONFIG\_VMSPLIT\_3G},
-\texttt{CONFIG\_PAGE\_OFFSET=0xC0000000}), discuss these in detail and give some
-solutions. \label{ia32_config_options}
+Most of the attacks introduced will be adaptable to all kinds of operating
+system and hardware combinations, but as a sample target, linux on an IA32
+system with the kernel-options \texttt{CONFIG\_NOHIGHMEM} or
+\texttt{CONFIG\_HIGHMEM4G}, \texttt{CONFIG\_VMSPLIT\_3G} and
+\texttt{CONFIG\_PAGE\_OFFSET=0xC0000000} is used.
 
 \end{abstract}
 

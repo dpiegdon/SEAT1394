@@ -77,8 +77,6 @@ As an example, the following applications are of interest:
 
 \subsubsection{Example attack: ssh-agent snarfer}
 
-% FIXME: def. "snarfing"? well... is defined in wiktionary but marked with a
-% "request for verification"
 \label{ssh-agent-snarfer} To proof that it is rather easy to obtain secret keys
 from a process I have written a sample attack to obtain
 %
@@ -280,7 +278,7 @@ To obtain a keypair from an agent via firewire, a staged attack is required:
 		recovered to obtain valid keypairs.  \cite{applied_crypto:1996,
 		handbook_applied_crypto:2001} give an overview of both
 		cryptographic algorithms, \cite{openssl_book:2002} introduces
-		openssl concepts and implementation details. Openssl's arbitrary
+		OpenSSL concepts and implementation details. OpenSSL`s arbitrary
 		precision integer implementation is the \texttt{BIGNUM}-struct
 		(often abbreviated ``BN'').  It consists of a variable-length
 		array of bit-vectors forming the value and a length-field
@@ -424,7 +422,7 @@ of the libc-mapping. It is important to inject the shellcode into the mapping,
 as all processes that will be affected have to be able to reach the shellcode.
 The intention is to overwrite the \texttt{printf} functions code with a
 \emph{relative}\footnote{An ELF may be mapped at different locations in
-different processes, if it is ``PIC'' or ``PIE'' (Position Independant
+different processes, if it is ``PIC'' or ``PIE'' (Position Independent
 Code/Executable) and the kernel supports this.  Thus, unless the ELF is only
 mapped in one process or the overwritten function is only used in one process,
 the jumps target has to be addressed relative to the current position.} jump to
@@ -540,11 +538,11 @@ communicate with stdin/stdout of the shell via two pipes. The shellcode then
 creates a second thread, then having one thread for each direction of
 \emph{master to shell} and \emph{shell to master}. If the master wishes to send
 a command to the shell, it writes the command string into the \emph{FromMaster}
-ringbuffer via DMA.  Once the ReaderThread sees that the ringbuffer is not
+ring-buffer via DMA.  Once the ReaderThread sees that the ring-buffer is not
 empty, it reads the data inside the buffer and writes it into the pipe to the
 shell.  The WriterThread will read data coming from the shell from the pipe and
-then write it into the \emph{ToMaster} ringbuffer, so the master can read it via
-DMA.
+then write it into the \emph{ToMaster} ring-buffer, so the master can read it
+via DMA.
 
 The shellcode of the beachhead
 (\texttt{attacks/userspace/shellcodes/dmashellcode.s}) is introduced in figure
@@ -564,8 +562,7 @@ shellcode and communicate with it is \texttt{attacks/userspace/dmashell.c}.
 \end{center}\end{figure}
 
 
-\begin{figure}[htp] \begin{center} \tiny \begin{lstlisting} // ringbuffer for
-	\tiny
+\begin{figure}[htp] \begin{center} \tiny
 	\begin{lstlisting}
 		// ringbuffer for data from beachhead to master
 		RingBuffer	ToMaster;
