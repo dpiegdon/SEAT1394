@@ -252,8 +252,10 @@ reader_sleep:
 	jmp	reader_while_fds_ok
 
 do_terminate_child:
-	; send a SIGKILL to child
+	; reset flag
 	xor	eax,eax
+	mov	[ebp+terminate_child],al
+	; send a SIGKILL to child
 	mov	al,37
 	mov	ebx,[ebp+child_pid]
 	xor	ecx,ecx
