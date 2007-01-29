@@ -229,11 +229,14 @@ void set_nonblocking_stdin()
 void handle_sigint(int __attribute__ ((__unused__)) signal)
 {{{
 	set_blocking_stdin();
-	printf(TERM_YELLOW "\n(dmashell)" TERM_RESET " received SIGINT. telling shellcode to kill the child...\n"
-	       TERM_YELLOW "(dmashell)" TERM_RESET " use SIGQUIT (CTRL-\\) at any time to terminate process without any further writing\n"
+	printf(TERM_YELLOW "\n(dmashell)" TERM_RESET " received SIGINT.\n"
+	       TERM_YELLOW "(dmashell)" TERM_RESET " use SIGQUIT (CTRL-\\) at any time to terminate process without any further notice or actions\n"
 	       TERM_YELLOW "(dmashell)" TERM_RESET " press enter to just continue\n"
 	       TERM_YELLOW "(dmashell)" TERM_RESET " press k to tell shellcode to send a SIGKILL to the shell\n"
-	       TERM_YELLOW "(dmashell)" TERM_RESET " press q to terminate dmashell NOW\n"
+	       TERM_YELLOW "(dmashell)" TERM_RESET " press q to terminate dmashell NOW (same as CTRL-\\)\n"
+/*	       TERM_YELLOW "(dmashell)" TERM_RESET " press s to rescan memory for the processes pagedirectory\n"
+	       TERM_YELLOW "(dmashell)" TERM_RESET " press f to rescan the firewire-bus for the attacked host\n"
+	       TERM_YELLOW "(dmashell)" TERM_RESET " press r to initiate a firewire-bus-reset\n"  */
 	      );
 
 	switch (getchar()) {
@@ -254,6 +257,10 @@ void handle_sigint(int __attribute__ ((__unused__)) signal)
 		case 'f':
 		case 'F':
 			// rescan raw1394 bus for attack-target
+			break;
+		case 'r':
+		case 'R':
+			// initiate firewire-bus-reset
 			break;
 */
 		default:
