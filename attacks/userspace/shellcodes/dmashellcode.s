@@ -260,12 +260,15 @@ do_terminate_child:
 	mov	cl,9	; SIGKILL
 	int	0x80
 
-	; clear to_child_ok
-	xor	eax,eax
-	mov	[ebp+to_child_ok], eax
-	; and from_child_ok
-	mov	[ebp+from_child_ok], eax
-	jmp	leave_sh
+;	; clear to_child_ok
+;	xor	eax,eax
+;	mov	[ebp+to_child_ok], eax
+;	; and from_child_ok
+;	mov	[ebp+from_child_ok], eax
+;	jmp	leave_sh
+
+	; don't terminate, wait for child to close pipes. maybe it just relays the signal to other child.
+	jmp	reader_while_fds_ok
 
 	; ==================================== the WRITER thread:
 thread_write_to_master:
