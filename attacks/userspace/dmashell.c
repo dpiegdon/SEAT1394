@@ -3,7 +3,7 @@
  *
  *  dmashell: inject shellcode and use it via 
  *
- *  Copyright (C) 2006
+ *  Copyright (C) 2006,2007
  *  losTrace aka "David R. Piegdon"
  *
  *  This program is free software; you can redistribute it and/or modify
