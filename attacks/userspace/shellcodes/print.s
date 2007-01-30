@@ -1,3 +1,6 @@
+;
+; $Id$
+
 BITS 32
 
 	call		string_get_address

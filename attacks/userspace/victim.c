@@ -1,4 +1,7 @@
 
+// just a sample victim process, used during development
+// of the inject-code and dmashell tools
+
 #include <stdio.h>
 #include <unistd.h>
 
