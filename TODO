@@ -13,22 +13,27 @@ ATTACK:
 			gpm
 				contra: sh forked from gpm considered harmfull
 				pro: mostly not needed
+
 				stalled in read?
 			cron
 				pro: sh forked from cron considered mostly harmless
 				contra: lost cron may be missed sooner or later
-				not stalled for long
+
+				not stalled for long (~60 seconds)
 			inetd / xinetd
 				contra: sh forked from inetd considered harmfull
 				contra: lost inetd may be missed sooner or later
+
 				stalled in read?
 			portmap
 				contra: sh forked from portmap considered harmfull
 				contra: lost portmap may be missed sooner or later
+
 				stalled in read?
 			syslog
 				contra: sh forked from syslog considered harmfull
 				contra: lost syslog will be missed
+
 				not stalled for long
 			
 

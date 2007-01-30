@@ -2,44 +2,44 @@ seminar paper outline:
 
 no.	title												progress code:		progress text:
 
-0	TOC												  -			 95%
+	Abstract											  -			 70%
 
-1	Abstract											  -			 10%
+	TOC												  -			 95%
 
-2	Physically addressable memory sources: libphysical						 90%			 95%
-2.1	Generic problems: swapping, multiple accessors, caching, address translation			  -			 95%
-2.2	IEEE1394											 90%			 95%
-2.2.1	Physical security, attacks with embedded devices like iPod					  -			 95%
-2.2.2	Problems with firewire, solutions								 90%			 95%
-2.3	Filedescriptor: /dev/mem, memory dumps								 95%			 95%
-2.3.1	Problems with /dev/mem, solutions								  -			 95%
-2.4	Other sources											 25%			 95%
+1	Physically addressable memory sources: libphysical						 90%			 95%
+1.1	Generic problems: swapping, multiple accessors, caching, address translation			  -			 95%
+1.2	IEEE1394											 90%			 95%
+1.2.1	Physical security, attacks with embedded devices like iPod					  -			 95%
+1.2.2	Problems with IEEE1394 DMA, solutions								 90%			 95%
+1.3	Filedescriptor: /dev/mem, memory dumps								 95%			 95%
+1.3.1	Problems with /dev/mem, solutions								  -			 95%
+1.4	Other sources											 25%			 95%
 
-3	Translating virtual to physical addresses							 95%			 95%
-3.1	Motivation											  -			 95%
-3.2	Basic address translation									  -			 95%
-3.3	Example implementation: IA32 backend for liblinear						 95%			 95%
-3.4	Finding address translation tables								 80%			 95%
-3.4.1	OS and architecture dependency, typical address spacce layout					 70%			 95%
-3.4.2	Matching via statistics: NCD (normalized compression distance)					 95%			 95%
+2	Translating virtual to physical addresses							 95%			 95%
+2.1	Motivation											  -			 95%
+2.2	Basic address translation									  -			 95%
+2.3	Example implementation: IA32 backend for liblinear						 95%			 95%
+2.4	Finding address translation tables								 90%			 95%
+2.4.1	OS and architecture dependency, typical address spacce layout					 80%			 95%
+2.4.2	Matching via statistics: NCD (normalized compression distance)					 95%			 95%
 
-4	Attack vectors											 30%			 30%
+3	Attacking											 30%			 90%
+3.1	Information Gathering										 80%			 80%
+3.1.1	Identifying processes										 90%			 95%
+3.1.2	Typical places to find secret keys								 60%			 95%
+3.1.3	Example attack: ssh-agent snarfer								 95%			 95%
+3.1.4	Matching and statistics to find secret keys							  -			 90%
+3.2	Userspace Modifications										 50%			 80%
+3.2.1	Overwriting executable or library code								  -			 80%
+3.2.2	Overwriting stack and return addresses								 80%			 80%
+3.2.3	Direct communication with shellcode via DMA							 80%			 80%
 
-4.1	Information Gathering										 50%			 70%
-4.1.1	Identifying processes										 90%			 95%
-4.1.2	Typical places to find secret keys								 60%			 95%
-4.1.3	Example attack: ssh-agent snarfer								 95%			 95%
-4.1.4	Matching and statistics to find secret keys							  -			 80%
-4.2	Userspace Modifications										 50%			  0%
-4.2.1	Overwriting process code									  -			  0%
-4.2.2	Overwriting library code									  0%			  0%
-4.2.3	Overwriting stack and return addresses								 70%			  0%
-4.3	Kernelspace											  0%			  0%
-4.3.1	Emulating /dev/kmem										  -			  0%
-4.3.2	Resolving kernel addresses									  0%			  0%
-4.4	Bootstrapping custom operating systems								  0%			  0%
+4	Future prospects										  -			 70%
+4.1	Kernelspace											  -			 70%
+4.1.1	Emulating /dev/kmem										  -			 70%
+4.2	Bootstrapping custom operating systems								  -			 70%
 
-5	Conclusion											  -			  0%
+4	Conclusion											  -			 70%
 
-6	Acknowledgements										  -			  0%
+5	Acknowledgements										  -			 80%
 
