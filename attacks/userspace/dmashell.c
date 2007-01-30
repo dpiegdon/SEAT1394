@@ -55,7 +55,7 @@ char pagedir[4096];
 // values of aggressiveness:
 // 	 & 1: write (but only at locations that are pointers into the binary)
 // 	 & 2: also try anywhere that may be a pointer to 0x08~~~~~~ or 0xb7~~~~~~ (does not write if not &1)
-// returns virtual address where the injectcode has been injected
+// return virtual address of injected code.
 uint32_t try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int injectcodelen, int aggressiveness)
 {{{
 	// i386-code that marks itself when being executed:
@@ -110,7 +110,7 @@ uint32_t try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int inj
 	// seek the stack-page with environment and stuff
 	stack_bottom = linear_seek_mapped_page(lin, 0xbffff, 0x1000, -1);
 
-	// and here we will inject the code.
+	// now we will inject the code.
 
 	// seek bounds of mapped binary
 	binary_first = linear_seek_mapped_page(lin, 0x08000, 0x1000, 1);
@@ -126,6 +126,7 @@ uint32_t try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int inj
 	binary_first = binary_first << 12;	// get addresses from pagenumbers
 	binary_last = binary_last << 12;
 
+	//
 	//insert code at offset zero of this page.
 	code_location = (stack_bottom << 12);
 	mark_location = code_location + MARK_OFFSET;
@@ -274,7 +275,6 @@ void handle_sigint(int __attribute__ ((__unused__)) signal)
 	set_nonblocking_stdin();
 }}}
 
-// search the shellcodes process once again (a fork may relocate the pagedirectory)
 // then interact with the shellcode
 void use_shell(linear_handle lin, uint32_t base)
 {{{
@@ -383,7 +383,8 @@ void usage(char* argv0)
 		argv0);
 }}}
 
-// search the given process, inject shellcode and then call use_shell()
+// search the given process, inject shellcode, search the process again
+// (fork might have changed pagetable's location) and then call use_shell()
 int main(int argc, char**argv)
 {{{
 	physical_handle phy;
@@ -405,6 +406,13 @@ int main(int argc, char**argv)
 	enum memsource memsource = SOURCE_UNDEFINED;
 	char *filename = NULL;
 	int nodeid = 0;
+
+	fprintf(stderr,
+		"(c) 2007 by losTrace aka ``David R. Piegdon''.\n"
+		"This program is distributed WITHOUT ANY WARRANTY; without even the implied\n"
+		"warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
+		"GNU General Public License for more details.\n\n"
+		);
 
 	while( -1 != (c = getopt(argc, argv, "pan:f:b:"))) {
 		switch (c) {
