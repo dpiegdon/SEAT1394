@@ -1,7 +1,7 @@
 /*  $Id$
  *  terminal control characters
  *
- *  Copyright (C) 2006
+ *  Copyright (C) 2006,2007
  *  losTrace aka "David R. Piegdon"
  *  Parity aka "Patrick Sudowe"
  *

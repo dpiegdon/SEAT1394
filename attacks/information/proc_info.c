@@ -4,7 +4,7 @@
  *  proc_info : functions to get information about a process
  *                 running in a given linear address space
  *
- *  Copyright (C) 2006
+ *  Copyright (C) 2006,2007
  *  losTrace aka "David R. Piegdon"
  *
  *  This program is free software; you can redistribute it and/or modify

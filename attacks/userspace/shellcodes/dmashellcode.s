@@ -4,7 +4,7 @@
 ; dmashellcode.s: communicate with a DMA master via two ringbuffers
 ;	and relay all data between the master and a forked shell.
 ;
-; Copyright (C) 2006,2007
+; Copyright (C) 2007
 ; losTrace aka "David R. Piegdon"
 ;
 ; This program is free software; you can redistribute it and/or modify
