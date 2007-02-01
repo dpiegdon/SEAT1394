@@ -117,7 +117,7 @@ int proc_info(linear_handle h, int *arg_c, char ***arg_v, int *env_c, char ***en
 	largv0p = p;
 	// this is the remote address of argv[0]
 	rargv0p = (char*)((uint32_t)(p - stack) + (((uint32_t)stack_bottom_page - MAX_ARG_PAGES + 1) * 4096));
-#ifdef __BIG_ENDIAN__
+#if __BYTE_ORDER == __BIG_ENDIAN
 	rargv0p = (char*)endian_swap32((uint32_t)rargv0p);
 #endif
 
@@ -135,7 +135,7 @@ int proc_info(linear_handle h, int *arg_c, char ***arg_v, int *env_c, char ***en
 	}
 	// argc is stored right before argv[]
 	argc = *((uint32_t*)(argv - 1));
-#ifdef __BIG_ENDIAN__
+#if __BYTE_ORDER == __BIG_ENDIAN
 	argc = endian_swap32(argc);
 #endif
 	if(argc > 32768) {

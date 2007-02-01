@@ -190,7 +190,7 @@ void do_analyse_process(linear_handle lin, char *bin)
 				switch (hdr->e_ident[EI_DATA]) {
 					case ELFDATA2LSB:
 						printf("LSB, ");
-#ifdef __BIG_ENDIAN__
+#if __BYTE_ORDER == __BIG_ENDIAN
 						correct_byteorder = 1;
 #else
 						correct_byteorder = 0;
@@ -198,7 +198,7 @@ void do_analyse_process(linear_handle lin, char *bin)
 						break;
 					case ELFDATA2MSB:
 						printf("MSB, ");
-#ifdef __BIG_ENDIAN__
+#if __BYTE_ORDER == __BIG_ENDIAN
 						correct_byteorder = 0;
 #else
 						correct_byteorder = 1;

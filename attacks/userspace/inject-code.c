@@ -173,7 +173,7 @@ uint32_t try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int inj
 	seeker = code_location;
 	seeker = seeker - (seeker & 3);		// align to 32 bit locations.
 	dest_value = code_location;
-#ifdef __BIG_ENDIAN__
+#if __BYTE_ORDER == __BIG_ENDIAN
 	dest_value = endian_swap32(dest_value);
 #endif
 	linear_read(lin, mark_location, &mark_value, 4);
@@ -192,7 +192,7 @@ uint32_t try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int inj
 			} else {
 				top_of_stack = 0;
 			}
-#ifdef __BIG_ENDIAN__
+#if __BYTE_ORDER == __BIG_ENDIAN
 			stackvalue = endian_swap32(stackvalue);
 #endif
 			if(aggressiveness & 2) {
