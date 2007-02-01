@@ -316,8 +316,9 @@ int main(int argc, char**argv)
 		if(raw1394_set_port(phy_data.ieee1394.raw1394handle, 0))
 			{ printf("raw1394 failed to set port\n"); return -3; }
 		// set attack target
-		phy_data.ieee1394.raw1394target = nodeid + NODE_OFFSET;
-		printf("using target %d\n", phy_data.ieee1394.raw1394target - NODE_OFFSET);
+		phy_data.ieee1394.raw1394target_nid = nodeid + NODE_OFFSET;
+		phy_data.ieee1394.raw1394target_guid = 0;
+		printf("using target %d\n", phy_data.ieee1394.raw1394target_nid - NODE_OFFSET);
 		if(physical_handle_associate(phy, physical_ieee1394, &phy_data, 4096)) {
 			printf("physical_handle_associate() failed\n");
 			return -3;
