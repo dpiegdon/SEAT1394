@@ -1,4 +1,5 @@
 /*  $Id$
+ *  vim: fdm=marker
  *  libphysical
  *
  *  Copyright (C) 2006,2007
@@ -18,24 +19,25 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef __PHYS_IEEE1394_H__
-# define __PHYS_IEEE1394_H__
+#ifndef __PHYSICAL_INTERNAL_H__
+# define __PHYSICAL_INTERNAL_H__
 
-#include <stdint.h>
+# include "physical.h"
 
-#include "physical_internal.h"
+// from physical.c:
 
-int physical_ieee1394_init(struct physical_handle_data* h);
+typedef int (*physical_iterator_t)(physical_handle h , void*data);
 
-int physical_ieee1394_finish(struct physical_handle_data* h);
+struct handle_list_entry {
+	struct handle_list_entry        *prev;
+	struct handle_list_entry        *next;
 
-int physical_ieee1394_read(struct physical_handle_data* h, addr_t adr, void* buf, unsigned long int len);
+	physical_handle                 h;
+};
 
-int physical_ieee1394_write(struct physical_handle_data* h, addr_t adr, void* buf, unsigned long int len);
+// call iterator for all handles that are of <type>,
+// if type==physical_none, call iterater for all
+void physical_iterate_all_handles(enum physical_type type, physical_iterator_t iterator, void* data);
 
-int physical_ieee1394_read_page(struct physical_handle_data* h, addr_t pagenum, void* buf);
-
-int physical_ieee1394_write_page(struct physical_handle_data* h, addr_t pagenum, void* buf);
-
-#endif // __PHYS_IEEE1394_H__
+#endif // __PHYSICAL_INTERNAL_H__
 

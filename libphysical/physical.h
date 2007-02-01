@@ -1,4 +1,5 @@
 /*  $Id$
+ *  vim: fdm=marker
  *  libphysical
  *
  *  Copyright (C) 2006,2007
@@ -21,9 +22,9 @@
 #ifndef __PHYSICAL_H__
 # define __PHYSICAL_H__
 
-#include <stdint.h>
-#include <stdlib.h>
-#include <libraw1394/raw1394.h>
+# include <stdint.h>
+# include <stdlib.h>
+# include <libraw1394/raw1394.h>
 
 // addressing is done via 64-bit unsigned physical addresses
 typedef uint64_t addr_t;
@@ -36,7 +37,8 @@ enum physical_type {
 	physical_filedescriptor,	// access phys mem via a given FD. all files should be opened with O_LARGEFILE to allow 64bit-addressing!
 	physical_ieee1394,		// access phys mem via ieee1394 (firewire), using libraw1394
 	physical_gdb			// access phys mem via the gdb serial protocol
-					// typically this will not be useful, only in combination with a VM like qemu that supports gdb
+					// typically this will not be useful, only in combination
+					// with a VM like qemu that supports gdb
 // TODO physical_qemu_savedvm		// access phys mem in a saved vm-status-file of qemu
 // TODO physical_suspended		// access phys mem in a suspend-to-disk-image
 };
@@ -52,7 +54,8 @@ struct physical_type_data_filedescriptor {
 struct physical_type_data_ieee1394 {
 	raw1394handle_t	raw1394handle;	// raw1394 handle (handle must have a port set
 					// via raw1394_set_port().)
-	nodeid_t	raw1394target;	// target on the firewire bus
+	uint64_t raw1394target_guid;	// targets GUID (if != 0, use this instead of nid)
+	nodeid_t raw1394target_nid;	// targets nodeid on the firewire bus
 };
 struct physical_type_data_gdb {
 	int fd;				// FD of connected gdb (e.g. open a tcp-socket to a gdb)
@@ -65,8 +68,13 @@ union physical_type_data {
 	struct physical_type_data_gdb			gdb;
 };
 
+// one can access multiple physical memory sources. to do this, one
+// requests a handle and associates the handle with the source of
+// choice.
 
 // internally, all needed data is stored here. physical_handle is really a pointer to this.
+// but a program using the library should never touch the internal stuff, as it may change
+// between different versions of the library.
 struct physical_handle_data {
 	enum	physical_type		type;				// type of memory source
 	union	physical_type_data	data;				// data specific to type
@@ -81,10 +89,8 @@ struct physical_handle_data {
 	int(*write_page)(struct physical_handle_data* h, addr_t pagenum, void* buf);
 };
 
-// one can access multiple physical memory sources. to do this, one
-// requests a handle and associates the handle with the source of
-// choice.
 typedef struct physical_handle_data* physical_handle;
+
 
 ///////////// functions
 
@@ -96,7 +102,6 @@ int physical_handle_associate(physical_handle h, enum physical_type type, union 
 
 // release a handle (and remove it)
 int physical_handle_release(physical_handle h);
-
 
 // read physical memory: read at address <adr>, <len> bytes and
 // store them into <buf>

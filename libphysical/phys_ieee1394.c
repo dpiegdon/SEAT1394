@@ -1,4 +1,5 @@
 /*  $Id$
+ *  vim: fdm=marker
  *  libphysical
  *
  *  Copyright (C) 2006,2007
@@ -18,6 +19,19 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+/*
+ * due to random bus resets the following will be implemented:
+ *
+ * init():
+ * 	if data->guid = 0
+ * 		obtain guid from nid
+ *
+ * install reset-handler, that gets nid from guid after bus-reset
+ */
+
+// FIXME: remove debugging stuff and stdio.h
+#include <stdio.h>
+
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -27,21 +41,121 @@
 #include <libraw1394/csr.h>
 
 #include "phys_ieee1394.h"
+#include "endian_swap.h"
 
 #define MIN(a,b)  ( ((a) < (b)) ? (a) : (b) )
 
 #define RAWHANDLE (h->data.ieee1394.raw1394handle)
-#define TARGET    (h->data.ieee1394.raw1394target)
+#define TARGET    (h->data.ieee1394.raw1394target_nid)
+
+#define NODE_OFFSET 0xffc0
 
 // blocksize is auto-adjusted down to 4 in case of errors
 #define BLOCKSIZE_MAX_VAL 1024
 #define BLOCKSIZE_MIN_VAL 4
 static size_t blocksize = BLOCKSIZE_MAX_VAL;
+static bus_reset_handler_t old_reset_handler = NULL;
+
+// get a targets GUID from its nodeid
+// on error, returns 0 as GUID
+static uint64_t guid_from_nodeid(raw1394handle_t handle, nodeid_t node)
+{{{
+	uint64_t guid = 0;
+	uint32_t low = 0;
+	uint32_t high = 0;
+	raw1394_read(handle, node, CSR_REGISTER_BASE + CSR_CONFIG_ROM + 0x0c, 4, &low);
+	raw1394_read(handle, node, CSR_REGISTER_BASE + CSR_CONFIG_ROM + 0x10, 4, &high);
+#ifdef __BIG_ENDIAN__
+	guid = (((uint64_t)high) << 32) | low;
+	guid = endian_swap64(guid);
+#else
+	guid = (((uint64_t)low) << 32) | high;
+#endif
+
+	return guid;
+}}}
+
+// returns 0 if GUID found and stores nodeid in nodeid
+// returns !0 on error
+static int nodeid_from_guid(raw1394handle_t handle, uint64_t guid, nodeid_t *nodeid)
+{{{
+	int nodecount;
+	int i;
+	int it_guid;
+
+	nodecount = raw1394_get_nodecount(handle);
+
+	for(i = NODE_OFFSET; i < (NODE_OFFSET + nodecount); i++) {
+		it_guid = guid_from_nodeid(handle, i);
+		if(guid == it_guid) {
+			*nodeid = i;
+			return 0;
+		}
+	}
+
+	return 1;
+}}}
+
+static int reset_iterator(physical_handle h, void *data)
+{
+	nodeid_t nid;
+
+	// (*data) is a raw1394handle_t
+	// check if this is a matching handle
+	if(h->data.ieee1394.raw1394handle != *(raw1394handle_t*)data)
+		return 0;
+
+	// search the GUID on the bus, save its nodeid. if not found,
+	// initiate a RAW1394_LONG_RESET and do the same.
+	if(nodeid_from_guid(RAWHANDLE, h->data.ieee1394.raw1394target_guid, (void*)&nid)) {
+		// do a hard bus-reset...
+		// RAW1394_LONG_RESET vs. RAW1394_SHORT_RESET
+		raw1394_reset_bus_new(RAWHANDLE, RAW1394_LONG_RESET);
+		// FIXME:
+		// this one should automatically call reset_handler, should it not?
+	} else {
+		TARGET = nid;
+	}
+
+	// FIXME:
+	// if then the host can not be found, print an error message
+	// and just continue as if nothing happened (let the user manually reset
+	// the bus, hopefully)
+	
+
+	return 0;
+}
+
+static int reset_handler(raw1394handle_t handle, unsigned int generation)
+{{{
+	int ret = 0; // ??
+
+	fprintf(stderr, "\n(physical_ieee1394) bus reset\n");
+
+	// call former handler
+	if(old_reset_handler)
+		ret = old_reset_handler(handle, generation);
+
+	// iterate over all physical handles with type==physical_ieee1394
+	physical_iterate_all_handles(physical_ieee1394, reset_iterator, &handle);
+
+	return ret;
+}}}
 
 int physical_ieee1394_init(struct physical_handle_data* h)
 {
-	// developer shall give us a handle that is already associated with a target on the firewire bus
-	// then we won't need to do anything else.
+	// developer shall give us a handle that is already
+	// associated with a firewire port
+
+	// if GUID == 0, get GUID from NID
+	if(h->data.ieee1394.raw1394target_guid == 0)
+		h->data.ieee1394.raw1394target_guid = guid_from_nodeid(RAWHANDLE, TARGET);
+
+	// install our bus-reset-handler that will search the guid
+	// after a bus-reset
+	old_reset_handler = raw1394_set_bus_reset_handler(RAWHANDLE, reset_handler);
+	raw1394_busreset_notify(RAWHANDLE, RAW1394_NOTIFY_ON);
+
 	return 0;
 }
 

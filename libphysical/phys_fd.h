@@ -23,7 +23,7 @@
 
 #include <stdint.h>
 
-#include "physical.h"
+#include "physical_internal.h"
 
 int physical_fd_init(struct physical_handle_data* h);
 
