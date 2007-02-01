@@ -34,8 +34,10 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include <errno.h>
+#include <endian.h>
 
 #include <libraw1394/raw1394.h>
 #include <libraw1394/csr.h>
@@ -65,7 +67,7 @@ static uint64_t guid_from_nodeid(raw1394handle_t handle, nodeid_t node)
 	uint32_t high = 0;
 	raw1394_read(handle, node, CSR_REGISTER_BASE + CSR_CONFIG_ROM + 0x0c, 4, &low);
 	raw1394_read(handle, node, CSR_REGISTER_BASE + CSR_CONFIG_ROM + 0x10, 4, &high);
-#ifdef __BIG_ENDIAN__
+#if __BYTE_ORDER == __LITTLE_ENDIAN
 	guid = (((uint64_t)high) << 32) | low;
 	guid = endian_swap64(guid);
 #else
@@ -81,7 +83,7 @@ static int nodeid_from_guid(raw1394handle_t handle, uint64_t guid, nodeid_t *nod
 {{{
 	int nodecount;
 	int i;
-	int it_guid;
+	uint64_t it_guid;
 
 	nodecount = raw1394_get_nodecount(handle);
 
@@ -97,7 +99,7 @@ static int nodeid_from_guid(raw1394handle_t handle, uint64_t guid, nodeid_t *nod
 }}}
 
 static int reset_iterator(physical_handle h, void *data)
-{
+{{{
 	nodeid_t nid;
 
 	// (*data) is a raw1394handle_t
@@ -107,30 +109,27 @@ static int reset_iterator(physical_handle h, void *data)
 
 	// search the GUID on the bus, save its nodeid. if not found,
 	// initiate a RAW1394_LONG_RESET and do the same.
-	if(nodeid_from_guid(RAWHANDLE, h->data.ieee1394.raw1394target_guid, (void*)&nid)) {
-		// do a hard bus-reset...
-		// RAW1394_LONG_RESET vs. RAW1394_SHORT_RESET
-		raw1394_reset_bus_new(RAWHANDLE, RAW1394_LONG_RESET);
-		// FIXME:
-		// this one should automatically call reset_handler, should it not?
-	} else {
-		TARGET = nid;
+	while(nodeid_from_guid(RAWHANDLE, h->data.ieee1394.raw1394target_guid, (void*)&nid)) {
+		fprintf(stderr,"could not find node %016llX. please check ieee1394 connection.\n", h->data.ieee1394.raw1394target_guid);
+		//raw1394_reset_bus_new(RAWHANDLE, RAW1394_LONG_RESET);
+		sleep(2);
 	}
+	fprintf(stderr, "new nid: 0x%04x ", nid);
+	TARGET = nid;
 
 	// FIXME:
 	// if then the host can not be found, print an error message
 	// and just continue as if nothing happened (let the user manually reset
 	// the bus, hopefully)
 	
-
 	return 0;
-}
+}}}
 
 static int reset_handler(raw1394handle_t handle, unsigned int generation)
 {{{
 	int ret = 0; // ??
 
-	fprintf(stderr, "\n(physical_ieee1394) bus reset\n");
+	fprintf(stderr, "\n(physical_ieee1394) bus reset, "); // let iterator finish the line.
 
 	// call former handler
 	if(old_reset_handler)
@@ -138,6 +137,8 @@ static int reset_handler(raw1394handle_t handle, unsigned int generation)
 
 	// iterate over all physical handles with type==physical_ieee1394
 	physical_iterate_all_handles(physical_ieee1394, reset_iterator, &handle);
+
+	fprintf(stderr, "\n");
 
 	return ret;
 }}}
@@ -148,13 +149,15 @@ int physical_ieee1394_init(struct physical_handle_data* h)
 	// associated with a firewire port
 
 	// if GUID == 0, get GUID from NID
-	if(h->data.ieee1394.raw1394target_guid == 0)
+	if(h->data.ieee1394.raw1394target_guid == 0) {
 		h->data.ieee1394.raw1394target_guid = guid_from_nodeid(RAWHANDLE, TARGET);
+		fprintf(stderr, "phys1394: got guid %016llX for nodeid 0x%04x\n", h->data.ieee1394.raw1394target_guid, TARGET);
+	}
 
 	// install our bus-reset-handler that will search the guid
 	// after a bus-reset
 	old_reset_handler = raw1394_set_bus_reset_handler(RAWHANDLE, reset_handler);
-	raw1394_busreset_notify(RAWHANDLE, RAW1394_NOTIFY_ON);
+	//raw1394_busreset_notify(RAWHANDLE, RAW1394_NOTIFY_ON);
 
 	return 0;
 }
