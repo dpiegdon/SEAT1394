@@ -51,7 +51,7 @@ static int pagedirtest_fast_linux3G1G(struct linear_handle_data* h, addr_t physi
 	if(res < 0)
 		return res;
 
-#ifdef __BIG_ENDIAN__
+#if __BYTE_ORDER == __BIG_ENDIAN
 	pde.raw = endian_swap32(pde.raw);
 #endif
 	if(pde.simple.P) {
@@ -199,7 +199,7 @@ int lin_ia32_set_new_pagedirectory(struct linear_handle_data* h, void* pagedir)
 	// copy all pagetables to buffer
 	for(pn=0; pn<1024; pn++) {
 		pde = PDE(pn);
-#ifdef __BIG_ENDIAN__
+#if __BYTE_ORDER == __BIG_ENDIAN
 		// correct byte-order on the fly
 		pde->raw = endian_swap32(pde->raw);
 		// and once and for all.
@@ -220,7 +220,7 @@ int lin_ia32_set_new_pagedirectory(struct linear_handle_data* h, void* pagedir)
 
 				return errno;
 			} else {
-#ifdef __BIG_ENDIAN__
+#if __BYTE_ORDER == __BIG_ENDIAN
 				int ptc;
 				uint32_t* pte;
 				// correct byte-order on the fly in all pagetables
