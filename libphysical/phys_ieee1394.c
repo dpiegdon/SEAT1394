@@ -151,7 +151,18 @@ int physical_ieee1394_init(struct physical_handle_data* h)
 	// if GUID == 0, get GUID from NID
 	if(h->data.ieee1394.raw1394target_guid == 0) {
 		h->data.ieee1394.raw1394target_guid = guid_from_nodeid(RAWHANDLE, TARGET);
-		fprintf(stderr, "phys1394: got guid %016llX for nodeid 0x%04x\n", h->data.ieee1394.raw1394target_guid, TARGET);
+		if(h->data.ieee1394.raw1394target_guid == 0) {
+			fprintf(stderr, "phys1394: failed to find node 0x%04x on the given bus\n", h->data.ieee1394.raw1394target_nid);
+			return -1;
+		}
+//		fprintf(stderr, "phys1394: got guid %016llX for nodeid 0x%04x\n", h->data.ieee1394.raw1394target_guid, TARGET);
+	} else {
+		// otherwise, get NID from GUID
+		if(nodeid_from_guid(RAWHANDLE, h->data.ieee1394.raw1394target_guid, &(TARGET))) {
+			// failed to find GUID on this bus
+			fprintf(stderr, "phys1394: failed to find %016llx on the given bus\n", h->data.ieee1394.raw1394target_guid);
+			return -1;
+		}
 	}
 
 	// install our bus-reset-handler that will search the guid
