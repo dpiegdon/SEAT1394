@@ -1,0 +1,87 @@
+% vim: tw=80 ai fdl=99 fo+=a
+%
+% $Id$
+%
+
+\section{Introduction}
+
+Several advances in hacking via DMA will be introduces. As a foundation for the
+attacks, \texttt{libphysical} and \texttt{liblinear} will be introduced to
+access virtual address spaces of any process on the to-be-attacked host.
+
+
+
+To have a simple, generic interface for all kinds of physical memory sources, we
+implemented \texttt{libphysical}, where backends for new memory sources may be
+plugged in. So far, it includes backends for IEEE1394 and filedescriptors.
+
+In \textbf{section \ref{memsources}}, \texttt{libphysical} will be introduced
+and different backends with their advantages and disadvantages will be
+discussed.
+
+
+
+Once, access to the physical memory of a system is obtained, there are two
+obvious ways to extract useful information from it:
+
+\begin{itemize}
+
+	\item It is possible to parse the operating systems internal data
+	structures holding all relevant information about loaded drivers,
+	running processes et al.
+	
+	\item It is possible to use the information that the operating system
+	provides to the hardware to tell it about the virtual address spaces of
+	each process.
+	
+\end{itemize}
+
+The first scenario will not work between different operating systems and
+architectures, it will be necessary to write a parser for each combination of
+them, possibly even for different versions of the same operating system.
+
+The latter uses an information structure that only changes between different
+architectures, as the architecture relies on it. Furthermore there is a well
+defined algorithm for using this information (implemented in hardware in the
+architecture, but well defined in the reference manuals for this architecture,
+so system designers can provide valid data to the hardware).
+
+On the other hand, the first approach will give much more information about the
+system than the second, as we obtain all information directly from the kernel
+structures, while using the second approach we only can enter virtual address
+spaces of processes.
+
+\cite{finding_digital_evidence_in_physical_memory:2006} is parsing
+kernel-structs of windows and Linux kernels. In the following \emph{we} will use
+the second approach for most attacks, as this seems to be more robust and
+automatable.  As the above mentioned paper is about \emph{finding an attacker}
+and not \emph{attacking}, the forensic personal does know about the
+architecture, the operating system and version and can build a copy of the
+system to test its tools, while an attacker only can guess the architecture and
+operating system and needs more robust tools for his attacks.  (Obviously this
+is only a short-term argument, as an attacker can also write such tools for
+\emph{all} OS version and architecture combinations\ldots but the heck with
+this...).
+
+
+
+In \textbf{section \ref{addresstranslations}}, \texttt{liblinear}, an interface
+to access virtual address spaces, will be introduced. It incorporates a backend
+for IA-32\footnote{This backend is missing algorithms for less-used
+operation-modes of the IA-32 architecture, but it will work at least for most
+kinds of the \emph{Linux} kernels ($\leq$ 4GB RAM). It has not yet been tested
+with \emph{Windows} or \emph{MacOS X} and is missing features (Virtual-8086
+mode) to work with DOS-processes running inside Windows.} and functions to find
+virtual address spaces.
+
+
+
+In \textbf{section \ref{attacks}}, several attacks will be introduces, ranging
+from simple information gathering up to obtaining an interactive shell via DMA
+only. 
+
+
+
+In \textbf{section \ref{prospects}}, prospects will be given, what further kinds
+of attacks seem to be possible and/or may be of interest.
+

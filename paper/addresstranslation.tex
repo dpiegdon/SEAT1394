@@ -5,49 +5,7 @@
 
 \section{Translating virtual to physical addresses}
 
-\subsection{Motivation}
-
-There are two obvious ways to extract useful information from physical
-addressable memory:
-
-\begin{itemize}
-
-	\item It is possible to parse the operating systems internal data
-	structures holding all relevant information about loaded drivers,
-	running processes et al.
-	
-	\item It is possible to use the information that the operating system
-	provides to the hardware to tell it about the virtual address spaces of
-	each process.
-	
-\end{itemize}
-
-The first scenario will not work between different operating systems and
-architectures, it will be necessary to write a parser for each combination of
-them, possibly even for different versions of the same operating system.
-
-The latter uses an information structure that only changes between different
-architectures, as the architecture relies on it. Furthermore there is a well
-defined algorithm for using this information (implemented in hardware in the
-architecture, but well defined in the reference manuals for this architecture,
-so system designers can provide valid data to the hardware).
-
-On the other hand, the first approach will give much more information about the
-system than the second, as we obtain all information directly from the kernel
-structures, while using the second approach we only can enter virtual address
-spaces of processes.
-
-\cite{finding_digital_evidence_in_physical_memory:2006} is parsing
-kernel-structs of windows and Linux kernels. I will in the following use the
-second approach for most attacks, as this seems to be more robust and
-automatable.  As the above mentioned paper is about \emph{finding an attacker}
-and not \emph{attacking}, the forensic personal does know about the
-architecture, the operating system and version and can build a copy of the
-system to test its tools, while an attacker only can guess the architecture and
-operating system and needs more robust tools for his attacks.  (Obviously this
-is only a short-term argument, as an attacker can also write such tools for
-\emph{all} OS version and architecture combinations\ldots but the heck with
-this...).
+\label{addresstranslations}
 
 \subsection{Basic address translations}
 
@@ -162,9 +120,8 @@ find address translation tables to make sense out of the vast, unsorted number
 of pages. Typically, translation tables are not marked as such and as we can not
 access the processor or the operating system to ask, where these are, we have to
 search them. The following methods have proven themselves when being combined:
-for all pages: make a quick guess if a page could be a pagedirectory
-(\ref{ATTguess}) and if so, analyse this page more in detail
-(\ref{ATTstatistics}):
+for all pages: make a simple test if a page \emph{could} be a pagedirectory
+(\ref{ATTguess}) and if so, analyse this page in detail (\ref{ATTstatistics}):
 
 
 
@@ -186,7 +143,7 @@ process:
 
 	\epsffile{linux_virtual_address_space.eps}
 
-        \caption{Layout of the virtual address space of a typical linux process}
+	\caption{Layout of the virtual address space of a typical Linux process}
 
 	\label{fig:linux_virtual_address_space}
 
@@ -222,7 +179,8 @@ process:
 \end{itemize}
 
 Stack- and memory randomization techniques like \emph{PaX} randomize the base
-addresses of these locations a bit, but the general layout stays the same.
+addresses of these locations within several pages, but the general layout stays
+the same.
 
 Besides searching pages that show non-zero values around these positions and
 zero values elsewhere, it is much easier and faster to just check, if the
@@ -239,15 +197,20 @@ of RAM for pagetables (see first paragraph of section \ref{kerneluserdivision}).
 
 \subsubsection{Matching via statistics: NCD (normalized compression distance)}
 
-\label{ATTstatistics} The \emph{normalized information distance} (NID), a form
-of parameter-free similarity distance measurement, can be understood as a
-measurement for the minimal amount of changes required to change one information
-into another one.  A NID of 1 means that two informations are totally unrelated;
-a NID of 0 means that they are the same.  Due to its relation to the
-\emph{Kolmogorov complexity} (a measurement for an information`s shortest
-description in a fixed description language) it is incalculatable.  As an
-approximation, it is possible to use data compressors instead of the Kolmogorov
-complexity to measure the size of a minimal representation of information.
+\label{ATTstatistics}
+
+For a detailed introduction to and analysis of the NCD and sample applications,
+the reader may refer to \cite{kolmogorov:1997} and the below given texts.
+
+The \emph{normalized information distance} (NID), a form of parameter-free
+similarity distance measurement, can be understood as a measurement for the
+minimal amount of changes required to change one information into another one.
+A NID of 1 means that two informations are totally unrelated; a NID of 0 means
+that they are the same.  Due to its relation to the \emph{Kolmogorov complexity}
+(a measurement for an information`s shortest description in a fixed description
+language) it is incalculable.  As an approximation, it is possible to use data
+compressors instead of the Kolmogorov complexity to measure the size of a
+minimal representation of information.
 
 %Let $C$ be a compressor and $K(x)$ be the Kolmogorov-complexity of $x$.  $ \big(
 %\forall x : C(x) = K(x) \big) \Rightarrow \big( \forall x,y : \mbox{NCD}(x,y) =
@@ -261,9 +224,7 @@ a vast area of applications; for instance, it has shown its usefulness during
 analysis of DNA sequences or languages for relatedness
 (\cite{clustering_by_compression:2005,similarity_matrix:2004}), MIDI music files
 for relations in style and creator (\cite{clustering_by_compression:2005}) and
-attack schemes of viruses and worms (\cite{analysing_worms_with_ncd:2006}).  For
-a detailed introduction to and analysis of the NCD and sample applications, the
-reader may refer to \cite{kolmogorov:1997} and the above texts.
+attack schemes of viruses and worms (\cite{analysing_worms_with_ncd:2006}).
 
 As the NCD is only an approximation of the NID based on compressors, its
 resulting ``normalized'' value can be slightly larger that $1.0$ and will never
@@ -281,7 +242,8 @@ choice should be adequate. The \texttt{complearn}-toolkit
 functions for generating NCD distance matrices between information, generating
 relational trees from these and more.  As we only need to compare two pages,
 this set of functions is far too big and the interface far too complex for this
-application.  Thus, I implemented my own, very short version of the NCD
-(\texttt{simple\_ncd()} in \texttt{liblinear/simple\_ncd.c}) using BZip2 as
-compressor.
+application.  Thus, we implemented a very short version of the NCD
+(\texttt{simple\_ncd()} in \texttt{liblinear/simple\_ncd.c}) using
+BZip2\footnote{BZip2: A high-quality data compressor,
+\href{http://www.bzip.org/}{http://www.bzip.org/}} as compressor.
 

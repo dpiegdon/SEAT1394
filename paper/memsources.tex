@@ -5,17 +5,20 @@
 
 \section{Physically addressable memory sources: \texttt{libphysical}}
 
+\label{memsources}
+
 Typically, processes and users are never granted access to physically addressed
-memory, as this addressing mode normally circumvents any protection methods.
-Only a running operating system may use physical addressing to prepare address
+memory, as this addressing mode circumvents any protection methods provided by
+virtual addressing to separate processes from each other and the operating
+system. Only the operating system may use physical addressing to prepare address
 spaces for each running process, manage these, access special memory of
 extension cards and alike, or even only during bootstrapping as Linux does. But
 there are several ways of obtaining access to physical addressed memory. As
-stated, physical addressing will circumvent protection mechanisms. Thus access
+stated, physical addressing will circumvent protection mechanisms.  Thus access
 to it should require system administrator rights or physical access to the
 hardware of the underlying system.
 
-To have a simple, generic interface for all kinds of physical memory sources, I
+To have a simple, generic interface for all kinds of physical memory sources, we
 implemented a simple interface, where backends for new memory sources may be
 plugged in. This interface is called \texttt{libphysical} and includes so far
 backends for IEEE1394 and filedescriptors.
@@ -112,20 +115,20 @@ CPU.  For a detailed discussion, see section \ref{address_translation}.
 % 1394a vs 1394b ?
 IEEE1394, also known as \epsfysize 0.3cm \epsfbox{logo-firewire-black.eps}
 firewire (Apple) or iLink (Sony), is an extension bus available on many modern
-computer systems and devices.  In opposition to USB, which is a serial periphery
+computer systems and devices.  In contrast to USB, which is a serial periphery
 bus, firewire is a high-speed serial expansion bus with features like guaranteed
-bandwidth (which is of interest for many real-time applications, mostly media
-crunching), DMA and the ability to connect multiple nodes with one firewire-bus.
-The concept of bus master and bus slaves, as known from USB, is only virtual.
-Typically when plugging together a firewire bus, a node is randomly selected to
-be the master and manages this bus. Most of these nodes have the ability to be
-bus master.
+bandwidth (which is of interest for many real-time applications, like media
+crunching), DMA\footnote{Direct Memory Access} and the ability to connect
+multiple nodes with a single firewire-bus.  The concept of bus master and bus
+slaves, as known from USB, is only virtual.  Typically when plugging together a
+firewire bus, a node is randomly selected to be the master and manages this bus.
+Most of these nodes have the ability to be bus master.
 
-DMA (Direct Memory Access) is implemented in hardware by the OHCI chip set; it
-is used to release the CPU from plain I/O. Mechanisms of preventing unwanted
-access exist, but many drivers do not activate these methods by default. In the
-case of windows, the operating system can be fooled into giving us DMA (see
-section \ref{windows-dma}).
+DMA is implemented in hardware by the OHCI chip set; it is used to release the
+CPU from I/O operations. Mechanisms of preventing unwanted access exist, but
+many drivers do not activate these methods by default. In the case of windows,
+the operating system can be tricked into giving DMA to any device (see section
+\ref{windows-dma}).
 
 Up to 64 devices may be plugged into one bus. Each one will choose a bus-unique
 node ID $[0..63]$; the bus master will have the highest node ID. All node IDs
@@ -159,7 +162,7 @@ security for his attacks. If he finds that going straight to the computer and
 stealing it, or plugging an embedded device like the iPod into it is easier than
 other known attacks, he will try.
 
-Typical physical attacks on computer systems are:
+Some typical physical attacks on computer systems are:
 
 \begin{itemize}
 
@@ -187,20 +190,20 @@ unplugging it.
 %imagine the attacker owns an iPod running Linux and the laptop has a firewire
 %port at its back.
 
+On the other hand, plugging in firewire devices will generate syslog messaged on
+Linux systems.
 
 
 \subsubsection{Problems with IEEE1394 DMA, solutions}
 
-Plugging in firewire devices will generate syslog messaged on Linux systems.
-
 Using firewire to access the memory of a running system \emph{may} generate non
 maskable interrupts (NMI) on the target system and even leave the operating
-system (Linux 2.6.17) in a non-usable state. I have seen some laptops and
+system (Linux 2.6.17) in a non-usable state. There are some laptops and
 workstations with on board controllers being disturbed by this, sometimes
-resulting in crashes. My desktop PC (with a firewire PCI extension card),
-though, just worked fine during all tests. It is possible that the deeply
-incorporated on board controllers interfere with the CPU accessing the main
-memory. This needs to be investigated.
+resulting in crashes. Computers with PCI extension card, though, just worked
+fine during all tests. It is possible that the deeply incorporated on-board
+controllers interfere with the CPU accessing the main memory. This needs to be
+investigated.
 
 % FIXME blocksize 32bit, align 32 bit :: ist dann problem immer noch da? /FIXME
 
@@ -213,12 +216,15 @@ Control state registers are likely to be readable only in 4~byte blocks.
 \label{windows-dma} Windows XP does use OHCI features to implement protection
 mechanisms to prevent random devices from reading any memory location.  Adam
 Boileau,``TMASKY'' and others have shown \cite{rux2k6firewire:2006} that, by
-pretending to be a device like an iPod, which ``deserves'' DMA, it is possible
-to fool Windows into giving an attacker DMA.  This attack is as simple as
-reading an iPod's config rom from its CSR and using \texttt{libraw1394}'s
-\texttt{raw1394\_update\_config\_rom()} to use the copy.  Adam Boileau has
-implemented a simple script to do this. I have written my own tool in C using
-\texttt{libraw1394}, which is located in \texttt{1394csrtools/}
+pretending to be a device like an iPod, which ``deserves'' DMA (in terms of
+marketdroid\footnote{see jargon-files,
+\href{http://catb.org/esr/jargon/html/M/marketroid.html}
+{http://catb.org/esr/jargon/html/M/marketroid.html}}-logik), it is possible to
+circumvent this ``protection'' and to trick Windows into giving an attacker DMA.
+This attack is as simple as reading an iPod's config rom from its CSR and using
+\texttt{libraw1394}'s \texttt{raw1394\_update\_config\_rom()} to use the copy.
+Adam Boileau has implemented a simple script to do this. We have written our own
+tool in C using \texttt{libraw1394}, which is located in \texttt{1394csrtools/}
 
 
 
@@ -236,12 +242,11 @@ circumventing any caching system (like the CPU), but directly using it.
 \subsubsection{Problems with \texttt{/dev/mem}, solutions}
 
 \texttt{/dev/mem} on Linux has one other, major problem:
-
 \label{kerneluserdivision} On 32 bit systems, the virtual address space has a
 size of $2^{32}$ bytes, i.e.  4GiB.  The virtual address space of a Linux
 process is divided into a userspace-part, where code, libraries and stack are
 mapped, and a kernelspace-part, where the complete kernel, data structures and
-the kernel-stack of this process are located. The userspace thread will never be
+the kernel-stack of this process are located. The userspace thread will not be
 able to access the kernelspace pages; but when the userspace process calls a
 system call, the CPU will jump into a different protection level and execute the
 system call entry code, which is part of the kernel. At this time the kernel
@@ -256,14 +261,14 @@ memory will be fully mapped (up to about 900MiB), the kernel will - in this case
 - be located at roughly \texttt{0xc100~0000}, i.e. at the physical address
 \texttt{0x0100~0000}. During kernel configuration, these 900MiB are called
 ``precious lowmem'', because it is the only memory accessible by the kernel in a
-simple manner. When allocating kernelspace structures (this includes all address
-translation tables (on IA-32, these are: pagedirectories, pagetables, local- and
-global descriptor tables)\label{linuxATTinlowmem}), the kernel will normally
-only use this lowmem.  The \texttt{/dev/mem} driver will access this lowmem,
-when a userspace process utilizes it. But if the process tries to read more than
-the mapped lowmem, \texttt{/dev/mem} will fail to return this, as it is not
-mapped in the process.  Thus, when using \texttt{/dev/mem}, only approx. 900GiB
-lower physical RAM will be accessible.
+simple manner. When allocating kernelspace structures - this includes all
+address translation tables \footnote{on IA-32, these are: pagedirectories,
+pagetables, local- and global descriptor tables} \label{linuxATTinlowmem} - the
+kernel will normally only use this lowmem.  The \texttt{/dev/mem} driver will
+access this lowmem, when a userspace process utilizes it. But if the process
+tries to read more than the mapped lowmem, \texttt{/dev/mem} will fail to return
+this, as it is not mapped in the process.  Thus, when using \texttt{/dev/mem},
+only approx.  900GiB lower physical RAM will be accessible.
 
 It may be possible to work around this restriction: as stated, all address
 translation tables are located in the accessible memory. A process could try to

@@ -5,9 +5,9 @@
 
 \begin{abstract}
 
-Several advances in hacking via DMA will be introduced, including stealing ssh
-private keys, injecting code and obtaining an interactive shell via firewire
-only.
+Several advances in hacking via DMA will be introduced; attacks to steal ssh
+private keys, inject code and obtain an interactive shell via firewire only will
+be presented.
 
 All of these advances are based on data structures that are required by the CPU
 to provide virtual address spaces for each process running on the system.  These
@@ -16,7 +16,7 @@ scattered pages in the physical memory, thus being able to read and write in
 each processes virtual address space.
 
 Most of the attacks introduced will be adaptable to all kinds of operating
-system and hardware combinations, but as a sample target, linux on an IA-32
+system and hardware combinations, but as a sample target, Linux on an IA-32
 system with the kernel-options \texttt{CONFIG\_NOHIGHMEM} or
 \texttt{CONFIG\_HIGHMEM4G}, \texttt{CONFIG\_VMSPLIT\_3G} and
 \texttt{CONFIG\_PAGE\_OFFSET=0xC0000000} is used.

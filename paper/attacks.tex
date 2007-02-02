@@ -5,6 +5,7 @@
 
 \section{Attacking}
 
+\label{attacks}
 
 
 
@@ -33,12 +34,17 @@ space and will print a list of all found processes with its arguments.
 
 Many applications keep secrets in their memory, some of them even locking them
 into the main memory\footnote{e.g. via the \emph{mlock} function} to prevent the
-operating system from swapping them to slower (permanent) media.  ``Secrets''
-includes, among other information, \emph{authentication data},
+operating system from swapping them to slower (permanent) media. While in
+general this is a good idea, as an attacker may reconstruct the data from e.g.
+thrown-away harddisks, it increases the chance of an attacker that can obtain
+access to the memory of the system in question, as the secret material will be
+stored in memory completely and unfragmented
+
+``Secrets'' includes, among other information, \emph{authentication data},
 \emph{cryptographic key material}, \emph{random data} (e.g. to seed a
 cryptographic algorithm) and sometimes even \emph{algorithms} (\emph{proprietary
 software}). Authentication data can be e.g.  passwords or private keys for
-signature algorithms; cryptographic key material, as the name says, are keys for
+signature algorithms. Cryptographic key material, as the name says, are keys for
 usage with cryptographic algorithms (like the above signature algorithms). These
 two will be of main interest in this section.
 
@@ -78,8 +84,8 @@ As an example, the following applications are of interest:
 
 \subsubsection{Example attack: ssh-agent snarfer}
 
-\label{ssh-agent-snarfer} To proof that it is rather easy to obtain secret keys
-from a process I have written a sample attack to obtain
+\label{ssh-agent-snarfer} To proof that it is easy to obtain secret keys from a
+process we have written a sample attack to obtain
 %
 (snarf\footnote{to snarf: To grab, esp. to grab a large document or file for the
 purpose of using it with or without the author's permission. // To acquire, with
@@ -108,15 +114,15 @@ without the requirement to enter the passphrase each time. The keypair can be
 wiped from memory on demand and also be loaded only for a specified period of
 time.
 
-Actually, here begins the fun. During my tests I found that the key is
-\emph{not} wiped from memory when the time limit is hit. It will be wiped the
-next time the ssh-agent is queried (via its socket), but the agent is stalled in
-a \emph{read} system call until this query and thus can not wipe the key. That
-makes it possible to obtain long overdue keys from \texttt{ssh-agent}s, although
-their owners believed them to be safe. A simple timer could have prevented this
--- I hereby strongly encourage the developers to implement such a timer. But
-even with such a timer enabled it would be possible to acquire the key during
-its lifetime.
+%Actually, here begins the fun.
+During our tests we found that the key is \emph{not} wiped from memory when the
+time limit is hit. It will be wiped the next time the ssh-agent is queried (via
+its socket), but the agent is stalled in a \emph{read} system call until this
+query and thus can not wipe the key. That makes it possible to obtain long
+overdue keys from \texttt{ssh-agent}s, although their owners believed them to be
+safe. A simple timer could have prevented this\footnote{We hereby strongly
+encourage the developers to implement such a timer!}. But even with such a timer
+enabled it would be possible to acquire the key during its lifetime.
 
 To obtain a keypair from an agent via firewire, a staged attack is required:
 
@@ -304,16 +310,16 @@ To obtain a keypair from an agent via firewire, a staged attack is required:
 	
 \end{enumerate}
 	
-The search algorithm (2,3,4) is far from perfect but works rather well.  To
-create a better algorithm remains as an exercise to the interested reader. For
-instance, a much better algorithm to find the \emph{identity}-structs is to use
-the ELF-headers of the mapped executable to resolve the symbol of the
+As seen, the search algorithm (2,3,4) has its downsides but works astonishingly
+well\footnote{To create a better algorithm remains as an exercise to the
+interested reader.}. A much better algorithm to find the \emph{identity}-structs
+is to use the ELF-headers of the mapped executable to resolve the symbol of the
 \emph{idtable}\footnote{The \emph{idtable} is a structure referencing all keys
 that are loaded into the agent.}. This approach is straight-forward, hits
-\emph{all} keys and would have worked almost always, if not many (almost all)
-distributions distributed programs with their symbols stripped (due to size and
-security reasons); this invalidates the symbol-resolution-approach, as this
-stripping also removes any information of the \emph{idtable} symbol.
+\emph{all} keys and should work almost always. The downside of this approach is
+that most distributions distribute programs with their symbols stripped (due to
+size and security reasons); this invalidates the symbol-resolution-approach, as
+this stripping also removes any information of the \emph{idtable} symbol.
 
 Furthermore once \emph{one} \emph{identity}-struct is found, \emph{all} structs
 of the same key-type (RSA or DSA) could be found by walking the list this key is
@@ -340,7 +346,7 @@ that this attack will only find keys loaded with the absolute path
 \cite{hide_n_seek:1998} introduces some schemes to find secret keys in random
 data and some countermeasures. It takes a special look at finding private RSA
 keys if their corresponding public keys are known and finding keys by searching
-high-entropy regions. Though I encourage the reader to read this interesting
+high-entropy regions. Though we encourage the reader to read this interesting
 paper, the circumstances are most likely very different now: cheap and small
 storage media like flash-memory and small harddisks have increased portable
 storage to a huge size, equal or larger than the memory a computer system
@@ -395,14 +401,14 @@ executable and which not, one can change this information before injecting code
 e.g. into an applications stack. 
 
 On Linux, programs and libraries are in \emph{Executable and Linker Format}
-(ELF).  This format is roughly described in the manpage \texttt{elf(5)}. When a
-binary is mapped into a process's memory, it is mapped including the full ELF
-header containing all information that is required to link all references
-between different objects; ELFs are always mapped at page-bounds. Due to this,
-all mapped ELFs (that includes executables and libraries) can be found by
-scanning all pages for the ELF Magic (0x7f E L F) at offset $0$ in the page.
-Libraries, executables and other ELF objects can be distinguished by evaluating
-the \texttt{e\_type} field of the ELF header.
+(ELF).  This format is described in the manpage \texttt{elf(5)}. When a binary
+is mapped into a process's memory, it is mapped including the full ELF header
+containing all information that is required to link all references between
+different objects; ELFs are always mapped at page-bounds. Due to this, all
+mapped ELFs (that includes executables and libraries) can be found by scanning
+all pages for the ELF Magic (0x7f E L F) at offset $0$ in the page.  Libraries,
+executables and other ELF objects can be distinguished by evaluating the
+\texttt{e\_type} field of the ELF header.
 
 \subsubsection{Overwriting executable or library code}
 
@@ -452,7 +458,7 @@ developed; e.g.  \cite{phrack59.8:2002} gives an introduction into using
 
 \subsubsection{Overwriting the stack and return addresses}
 
-\label{overwriting_stack} Besides stealing SSH-keys, I have put most of my
+\label{overwriting_stack} Besides stealing SSH-keys, we have put most of our
 efforts into injecting code into the stack and overwriting return-addresses on
 the stack to point to the injected code. This modification of the classic
 \emph{stack overflow} method has some advantages over the previous approach:
@@ -504,7 +510,7 @@ Once the attacked process leaves a stack frame with an overwritten return value,
 it will jump to the injected code and execute it.
 
 An implementation of this attack, including some sample shellcodes like a
-bindshell and a simple printf can be found in
+bindshell and a simple \texttt{printf} can be found in
 \texttt{attacks/userspace/inject-code.c} and \linebreak
 \texttt{attacks/userspace/shellcodes/}.
 
@@ -527,23 +533,20 @@ connection is impossible. When using e.g. firewire to attack a host it is even
 possible that there is no network connection between the attacker and the victim
 at all.
 
-Obviously the bindshell approach is a suboptimal one, if there is no direct
-network connection between attacker and victim. But if an attacker uses a
-special media for his attack, he can also use this media for communicating with
-his injected ``beachhead'', does he not?
+The bindshell approach has obvious disadvantages. Thus we will use the same
+attack vector that has been used to inject the ``beachhead'': physical memory
+access.
 
-So as we use DMA to inject shellcode, we can use DMA to communicate with the
-shellcode. The overall mechanism is introduced in figure
-\ref{fig:functionality_beachhead}. The injected shellcode will fork a shell and
-communicate with stdin/stdout of the shell via two pipes. The shellcode then
-creates a second thread, then having one thread for each direction of
-\emph{master to shell} and \emph{shell to master}. If the master wishes to send
-a command to the shell, it writes the command string into the \emph{FromMaster}
-ring-buffer via DMA.  Once the ReaderThread sees that the ring-buffer is not
-empty, it reads the data inside the buffer and writes it into the pipe to the
-shell.  The WriterThread will read data coming from the shell from the pipe and
-then write it into the \emph{ToMaster} ring-buffer, so the master can read it
-via DMA.
+The overall mechanism is introduced in figure \ref{fig:functionality_beachhead}.
+The injected shellcode will fork a shell and communicate with stdin/stdout of
+the shell via two pipes. The shellcode then creates a second thread, then having
+one thread for each direction of \emph{master to shell} and \emph{shell to
+master}. If the master (attacker) wishes to send a command to the shell, it
+writes the command string into the \emph{FromMaster} ring-buffer via DMA.  Once
+the ReaderThread sees that the ring-buffer is not empty, it reads the data
+inside the buffer and writes it into the pipe to the shell.  The WriterThread
+will read data coming from the shell from the pipe and then write it into the
+\emph{ToMaster} ring-buffer, so the master can read it via DMA.
 
 The shellcode of the beachhead
 (\texttt{attacks/userspace/shellcodes/dmashellcode.s}) is introduced in figure
