@@ -7,9 +7,25 @@
 
 \label{attacks}
 
+\textbf{Subsection \ref{information_gathering}} will discuss passive attacks
+that only \emph{read} from a physical memory source. An overview over gathering
+information from a virtual address space is given, including finding processes
+on a host, obtaining its environment, arguments and the path of the processes
+binary.  After that a deeper attack is introduced that is capable of copying ssh
+public/private keypairs from a running \texttt{ssh-agent} process.
+
+In \textbf{subsection \ref{userspace_attacks}}, we will introduce attacks that
+change data in the virtual address space. Further details about executables,
+libraries and processes will be given as an introduction. Then we will show how
+to find mapped libraries, binaries and the stack of a process and how to inject
+shellcode into a running process (its stack), then introduce a special shellcode
+that can be used to obtain an interactive shell over firewire only.
+
 
 
 \subsection{Information Gathering}
+
+\label{information_gathering}
 
 \subsubsection{Identifying processes}
 
@@ -126,118 +142,6 @@ enabled it would be possible to acquire the key during its lifetime.
 
 To obtain a keypair from an agent via firewire, a staged attack is required:
 
-%\lstset{numbers=left, numberstyle=\tiny, stepnumber=2, numbersep=5pt}
-\lstset{language=C, numbers=left, numberstyle=\tiny, frame=lines}
-
-\begin{figure}[ht] \begin{center}
-	\tiny
-	\begin{lstlisting}
-		typedef struct identity {
-			TAILQ_ENTRY(identity) next;
-			Key *key;
-			char *comment;
-			u_int death;
-			u_int confirm;
-		} Identity;
-
-		typedef struct {
-			int nentries;
-			TAILQ_HEAD(idqueue, identity) idlist;
-		} Idtab;
-
-		/* private key table, one per protocol version */
-		Idtab idtable[3];
-	\end{lstlisting}
-	\caption{\texttt{openssh/ssh-agent.c}: Identity structure and \texttt{idtable}}
-	\label{fig:code:identity-struct}
-\end{center}\end{figure}
-
-\begin{figure}[ht] \begin{center}
-	\tiny
-	\begin{lstlisting}
-		enum types {
-			KEY_RSA1,
-			KEY_RSA,
-			KEY_DSA,
-			KEY_UNSPEC
-		};
-
-		struct Key {
-			int      type;
-			int      flags;
-			RSA     *rsa;
-			DSA     *dsa;
-		};
-	\end{lstlisting}
-	\caption{\texttt{openssh/key.h}: Key-structure}
-	\label{fig:code:key-struct}
-\end{center}\end{figure}
-
-\begin{figure}[ht] \begin{center}
-	\tiny
-	\begin{lstlisting}
-		/* Declared already in ossl_typ.h */
-		/* typedef struct rsa_st RSA; */
-		struct rsa_st {
-			int pad;
-			long version;
-			const RSA_METHOD *meth;
-			ENGINE *engine;
-			BIGNUM *n;
-			BIGNUM *e;
-			BIGNUM *d;
-			BIGNUM *p;
-			BIGNUM *q;
-			BIGNUM *dmp1;
-			BIGNUM *dmq1;
-			BIGNUM *iqmp;
-			int flags;
-		};
-	\end{lstlisting}
-	\caption{\texttt{openssl/crypto/rsa/rsa.h}: RSA structure (stripped down)}
-	\label{fig:code:rsa-struct}
-\end{center}\end{figure}
-
-\begin{figure}[ht] \begin{center}
-	\tiny
-	\begin{lstlisting}
-		/* Already defined in ossl_typ.h */
-		/* typedef struct dsa_st DSA; */
-		struct dsa_st {
-			int pad;
-			long version;
-			int write_params;
-			BIGNUM *p;
-			BIGNUM *q;      /* == 20 */
-			BIGNUM *g;
-			BIGNUM *pub_key;  /* y public key */
-			BIGNUM *priv_key; /* x private key */
-			int flags;
-			const DSA_METHOD *meth;
-			ENGINE *engine;
-		};
-	\end{lstlisting}
-	\caption{\texttt{openssl/crypto/dsa/dsa.h}: DSA structure (stripped down)}
-	\label{fig:code:dsa-struct}
-\end{center}\end{figure}
-
-\begin{figure}[ht] \begin{center}
-	\tiny
-	\begin{lstlisting}
-		/* Already declared in ossl_typ.h */
-		/* typedef struct bignum_st BIGNUM; */
-		struct bignum_st {
-			BN_ULONG *d;    /* Pointer to an array of 'BN_BITS2' bit chunks. */
-			int top;        /* Index of last used d +1. */
-			/* The next are internal book keeping for bn_expand. */
-			int dmax;       /* Size of the d array. */
-			int neg;        /* one if the number is negative */
-			int flags;
-		};
-	\end{lstlisting}
-	\caption{\texttt{openssl/crypto/bn/bn.h}: BIGNUM structure (stripped down)}
-	\label{fig:code:bignum-struct}
-\end{center}\end{figure}
 
 
 \begin{enumerate}
@@ -268,6 +172,30 @@ To obtain a keypair from an agent via firewire, a staged attack is required:
 		of the key. Thus to find the identity struct corresponding to a
 		found comment-field, one has to search the address of the
 		comment-field in the heap of the agent.
+
+\lstset{language=C, numbers=left, numberstyle=\tiny, frame=lines}
+\begin{figure}[h] \begin{center}
+	\tiny
+	\begin{lstlisting}
+		typedef struct identity {
+			TAILQ_ENTRY(identity) next;
+			Key *key;
+			char *comment;
+			u_int death;
+			u_int confirm;
+		} Identity;
+
+		typedef struct {
+			int nentries;
+			TAILQ_HEAD(idqueue, identity) idlist;
+		} Idtab;
+
+		/* private key table, one per protocol version */
+		Idtab idtable[3];
+	\end{lstlisting}
+	\caption{\texttt{openssh/ssh-agent.c}: Identity structure and \texttt{idtable}}
+	\label{fig:code:identity-struct}
+\end{center}\end{figure}
 	
 	\item Once the \emph{key-struct} (figure \ref{fig:code:key-struct}),
 		that is linked to by the identity-struct, has been found, one
@@ -280,6 +208,28 @@ To obtain a keypair from an agent via firewire, a staged attack is required:
 		also providing a general purpose cryptography library
 		(\text{libcrypto}).}-structures \texttt{RSA} and \texttt{DSA}.
 	
+\lstset{language=C, numbers=left, numberstyle=\tiny, frame=lines}
+\begin{figure}[h] \begin{center}
+	\tiny
+	\begin{lstlisting}
+		enum types {
+			KEY_RSA1,
+			KEY_RSA,
+			KEY_DSA,
+			KEY_UNSPEC
+		};
+
+		struct Key {
+			int      type;
+			int      flags;
+			RSA     *rsa;
+			DSA     *dsa;
+		};
+	\end{lstlisting}
+	\caption{\texttt{openssh/key.h}: Key-structure}
+	\label{fig:code:key-struct}
+\end{center}\end{figure}
+
 	\item For both RSA and DSA structures (figure \ref{fig:code:rsa-struct}
 		and \ref{fig:code:dsa-struct}), all important fields need to be
 		recovered to obtain valid keypairs.  \cite{applied_crypto:1996,
@@ -295,6 +245,75 @@ To obtain a keypair from an agent via firewire, a staged attack is required:
 		Therefore, the RSA and DSA structures contain several
 		\texttt{BIGNUM}s that need to be recovered to obtain a valid
 		copy of the keypair.
+	
+\lstset{language=C, numbers=left, numberstyle=\tiny, frame=lines}
+\begin{figure}[h] \begin{center}
+	\tiny
+	\begin{lstlisting}
+		/* Declared already in ossl_typ.h */
+		/* typedef struct rsa_st RSA; */
+		struct rsa_st {
+			int pad;
+			long version;
+			const RSA_METHOD *meth;
+			ENGINE *engine;
+			BIGNUM *n;
+			BIGNUM *e;
+			BIGNUM *d;
+			BIGNUM *p;
+			BIGNUM *q;
+			BIGNUM *dmp1;
+			BIGNUM *dmq1;
+			BIGNUM *iqmp;
+			int flags;
+		};
+	\end{lstlisting}
+	\caption{\texttt{openssl/crypto/rsa/rsa.h}: RSA structure (stripped down)}
+	\label{fig:code:rsa-struct}
+\end{center}\end{figure}
+
+\lstset{language=C, numbers=left, numberstyle=\tiny, frame=lines}
+\begin{figure}[h] \begin{center}
+	\tiny
+	\begin{lstlisting}
+		/* Already defined in ossl_typ.h */
+		/* typedef struct dsa_st DSA; */
+		struct dsa_st {
+			int pad;
+			long version;
+			int write_params;
+			BIGNUM *p;
+			BIGNUM *q;      /* == 20 */
+			BIGNUM *g;
+			BIGNUM *pub_key;  /* y public key */
+			BIGNUM *priv_key; /* x private key */
+			int flags;
+			const DSA_METHOD *meth;
+			ENGINE *engine;
+		};
+	\end{lstlisting}
+	\caption{\texttt{openssl/crypto/dsa/dsa.h}: DSA structure (stripped down)}
+	\label{fig:code:dsa-struct}
+\end{center}\end{figure}
+
+\lstset{language=C, numbers=left, numberstyle=\tiny, frame=lines}
+\begin{figure}[h] \begin{center}
+	\tiny
+	\begin{lstlisting}
+		/* Already declared in ossl_typ.h */
+		/* typedef struct bignum_st BIGNUM; */
+		struct bignum_st {
+			BN_ULONG *d;    /* Pointer to an array of 'BN_BITS2' bit chunks. */
+			int top;        /* Index of last used d +1. */
+			/* The next are internal book keeping for bn_expand. */
+			int dmax;       /* Size of the d array. */
+			int neg;        /* one if the number is negative */
+			int flags;
+		};
+	\end{lstlisting}
+	\caption{\texttt{openssl/crypto/bn/bn.h}: BIGNUM structure (stripped down)}
+	\label{fig:code:bignum-struct}
+\end{center}\end{figure}
 
 	\item Some validity tests may be done to verify that the acquired
 		\texttt{BIGNUM}s fulfill algorithm-specific
@@ -309,7 +328,10 @@ To obtain a keypair from an agent via firewire, a staged attack is required:
 		openssl-functions.
 	
 \end{enumerate}
-	
+
+
+
+
 As seen, the search algorithm (2,3,4) has its downsides but works astonishingly
 well\footnote{To create a better algorithm remains as an exercise to the
 interested reader.}. A much better algorithm to find the \emph{identity}-structs
@@ -364,8 +386,7 @@ require the public key.
 
 \subsection{Userspace Modifications}
 
-It is important to know a few details about executables, libraries and processes
-to understand this section.
+\label{userspace_attacks}
 
 Each executable object, including libraries and executables, can be separated
 into code and data, where the code should be read-only during execution. The
@@ -384,10 +405,11 @@ reference to it.
 Code and rodata may not be written to by a process, thus the operating system
 can share these two regions among processes that are using the same objects
 (binaries or libraries).  Thus, once an operating system \emph{ensures} that a
-process can not write to code-regions and read-only data-regions, it can map
-these once loaded regions into multiple virtual address spaces. This enforcement
-is done in hardware, on IA-32 by setting a flag in the page directory or a page
-table referencing the specific physical memory pages containing the region.
+process can not write to code-regions and read-only data-regions or introduces a
+copy-on-write mechanism, it can map these once loaded regions into multiple
+virtual address spaces.  This enforcement is done in hardware, on IA-32 by
+setting a flag in the page directory or a page table referencing the specific
+physical memory pages containing the region.
 
 Newer CPUs provide \emph{page-level no-execute enforcements} (AMD's NX \emph{No
 eXecute bit}, Intel's EXB \emph{EXecute disable Bit}); equal segment-level
@@ -553,9 +575,9 @@ The shellcode of the beachhead
 \ref{fig:beachhead_pseudocode} in pseudo-code. The program to inject the
 shellcode and communicate with it is \texttt{attacks/userspace/dmashell.c}.
 
-\begin{figure}[ht] \begin{center}
+\begin{figure}[htb] \begin{center}
 
-	\epsfysize 6cm
+	\epsfysize 5cm
 
 	\epsffile{functionality_beachhead.eps}
 
@@ -566,7 +588,8 @@ shellcode and communicate with it is \texttt{attacks/userspace/dmashell.c}.
 \end{center}\end{figure}
 
 
-\begin{figure}[htp] \begin{center} \tiny
+\lstset{language=C, numbers=left, numberstyle=\tiny, frame=lines}
+\begin{figure}[p] \begin{center} \tiny
 	\begin{lstlisting}
 		// ringbuffer for data from beachhead to master
 		RingBuffer	ToMaster;
