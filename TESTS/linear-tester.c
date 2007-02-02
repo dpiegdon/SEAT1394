@@ -140,8 +140,9 @@ int main(
 		printf("raw1394 failed to set port\n");
 		return -4;
 	}
-	phy_data.ieee1394.raw1394target = atoi(argv[1]) + NODE_OFFSET;
-	printf("using target %d\n", phy_data.ieee1394.raw1394target - NODE_OFFSET);
+	phy_data.ieee1394.raw1394target_nid = atoi(argv[1]) + NODE_OFFSET;
+	phy_data.ieee1394.raw1394target_guid = 0;
+	printf("using target %d\n", phy_data.ieee1394.raw1394target_nid - NODE_OFFSET);
 	printf("associating physical source with raw1394\n"); fflush(stdout);
 	if(physical_handle_associate(phy, physical_ieee1394, &phy_data, 4096)) {
 		printf("physical_handle_associate() failed\n");
