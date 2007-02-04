@@ -440,8 +440,8 @@ also the burden, to possibly infect several processes at the same time. Such an
 attack has to be carefully prepared and conducted, as each system may have a
 different version of a binary and overwriting the wrong parts of an ELF or
 writing the wrong code may result in an almost immediate crash of all processes
-using the ELF. Though this is a rather interesting approach, there are easier
-ways to inject code into a \emph{single} process (see \ref{overwriting_stack}).
+using the ELF. Though this is an interesting approach, there are easier ways to
+inject code into a \emph{single} process (see \ref{overwriting_stack}).
 
 Such an attack could be conducted by searching a single virtual address space
 for the glibc and then parsing the ELF-headers and searching for the entry-point
@@ -515,7 +515,14 @@ The attack consists of the following steps:
 		\ref{identifying_processes}). If the shellcode does not fit into
 		this area, we could try to just overwrite these vectors. Most
 		programs will parse environment and arguments only once during
-		startup of the program, thus this should be rather safe.
+		startup of the program, thus this should be safe. On the other
+		hand, these vectors are also evaluates when a process accesses a
+		processes \emph{procfs} entries \texttt{/proc/\$PID/environ} and
+		\texttt{/proc/\$PID/cmdline}. Thus if these are overwritten with
+		random data, it is possible to see the difference by querying
+		these procfs-entries or using \texttt{ps}\footnote{\texttt{ps}
+		relies on these procfs entries}.
+
 
 	\item Scan the stack for stack-frames and for each found: overwrite the
 		return address. This can be simplified into: overwrite all
@@ -540,6 +547,8 @@ bindshell and a simple \texttt{printf} can be found in
 % aufbauen. Mehr infos zu stack-frames?
 
 \subsubsection{Direct communication with shellcode via DMA}
+
+% FIXME: masterpiece?
 
 \label{communication_DMA} The masterpiece of shellcode-writing is a shellcode
 that spawns an interactive shell (thus the name ``shellcode'') and yet is as
