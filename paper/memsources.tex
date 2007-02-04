@@ -34,7 +34,7 @@ interested reader may read documentation on system programming (e.g.
 obtain further information.
 
 Assume a process with its virtual address space and its corresponding set of
-pages. Each page in this virtual address space may be
+pages. Each page in this virtual address space may be:
 
 \begin{itemize}
 
@@ -81,28 +81,28 @@ routines may be different from operating system to operating system, there is
 no simple solution.
 
 Depending on the method used to access the memory, a parallel accessor may be
-using the same memory at the same time. E.g. when using firewire to read a page
-of a currently running task, this task may access, thus read or write this page
-at the same time. For instance, if both CPU and another accessor write at the
-same moment to the same address location, it is undefined, which write access
-will be performed and thus override the other one (actually it depends on timing
-and caching, but we have no way of knowing, when the systems CPU accesses a page
-and if it is cached). Also, reading and writing at the same time may be
-impossible via the given method; thus many atomic commands used for process
-synchronization, like ``test and set'', will not exist.  Caching may also
-prevent these.
+using the same memory at the same time. E.g. when using firewire (see
+\ref{phys1394}) to read a page of a currently running task, this task may
+access, thus read or write this page at the same time. For instance, if both CPU
+and another accessor write at the same moment to the same address location, it
+is undefined, which write access will be performed and thus override the other
+one (actually it depends on timing and caching, but we have no way of knowing,
+when the systems CPU accesses a page and if it is cached). Also, reading and
+writing at the same time may be impossible via the given method; thus many
+atomic commands used for process synchronization, like ``test and set'', will
+not exist.  Caching may also prevent these.
 
 If a page is cached in another, faster memory, a copy of it will typically
 reside in physical memory. In most cases we will not know if a page is cached or
 not; on IA-32 however the address translation tables contain a flag for each
 page telling the CPU if it may be cached or not. Depending on the way used to
 access the memory, it may circumvent the cache or not have access to it at all.
-When thus accessing a page, changes made by a task running in parallel may not
-be visible to us immediately and changes made by us may be invisible to a
-parallel task or maybe even overwritten by the cache at any time. Special care
-needs to be taken to minimize this risk. When writing to pages, only choose
-pages that are not cached or unlikely to be cached while writing; when reading
-pages, consider that the data may change at any time or may have changed yet.
+When accessing a page, changes made by a task running in parallel may not be
+visible to us immediately and changes made by us may be invisible to a parallel
+task or maybe even overwritten by the cache at any time. Special care needs to
+be taken to minimize this risk. When writing to pages, only choose pages that
+are not cached or unlikely to be cached while writing; when reading pages,
+consider that the data may change at any time or may have changed yet.
 
 As stated above, on systems using paging, physical memory will mostly be a
 concatenation of random pages, each one either used by a random process or the
@@ -115,11 +115,14 @@ CPU.  For a detailed discussion, see section \ref{address_translation}.
 
 \subsection{IEEE1394}
 
+\label{phys1394}
 % 1394a vs 1394b ?
 IEEE1394, also known as \epsfysize 0.3cm \epsfbox{logo-firewire-black.eps}
 firewire (Apple) or iLink (Sony), is an extension bus available on many modern
 computer systems and devices.  In contrast to USB, which is a serial periphery
 bus, firewire is a high-speed serial expansion bus with features like guaranteed
+% FIXME: spida: vielleicht die intelligente natur von firewire gegenueber das
+% polling von usb stellen. ich wuerds evtl noch auswalzen, musst du wissen.
 bandwidth (which is of interest for many real-time applications, like media
 crunching), DMA\footnote{Direct Memory Access} and the ability to connect
 multiple nodes with a single firewire-bus.  The concept of bus master and bus
@@ -145,6 +148,11 @@ from \texttt{0x0}; around \texttt{0xffff~f000~0000} several control state
 registers (CSRs) are located that provide information about the given target
 node and the capabilities of the firewire device.
 
+To disable the DMA-feature of firewire completely, load the \emph{ohci1394}
+module with option \emph{phys\_dma=0} on Linux or set the security mode in
+open-firmware to something different than ``none'' for apples powerbooks and
+ibooks. 
+
 For more information on the underlying hardware or protocols, please refer to
 \cite{OHCIspecs:2000,fwire_sys_arch:2222} or the
 \texttt{libraw1394}\footnotemark[\value{footnote}] documentation.
@@ -163,7 +171,7 @@ forgotten and thus weak.
 In general, a professional attacker will most likely choose the weakest link of
 security for his attacks. If he finds that going straight to the computer and
 stealing it, or plugging an embedded device like the iPod into it is easier than
-other known attacks, he will try.
+other known attacks, he will try it.
 
 Some typical physical attacks on computer systems are:
 
@@ -204,7 +212,7 @@ Linux systems.
 Using firewire to access the memory of a running system \emph{may} generate non
 maskable interrupts (NMI) on the target system and even leave the operating
 system (Linux 2.6.17) in a non-usable state. There are some laptops and
-workstations with on board controllers being disturbed by this, sometimes
+workstations with on-board controllers being disturbed by this, sometimes
 resulting in crashes. Computers with PCI extension card, though, just worked
 fine during all tests. It is possible that the deeply incorporated on-board
 controllers interfere with the CPU accessing the main memory. This needs to be
@@ -229,7 +237,7 @@ circumvent this ``protection'' and to trick Windows into giving an attacker DMA.
 This attack is as simple as reading an iPod's config rom from its CSR and using
 \texttt{libraw1394}'s \texttt{raw1394\_update\_config\_rom()} to use the copy.
 Adam Boileau has implemented a simple script to do this. We have written our own
-tool in C using \texttt{libraw1394}, which is located in \texttt{1394csrtools/}
+tool in C using \texttt{libraw1394}, which is located in \texttt{1394csrtools/}.
 
 
 
@@ -245,6 +253,8 @@ memory; caching on the other hand should not be a problem as we are not
 circumventing any caching system (like the CPU), but directly using it.
 
 \subsubsection{Problems with \texttt{/dev/mem}, solutions}
+
+% FIXME: GiB mit ~ trennen? (http://webdesign.crissov.de/Typographie#Zahlen)
 
 \texttt{/dev/mem} on Linux has one other, major problem:
 \label{kerneluserdivision} On 32 bit systems, the virtual address space has a
@@ -275,7 +285,7 @@ tries to read more than the mapped lowmem, \texttt{/dev/mem} will fail to return
 this, as it is not mapped in the process.  Thus, when using \texttt{/dev/mem},
 only approx.  900GiB lower physical RAM will be accessible.
 
-It may be possible to work around this restriction: as stated, all address
+It may be possible to work around this restriction: As stated, all address
 translation tables are located in the accessible memory. A process could try to
 find its own pagetable and manipulate it to map other regions of physical memory
 into its userspace section; then, no further access to \texttt{/dev/mem} would
@@ -301,7 +311,7 @@ system may overwrite the manipulated pagetable with a new, adjusted one.
 \subsection{Other sources}
 
 The ideas described in this paper should be easily adoptable to all memory
-sources giving access to physically addressable memory, this may e.g. include
+sources giving access to physically addressable memory, this may include e.g.
 remote management cards, suspend-2-disk images or virtual machines that have an
 interface to access the virtual machines` memory.  \texttt{qemu} is such a
 virtual machine, providing a \texttt{gdb} remote stub to attach a debugger.

@@ -20,6 +20,7 @@ technique).
 \subsubsection{Emulating \texttt{/dev/kmem}}
 
 As \texttt{/dev/kmem} gives a process access to its virtual address space
+% spida: "it is yet emulated by liblinear" <- das yet kann weg
 without any restrictions, it is yet emulated by \texttt{liblinear}, as
 \texttt{liblinear} provides the same functionality, once it has been loaded with
 a pagetable of a random process.  A pagetable of any process will include the
@@ -43,4 +44,5 @@ operating system on it (and e.g. use firewire storage as the root-device for the
 new system). A special bootloader would be required to do this and it might also
 be necessary to reset the system and attached hardware in a special way,
 depending on the operating system running on it before the approach.
+% FIXME: spida: "before the approach" <- baeh
 

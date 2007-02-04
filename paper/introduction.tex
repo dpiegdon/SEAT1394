@@ -13,7 +13,7 @@ access virtual address spaces of any process on the to-be-attacked host.
 
 To have a simple, generic interface for all kinds of physical memory sources, we
 implemented \texttt{libphysical}, where backends for new memory sources may be
-plugged in. So far, it includes backends for IEEE1394 and filedescriptors.
+plugged in. It includes backends for IEEE1394 and filedescriptors so far.
 
 In \textbf{section \ref{memsources}}, \texttt{libphysical} will be introduced
 and different backends with their advantages and disadvantages will be
@@ -51,17 +51,20 @@ system than the second, as we obtain all information directly from the kernel
 structures, while using the second approach we only can enter virtual address
 spaces of processes.
 
-\cite{finding_digital_evidence_in_physical_memory:2006} is parsing
-kernel-structs of windows and Linux kernels. In the following \emph{we} will use
-the second approach for most attacks, as this seems to be more robust and
-automatable.  As the above mentioned paper is about \emph{finding an attacker}
-and not \emph{attacking}, the forensic personal does know about the
-architecture, the operating system and version and can build a copy of the
-system to test its tools, while an attacker only can guess the architecture and
-operating system and needs more robust tools for his attacks.  (Obviously this
-is only a short-term argument, as an attacker can also write such tools for
-\emph{all} OS version and architecture combinations\ldots but the heck with
-this...).
+In \cite{finding_digital_evidence_in_physical_memory:2006}, an approach is
+introduced that parses kernel-structs of windows and Linux kernels. In the
+following \emph{we} will use the second approach for most attacks, as this seems
+to be more robust and automatable.  As the above mentioned paper is about
+\emph{finding an attacker} and not \emph{attacking}, the forensic personal does
+know about the architecture, the operating system and version and can build a
+copy of the system to test its tools, while an attacker only can guess the
+architecture and operating system and needs more robust tools for his attacks.
+(Obviously this is only a short-term argument, as an attacker can also write
+such tools for \emph{all} OS version and architecture combinations\ldots but the
+heck with this...).
+% FIXME ``the heck with this''... spida: ``for simplicities sake, I will do this
+% for only one one combination here, as this is intended to be only a proof of
+% concept''
 
 
 

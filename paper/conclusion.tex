@@ -12,11 +12,7 @@ persons can access them; this particularly includes laptops, as more and more of
 them are equipped with a tiny firewire port.  Security ``solutions'' that deny
 DMA for some devices and allow DMA for others should be tested very carefully,
 as these schemes may be fooled by pretending to be a different, ``trusted''
-device (see \cite{rux2k6firewire:2006}). To disable the DMA-feature of firewire
-completely, use ``\texttt{modprobe ohci1394 phys\_dma=0}'' on Linux or set the
-security mode in open-firmware to something different than ``none'' for apples
-powerbooks and ibooks. 
-
+device (see \cite{rux2k6firewire:2006}).
 
 Though most of the tools introduced are designed to attack a system,
 \texttt{libphysical} and \texttt{liblinear} can also be used for forensic
