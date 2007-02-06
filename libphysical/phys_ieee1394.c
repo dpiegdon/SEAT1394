@@ -118,7 +118,7 @@ static int reset_iterator(physical_handle h, void *data)
 	TARGET = nid;
 
 	// FIXME:
-	// if then the host can not be found, print an error message
+	// if then the host can not be found, show an error message
 	// and just continue as if nothing happened (let the user manually reset
 	// the bus, hopefully)
 	
@@ -130,6 +130,7 @@ static int reset_handler(raw1394handle_t handle, unsigned int generation)
 	int ret = 0; // ??
 
 	fprintf(stderr, "\n(physical_ieee1394) bus reset, "); // let iterator finish the line.
+	fflush(stderr);
 
 	// call former handler
 	if(old_reset_handler)
@@ -184,6 +185,7 @@ int physical_ieee1394_read(struct physical_handle_data* h, addr_t adr, void* buf
 	size_t r = 0;		// how much was read so far
 	size_t tr;		// how much is to read
 
+	// try to increment blocksize again, if it was decreased before.
 	if(blocksize < BLOCKSIZE_MAX_VAL)
 		blocksize = blocksize << 2;
 
@@ -193,10 +195,14 @@ int physical_ieee1394_read(struct physical_handle_data* h, addr_t adr, void* buf
 		err = raw1394_read(RAWHANDLE, TARGET, adr + r, tr, (quadlet_t*)((char*)buf + r));
 		if(err < 0) {
 			// auto-adjust blocksize to specific machine
+			fprintf(stderr,"raw1394 read failed. ");
 			if(blocksize > BLOCKSIZE_MIN_VAL) {
 				blocksize = blocksize >> 2;
-//				printf("adjusted blocksize to %d\n", blocksize);
+				fprintf(stderr,"adjusted blocksize to %d\n", blocksize);
+				fflush(stderr);
 			} else {
+				fprintf(stderr,"blocksize is already minimal. failing.\n");
+				fflush(stderr);
 				return err;
 			}
 		} else {
@@ -225,7 +231,7 @@ int physical_ieee1394_write(struct physical_handle_data* h, addr_t adr, void* bu
 			// auto-adjust blocksize to specific machine
 			if(blocksize > BLOCKSIZE_MIN_VAL) {
 				blocksize = blocksize >> 2;
-//				printf("adjusted blocksize to %d\n", blocksize);
+//				fprintf(stderr, "adjusted blocksize to %d\n", blocksize);
 			} else {
 				return err;
 			}

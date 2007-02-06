@@ -47,7 +47,7 @@ static int gdb_flush_read(struct physical_handle_data* h)
 		if( l > 0) {
 			m+=l;
 			gdb_buffer[l] = 0;
-			printf("gdb_flush_read(): flushed %d bytes: \"%s\"\n", l, gdb_buffer);
+			fprintf(stderr,"gdb_flush_read(): flushed %d bytes: \"%s\"\n", l, gdb_buffer);
 		}
 	}
 	return m;
@@ -88,7 +88,7 @@ static int gdb_receive_payload(struct physical_handle_data* h)
 		if( l > 0) {
 			m+=l;
 			gdb_buffer[l] = 0;
-			printf("gdb_receive_payload(): flushed %d bytes: \"%s\"\n", l, gdb_buffer);
+			fprintf(stderr,"gdb_receive_payload(): flushed %d bytes: \"%s\"\n", l, gdb_buffer);
 		}
 
 		// TODO: eval payload and return data.
