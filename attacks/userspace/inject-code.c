@@ -227,7 +227,7 @@ uint32_t try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int inj
 
 void usage(char* argv0)
 {{{
-	printf( "%s [-] <"TERM_YELLOW"-n nodeid"TERM_RESET"|"TERM_YELLOW"-f filename"TERM_RESET"> -b <binary> -c <codefile>\n"
+	printf( "%s <"TERM_YELLOW"-n nodeid"TERM_RESET"|"TERM_YELLOW"-f filename"TERM_RESET"> -b <binary> -c <codefile>\n"
 		"\ninject -c <codefile> into first process matching the -b <binary>\n"
 		"\t\tgive -p to pretend (then i will not write anything, only read)\n"
 		"\t\t* the host connected via firewire with the given nodeid\n"

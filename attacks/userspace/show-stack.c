@@ -178,7 +178,7 @@ void show_stack(linear_handle lin)
 
 void usage(char* argv0)
 {{{
-	printf( "%s [-] <"TERM_YELLOW"-n nodeid"TERM_RESET"|"TERM_YELLOW"-f filename"TERM_RESET"> -b <binary>\n"
+	printf( "%s <"TERM_YELLOW"-n nodeid"TERM_RESET"|"TERM_YELLOW"-f filename"TERM_RESET"> -b <binary>\n"
 		"\ncontinually dump the stack of the first process matching the -b <binary>\n"
 		"\t\t* the host connected via firewire with the given nodeid\n"
 		"\t\t* the memory dump in the given file\n",
