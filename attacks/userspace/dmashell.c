@@ -279,17 +279,17 @@ void handle_sigint(int __attribute__ ((__unused__)) signal)
 void use_shell(linear_handle lin, uint32_t base)
 {{{
 	// these depend on the used shellcode:
-#define CHILD_IS_DEAD		0x20e
-#define CHILD_IS_DEAD_ACK	0x20f
-#define TERMINATE_CHILD		0x210
+#define CHILD_IS_DEAD		0x206
+#define CHILD_IS_DEAD_ACK	0x207
+#define TERMINATE_CHILD		0x208
 
-#define RFRM_WRITER_POS		0x213
-#define RFRM_READER_POS		0x214
-#define RFRM_BUFFER		(0x220 + 20)
+#define RFRM_WRITER_POS		0x20b
+#define RFRM_READER_POS		0x20c
+#define RFRM_BUFFER		(0x218 + 20)
 
-#define RTO_WRITER_POS		0x215
-#define RTO_READER_POS		0x216
-#define RTO_BUFFER		(0x220 + 276)
+#define RTO_WRITER_POS		0x20d
+#define RTO_READER_POS		0x20e
+#define RTO_BUFFER		(0x218 + 276)
 
 	uint8_t true_value = 0x1;
 
