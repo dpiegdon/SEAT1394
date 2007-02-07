@@ -1,0 +1,51 @@
+\documentclass[twoside,a4paper,dvips]{llncs}
+
+\usepackage{graphicx,curves,epsf,float,rotating}
+\usepackage{color}
+\usepackage{epsf,epsfig,eepic}
+\usepackage{stmaryrd,latexsym}
+%\usepackage{a4,amsmath,amsfonts,amssymb}
+\usepackage{abstract}
+
+\usepackage{listings}
+
+\title{Hacking in Physically Addressable Memory}
+\author{David R.~Piegdon \and Lexi Pimenidis}
+\institute{Aachen University of Technology, \\
+          Computer Science Department Informatik IV, \\
+          Ahornstr. 55, D-52074 Aachen, Germany }
+%\thanks{thankthankthank}
+
+% according to lshort, hyperref has to be last in preamble
+%\usepackage{hyperref}
+
+\newcommand{\href}[2]{#1}
+\newcommand{\text}[1]{}
+
+\begin{document}
+
+\maketitle
+
+\input{abstract}
+
+\input{introduction}
+
+\input{relatedworks}
+
+\input{memsources}
+
+\input{addresstranslation}
+
+\input{attacks}
+
+\input{prospects}
+
+\input{conclusion}
+
+\input{acknowledgements}
+
+\bibliographystyle{lni}
+\bibliography{paper}
+
+\end{document}
+
