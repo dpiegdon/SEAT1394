@@ -129,8 +129,7 @@ static int reset_handler(raw1394handle_t handle, unsigned int generation)
 {{{
 	int ret = 0; // ??
 
-	fprintf(stderr, "\n(physical_ieee1394) bus reset, "); // let iterator finish the line.
-	fflush(stderr);
+	fprintf(stderr, "\nphys1394: bus reset, "); // let iterator finish the line.
 
 	// call former handler
 	if(old_reset_handler)
@@ -156,7 +155,7 @@ int physical_ieee1394_init(struct physical_handle_data* h)
 			fprintf(stderr, "phys1394: failed to find node 0x%04x on the given bus\n", h->data.ieee1394.raw1394target_nid);
 			return -1;
 		}
-//		fprintf(stderr, "phys1394: got guid %016llX for nodeid 0x%04x\n", h->data.ieee1394.raw1394target_guid, TARGET);
+		fprintf(stderr, "phys1394: got guid %016llX for nodeid 0x%04x\n", h->data.ieee1394.raw1394target_guid, TARGET);
 	} else {
 		// otherwise, get NID from GUID
 		if(nodeid_from_guid(RAWHANDLE, h->data.ieee1394.raw1394target_guid, &(TARGET))) {
@@ -195,14 +194,12 @@ int physical_ieee1394_read(struct physical_handle_data* h, addr_t adr, void* buf
 		err = raw1394_read(RAWHANDLE, TARGET, adr + r, tr, (quadlet_t*)((char*)buf + r));
 		if(err < 0) {
 			// auto-adjust blocksize to specific machine
-			fprintf(stderr,"raw1394 read failed. ");
+//			fprintf(stderr,"phys1394: raw1394 read failed. ");
 			if(blocksize > BLOCKSIZE_MIN_VAL) {
 				blocksize = blocksize >> 2;
-				fprintf(stderr,"adjusted blocksize to %d\n", blocksize);
-				fflush(stderr);
+//				fprintf(stderr,"adjusted blocksize to %d\n", blocksize);
 			} else {
-				fprintf(stderr,"blocksize is already minimal. failing.\n");
-				fflush(stderr);
+//				fprintf(stderr,"blocksize is already minimal. failing.\n");
 				return err;
 			}
 		} else {
@@ -231,7 +228,6 @@ int physical_ieee1394_write(struct physical_handle_data* h, addr_t adr, void* bu
 			// auto-adjust blocksize to specific machine
 			if(blocksize > BLOCKSIZE_MIN_VAL) {
 				blocksize = blocksize >> 2;
-//				fprintf(stderr, "adjusted blocksize to %d\n", blocksize);
 			} else {
 				return err;
 			}
