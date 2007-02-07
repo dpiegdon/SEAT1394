@@ -133,6 +133,23 @@ physical_handle_associate(physical_handle h, enum physical_type type, union phys
 	return 0;
 }}}
 
+/*
+// request a handle and associate it with the source identified by URI
+int __attribute__ ((visibility ("default")))
+physical_handle_from_URI(char* uri)
+{{{
+	// attention: during release() of this handle, we need to free the data-structures we alloced here.
+	// add a new flag to existing physical handle, that indicates that these need to be removed?
+
+	// an URI looks like this:
+	// TYPE-ID://type-specific-data
+	//
+	// where TYPE-ID is a string that identifies a memory source (raw1394, fd, ...)
+
+	// move to plug-in structure, where each backend can register handlers for some TYPE-IDs?
+}}}
+*/
+
 // release a handle (and remove it)
 int __attribute__ ((visibility ("default")))
 physical_handle_release(physical_handle h)
