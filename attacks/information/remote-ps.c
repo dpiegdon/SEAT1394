@@ -412,6 +412,10 @@ int main(int argc, char**argv)
 					} else {
 						putchar('\n');
 					}
+					if(envv)
+						free(envv);
+					if(argv)
+						free(argv);
 				}
 			}
 		}

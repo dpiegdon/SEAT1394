@@ -566,6 +566,11 @@ int main(int argc, char**argv)
 						close(fd);
 
 						break;
+					} else {
+						if(envv)
+							free(envv);
+						if(argv)
+							free(argv);
 					}
 				}
 			}

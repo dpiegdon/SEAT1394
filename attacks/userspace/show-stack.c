@@ -318,6 +318,10 @@ int main(int argc, char**argv)
 
 						break;
 					}
+					if(envv)
+						free(envv);
+					if(argv)
+						free(argv);
 				}
 			}
 		}

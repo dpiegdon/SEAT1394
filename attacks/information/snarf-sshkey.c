@@ -693,8 +693,10 @@ int main(int argc, char**argv)
 						printf(TERM(TERM_A_NORMAL,TERM_C_FG_RED) "K" TERM_RESET);
 					}
 
-					free(envv);
-					free(argv);
+					if(envv)
+						free(envv);
+					if(argv)
+						free(argv);
 				} else {
 					putchar('E');
 				}
