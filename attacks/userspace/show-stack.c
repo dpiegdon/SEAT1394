@@ -323,9 +323,11 @@ int main(int argc, char**argv)
 		}
 	}
 
+
 	// release handles
 	linear_handle_release(lin);
-	raw1394_destroy_handle(phy_data.ieee1394.raw1394handle);
+	if( memsource == SOURCE_IEEE1394 )
+		raw1394_destroy_handle(phy_data.ieee1394.raw1394handle);
 	physical_handle_release(phy);
 	
 	return 0;
