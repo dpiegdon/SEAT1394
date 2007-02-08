@@ -44,8 +44,51 @@
 
 static char buffer[BUFFERSIZE];
 
+char* resolve_oui(uint64_t guid)
+{{{
+#define OUI_LIST "/etc/oui-resolv.conf"
+	static FILE* oui_file = NULL;
+	static int invalid_file = 0;
+	char s[128];
+	static char vendor[128];
+	char*p;
+	uint32_t oui;
+
+
+	if(!invalid_file) {
+		oui_file = fopen(OUI_LIST, "r");
+		if(!oui_file) {
+			invalid_file = 1;
+			return NULL;
+		}
+
+		rewind(oui_file);
+
+		while (fgets(s, 128, oui_file) != NULL) {
+			if(s[0] != '#') {
+				sscanf(s, "%06X ", &oui);
+				if(oui == (guid >> 40) ) {
+					strcpy(vendor, s+7);
+					p = vendor;
+					while(*p) {
+						if(*p == '\n')
+							*p = 0;
+						p++;
+					}
+					return vendor;
+				} else if(oui > (guid >> 40)) {
+					return NULL;
+				}
+			}
+		}
+		return NULL;
+	} else {
+		return NULL;
+	}
+}}}
+
 int configrom_read_to_file(int port, char* filename)
-{
+{{{
 	raw1394handle_t h;				// handle to access raw1394
 	size_t romsize;
 	unsigned char version;
@@ -84,10 +127,10 @@ int configrom_read_to_file(int port, char* filename)
 	}
 
 	return 0;
-}
+}}}
 
 int configrom_write_from_file(int port, char* filename)
-{
+{{{
 	raw1394handle_t h;				// handle to access raw1394
 	size_t romsize;
 	unsigned char version;
@@ -136,10 +179,10 @@ int configrom_write_from_file(int port, char* filename)
 
 	return 0;
 
-}
+}}}
 
 int configrom_dump(int port, nodeid_t target, char* filename)
-{
+{{{
 	raw1394handle_t h;				// handle to access raw1394
 	uint64_t config_adr;
 	char* buffer_adr;
@@ -185,10 +228,10 @@ printf("dumping %d chunks a %d bytes\n", ((CSR_CONFIG_ROM_END - CSR_CONFIG_ROM) 
 	}
 	close(fd);
 	printf("dumped to \"%s\"\n", filename);
-}
+}}}
 
 int ieee1394scan()
-{
+{{{
 	raw1394handle_t h;				// handle to access raw1394
 	struct raw1394_portinfo pinf[MAX_PORTS];	// array of all available ports
 	nodeid_t self;					// nodeid of self
@@ -231,27 +274,28 @@ int ieee1394scan()
 			guid = (((uint64_t)low) << 32) | high;
 #endif
 
-			printf("\t\tnode %d (0x%04x): GUID: %016llX%s%s\n", t, t+NODE_OFFSET, guid,
-					(self - NODE_OFFSET) == t ? " (self)" : "",
-					(somenode - NODE_OFFSET) == t ? " (CSR)" : "");
+			printf("\t\tnode %d (0x%04x): GUID: %016llX%s%s   vendor: %s\n", t, t+NODE_OFFSET, guid,
+					(self - NODE_OFFSET) == t ? " (self)" : "       ",
+					(somenode - NODE_OFFSET) == t ? " (CSR)" : "      ",
+					resolve_oui(guid) );
 		}
 	}
 
 	return 0;
-}
+}}}
 
 
 
 
 void usage(char* progname)
-{
+{{{
 	printf("%s < -r | -w | -d | -s > [-p <port>] [-t <target>] [-f <filename>]\n"
 	       "\t -r : read  own config rom of -p <port> to -f <filename>\n"
 	       "\t -w : write own config rom of -p <port> from -f <filename>\n"
 	       "\t -d : dump config rom of -p <port> -t <target> to -f <filename>\n"
 	       "\t -s : scan all ports\n",
 	       progname);
-}
+}}}
 
 enum command {
 	COMMAND_NONE,
@@ -262,7 +306,7 @@ enum command {
 };
 
 int main(int argc, char**argv)
-{
+{{{
 	int c;						// char for getopt
 
 	// arguments:
@@ -357,89 +401,5 @@ int main(int argc, char**argv)
 			return ieee1394scan();
 			break;
 	}
-}
-
-/*
-
-
-{
-
-	// get ieee1394 handle
-	h = raw1394_new_handle();
-	// get info on first MAX_PORTS ports
-	p = raw1394_get_port_info(h, pinf, MAX_PORTS);
-	printf("got %d ieee1394 ports:\n", p);
-	// print info on all ports
-	for(i=0; i<p; i++) {
-		printf("\tport %2d: \"%s\", %d nodes\n",
-				i, pinf[i].name, pinf[i].nodes);
-		if( (pinf[i].nodes > 1) && (-1 == port) ) {
-			printf("\tchose port %d.\n",i);
-			port = i;
-		}
-	}
-	// choose a port
-	p = raw1394_set_port(h, port);
-	if(p == 0)
-		printf("choice ok.\n");
-	else {
-		printf("choice failed!\n");
-		goto release;
-	}
-
-	// some debugging: self nodeid
-	printf("\nnodes:\n");
-	self = raw1394_get_local_id(h);
-	printf("self   is %d\n", (u_int16_t)self);
-	somenode = raw1394_get_irm_id(h);
-	printf("ISM    is %d\n", (u_int16_t)somenode);
-
-	printf("trying target: %s (argument 1)\n", argv[1]);
-	target = atoi(argv[1]);
-	printf("target is %d\n", (u_int16_t)target);
-
-	somenode = raw1394_get_nodecount(h);
-	printf("%d nodes.\n", (u_int16_t)somenode);
-
-
-	// open dump file
-	dump = open(argv[1], O_RDWR | O_CREAT, 0644);
-
-	// read something from target
-	printf("\ntrying to read:\n");
-	{
-#define BLOCKSIZE 1024
-		char* iobuf[BLOCKSIZE];
-		nodeaddr_t adr = 0;
-		size_t length = BLOCKSIZE;
-		p = 0;
-
-		memset(iobuf, 0x23, BLOCKSIZE * sizeof(char));
-
-		while(!p) {
-			p = raw1394_read(h, target, adr, length, (quadlet_t*)iobuf);
-			printf("read 0x%x bytes from @0x%llx. result: %s",
-					length, adr, (p == 0) ? "ok\n" : "error: ");
-			adr += length;
-
-			if(p) {
-				printf("%s\n", strerror(errno));
-			} else {
-				write(dump, iobuf, length);
-			}
-		}
-	}
-	
-	// EXIT:
-	close(dump);
-
-release:
-	// release handle
-	raw1394_destroy_handle(h);
-
-	// exit
-	return 1;
-}
-
-*/
+}}}
 
