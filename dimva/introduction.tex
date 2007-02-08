@@ -80,30 +80,48 @@ more robust tools for his attacks.%  (Obviously this is only a short-term
 %heck with this''... spida: ``for simplicities sake, I will do this for only one
 %one combination here, as this is intended to be only a proof of concept''
 
+Latest state of the art was shown in \cite{cansecwest_firewire:2005}, where
+Dornseif et al.~demonstrated how to connect to a remote computer over an
+IEEE1394 connection and changed the user of all running processes to the super
+user "`root"'. However, their work left the victim's machine in a fragile state,
+often prone to crashing, and without direct privilege gain for the attacker.
+
+Other advances in memory analysis have been introduced in
+\ref{finding_digital_evidence_in_physical_memory:2006}, where kernel-structures
+are searched and parsed to identify processes and meta-information about
+processes and the system itself.
+
+Our contributions in to this area are twofold: 
+
+\begin{itemize} 
+
+\item We demonstrate how to access the memory of a remote machine in a
+structured manner, making information retrieval as easy as reading the local
+memory.
+
+\item With the help of our tool-set we demonstrate that it is not only possible
+to change some data in the remote machine, but also to execute code and obtain
+interactive access, possibly with superuser privileges.
+
+\end{itemize}
+
 \subsection{Roadmap}
 
-\textbf{Section \ref{relatedworks}} lists some of the related works in this
-area, and how they are related to this piece of research.
-
-In \textbf{section \ref{memsources}}, we will introduce \texttt{libphysical}, a
+In \textbf{Section \ref{memsources}}, we will introduce \texttt{libphysical}, a
 library providing an attacker with a simple, generic interface to interact with
-physical memory via a simple interface.
+physical memory via a simple interface.  Thereafter, in \textbf{Section
+\ref{addresstranslations}}, \texttt{liblinear}, an interface to access virtual
+address spaces, will be introduced. It incorporates a backend for
+IA-32\footnote{This backend is missing algorithms for less-used operation-modes
+of the IA-32 architecture, but it will work at least for most kinds of the
+\emph{Linux} kernels ($\leq$ 4GB RAM). It has not yet been tested with
+\emph{Windows} or \emph{MacOS X} and is missing features (Virtual-8086 mode) to
+work with DOS-processes running inside Windows.} and functions to find virtual
+address spaces.  We introduce several attacks basing on these results in
+\textbf{Section \ref{attacks}}, ranging from simple information gathering up to
+obtaining an interactive shell.
 
-In \textbf{section \ref{addresstranslations}}, \texttt{liblinear}, an interface
-to access virtual address spaces, will be introduced. It incorporates a backend
-for IA-32\footnote{This backend is missing algorithms for less-used
-operation-modes of the IA-32 architecture, but it will work at least for most
-kinds of the \emph{Linux} kernels ($\leq$ 4GB RAM). It has not yet been tested
-with \emph{Windows} or \emph{MacOS X} and is missing features (Virtual-8086
-mode) to work with DOS-processes running inside Windows.} and functions to find
-virtual address spaces.
-
-
-
-In \textbf{section \ref{attacks}}, several attacks will be introduces, ranging
-from simple information gathering up to obtaining an interactive shell.
-
-
-In \textbf{section \ref{prospects}}, prospects will be given, what further kinds
-of attacks seem to be possible and/or may be of interest.
+In \textbf{Section \ref{prospects}}, prospects will be given, what further kinds
+of attacks seem to be possible and are of interest. The paper ends with
+conclusions in \textbf{Section \ref{conclusion}}.
 

