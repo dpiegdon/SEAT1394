@@ -368,7 +368,11 @@ int main(int argc, char**argv)
 			printf("0x%05llx\r", pn);
 			fflush(stdout);
 		}
-		if(linear_is_pagedir_fast(lin, pn)) {
+		if((c = linear_is_pagedir_fast(lin, pn))) {
+			if(c < 0) {
+				printf("\n\n" TERM_RED "failed to read page 0x%05llx. aborting." TERM_RESET "\n", pn);
+				break;
+			}
 			// load page
 			physical_read_page(phy, pn, page);
 			prob = linear_is_pagedir_probability(lin, page);

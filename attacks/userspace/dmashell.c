@@ -316,7 +316,9 @@ void use_shell(linear_handle lin, uint32_t base)
 	set_nonblocking_stdin();
 	// set STDIN to non-blocking.
 
-	printf(TERM_YELLOW "(dmashell)" TERM_RESET " rfrm_writer_pos is @0x%08x (offset 0x%03x).\n", base + RFRM_WRITER_POS, RFRM_WRITER_POS);
+//	printf(TERM_YELLOW "(dmashell)" TERM_RESET " rfrm_writer_pos is @0x%08x (offset 0x%03x).\n", base + RFRM_WRITER_POS, RFRM_WRITER_POS);
+	printf(TERM_YELLOW "(dmashell)" TERM_RESET " interactive shell may work at any time now.\n");
+	printf(TERM_YELLOW "(dmashell)" TERM_RESET " press CTRL-C to enter menu-mode\n");
 
 	signal(SIGINT, handle_sigint);
 
@@ -517,7 +519,11 @@ int main(int argc, char**argv)
 			printf("0x%05llx\r", pn);
 			fflush(stdout);
 		}
-		if(linear_is_pagedir_fast(lin, pn)) {
+		if((c = linear_is_pagedir_fast(lin, pn))) {
+			if(c < 0) {
+				printf("\n\n" TERM_RED "failed to read page 0x%05llx. aborting." TERM_RESET "\n", pn);
+				break;
+			}
 			// load page
 			physical_read_page(phy, pn, page);
 			prob = linear_is_pagedir_probability(lin, page);
@@ -584,7 +590,11 @@ int main(int argc, char**argv)
 			printf("0x%05llx\r", pn);
 			fflush(stdout);
 		}
-		if(linear_is_pagedir_fast(lin, pn)) {
+		if((c = linear_is_pagedir_fast(lin, pn))) {
+			if(c < 0) {
+				printf("\n\n" TERM_RED "failed to read page 0x%05llx. aborting." TERM_RESET "\n", pn);
+				break;
+			}
 			// load page
 			physical_read_page(phy, pn, page);
 			prob = linear_is_pagedir_probability(lin, page);
