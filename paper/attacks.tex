@@ -11,7 +11,7 @@
 that only \emph{read} from a physical memory source. An overview over gathering
 information from a virtual address space is given, including finding processes
 on a host, obtaining its environment, arguments and the path of the processes
-binary.  After that a deeper attack is introduced that is capable of copying ssh
+binary. After that a deeper attack is introduced that is capable of copying ssh
 public/private keypairs from a running \texttt{ssh-agent} process.
 
 In \textbf{subsection \ref{userspace_attacks}}, we will introduce attacks that
@@ -29,13 +29,13 @@ that can be used to obtain an interactive shell over firewire only.
 
 \subsubsection{Identifying processes}
 
-\label{identifying_processes}  Once an address translation table has been found,
+\label{identifying_processes} Once an address translation table has been found,
 it is of interest, what kind of process resides in this virtual address space.
 For userspace applications on IA-32-Linux there is a simple way to identify a
 process's \emph{filename}, its \emph{arguments} and even its full set of
 \emph{environment variables}: This information is often required by a process
 and thus the kernel will provide it to the process by copying it to the bottom
-pages of the application's stack\footnote{i.e.  the stack-pages that are found
+pages of the application's stack\footnote{i.e\@. the stack-pages that are found
 first when seeking downward from virtual address \texttt{0xbfff~f000}}.
 
 \texttt{proc\_info()} will seek the stack-bottom, parse it and return
@@ -49,17 +49,17 @@ space and will print a list of all found processes with its arguments.
 \subsubsection{Typical places to find secrets}
 
 Many applications keep secrets in their memory, some of them even locking them
-into the main memory\footnote{e.g. via the \emph{mlock} function} to prevent the
-operating system from swapping them to slower (permanent) media. While in
-general this is a good idea, as an attacker may reconstruct the data from e.g.
+into the main memory\footnote{e.g\@. via the \emph{mlock} function} to prevent
+the operating system from swapping them to slower (permanent) media. While in
+general this is a good idea, as an attacker may reconstruct the data from e.g\@.
 thrown-away harddisks, it increases the chance of an attacker that can obtain
 access to the memory of the system in question, as the secret material will be
 stored in memory completely and unfragmented
 
 ``Secrets'' includes, among other information, \emph{authentication data},
-\emph{cryptographic key material}, \emph{random data} (e.g. to seed a
+\emph{cryptographic key material}, \emph{random data} (e.g\@. to seed a
 cryptographic algorithm) and sometimes even \emph{algorithms} (\emph{proprietary
-software}). Authentication data can be e.g.  passwords or private keys for
+software}). Authentication data can be e.g\@. passwords or private keys for
 signature algorithms. Cryptographic key material, as the name says, are keys for
 usage with cryptographic algorithms (like the above signature algorithms). These
 two will be of main interest in this section.
@@ -87,12 +87,12 @@ As an example, the following applications are of interest:
 
 	\item OpenVPN, Cisco-VPN and other VPN-servers and clients
 
-	\item Instant Messaging Applications, e.g. Psi keeps the authentication
-	information and possibly the GnuPG keypair in memory.
+	\item Instant Messaging Applications, e.g\@. Psi keeps the
+	authentication information and possibly the GnuPG keypair in memory.
 
 	\item The computer BIOS password, ATA password or PGP-Wholedisk
 		password: the computer or its drives can be locked with a BIOS
-		password or the harddisk can be encrypted.  For a sample attack,
+		password or the harddisk can be encrypted. For a sample attack,
 		see \cite{rux2k6firewire:2006}.
 
 \end{itemize}
@@ -115,11 +115,11 @@ authenticate via passwords, public/private keypairs and various other methods.
 The usage of public/private keypairs is wide-spread among people using
 \texttt{ssh} on a regular basis. These keypairs can either be a DSA or a RSA
 keypair, they are typically created with \texttt{ssh-keygen} and stored
-somewhere in \texttt{\$HOME/.ssh/}, e.g.  \texttt{/root/.ssh/id\_dsa} and
+somewhere in \texttt{\$HOME/.ssh/}, e.g\@. \texttt{/root/.ssh/id\_dsa} and
 \texttt{/root/.ssh/id\_dsa.pub}. Keypairs can and should be encrypted with a
 passphrase to prevent attackers from using them, if they were able to obtain
 them somehow. Thus to use a keypair it is required to enter this passphrase each
-time. This can be disturbing during frequent usage, e.g. when using
+time. This can be disturbing during frequent usage, e.g\@. when using
 \texttt{ssh+svn} or \texttt{scp} with remote-tab-completion (\texttt{zsh} is
 capable of this).
 
@@ -154,8 +154,8 @@ To obtain a keypair from an agent via firewire, a staged attack is required:
 
 	\item Use the obtained environment to resolve the users home directory
 		(\texttt{\$HOME}) and create a path where keypairs most likely
-		reside in the file system (e.g.  ``\texttt{\$HOME/.ssh/}'') and
-		seek this string in the heap.  This approach will only find
+		reside in the file system (e.g\@. ``\texttt{\$HOME/.ssh/}'') and
+		seek this string in the heap. This approach will only find
 		keypairs that have been loaded with this
 		key-location.\footnote{Actually this field is the key's
 		comment-field that is mostly unused and overwritten with the
@@ -199,9 +199,9 @@ To obtain a keypair from an agent via firewire, a staged attack is required:
 	
 	\item Once the \emph{key-struct} (figure \ref{fig:code:key-struct}),
 		that is linked to by the identity-struct, has been found, one
-		can determine whether the found key is a RSA or a DSA key.  The
+		can determine whether the found key is a RSA or a DSA key. The
 		key-struct contains a type-field and two pointers to either the
-		RSA or the DSA key.  These referenced structures are the
+		RSA or the DSA key. These referenced structures are the
 		\emph{OpenSSL}\footnote{OpenSSL
 		(\href{http://openssl.org}{http://openssl.org}) is a free
 		open-source implementation of the secure socket layer protocol
@@ -232,15 +232,15 @@ To obtain a keypair from an agent via firewire, a staged attack is required:
 
 	\item For both RSA and DSA structures (figure \ref{fig:code:rsa-struct}
 		and \ref{fig:code:dsa-struct}), all important fields need to be
-		recovered to obtain valid keypairs.  \cite{applied_crypto:1996,
+		recovered to obtain valid keypairs. \cite{applied_crypto:1996,
 		handbook_applied_crypto:2001} give an overview of both
 		cryptographic algorithms, \cite{openssl_book:2002} introduces
 		OpenSSL concepts and implementation details. OpenSSL`s arbitrary
 		precision integer implementation is the \texttt{BIGNUM}-struct
-		(often abbreviated ``BN'').  It consists of a variable-length
+		(often abbreviated ``BN''). It consists of a variable-length
 		array of bit-vectors forming the value and a length-field
 		defining the length of this array (see figure
-		\ref{fig:code:bignum-struct}).  As RSA and DSA both operate on
+		\ref{fig:code:bignum-struct}). As RSA and DSA both operate on
 		finite fields, both are implemented with \texttt{BIGNUM}s.
 		Therefore, the RSA and DSA structures contain several
 		\texttt{BIGNUM}s that need to be recovered to obtain a valid
@@ -351,7 +351,7 @@ As stated above, the keypairs reside decrypted in the memory of the agent (even
 if overtime) and thus, when snarfed and stored to a file, can be immediately
 used by the command \texttt{ssh~-i~keyfile~user@host}\footnote{Only by stealing
 a key, an attacker will not know, which hosts can be accessed with a retrieved
-key.}.  Such an attack will not take much longer than searching the first 1 GiB
+key.}. Such an attack will not take much longer than searching the first 1 GiB
 of physical RAM for pagedirectories, that is \emph{typically no more than 15
 seconds}. If an attack fails but an agent was found, it would be possible to
 just dump the heap of the agent and stage a more thorough attack at a later
@@ -375,7 +375,7 @@ storage media like flash-memory and small harddisks have increased portable
 storage to a huge size, equal or larger than the memory a computer system
 typically has. Thus, an attacker can just dump the full memory or a subset of it
 (like the virtual address space of a single process) that is promising to
-contain a secret. A thorough attack can then be staged later.  Still, searching
+contain a secret. A thorough attack can then be staged later. Still, searching
 private keys with the introduced methods can be very helpful, if reconstruction
 of the used data-structures is impossible or more expensive. Furthermore, when
 trying to obtain a private key, often enough the corresponding public key is
@@ -393,7 +393,7 @@ Each executable object, including libraries and executables, can be separated
 into code and data, where the code should be read-only during execution. The
 data can further be separated into read-only data, read-write data and
 uninitialized global variables (local variables will be allocated from the
-stack, runtime-allocated memory is allocated from the heap).  Thus an executable
+stack, runtime-allocated memory is allocated from the heap). Thus an executable
 object may be split into four regions: \emph{code}, \emph{rodata} (constants),
 \emph{rwdata} and \emph{dynamic data} (rwdata may also be implemented by copying
 the initial data from rodata to dynamic data); stack and heap are
@@ -405,10 +405,10 @@ reference to it.
 
 Code and rodata may not be written to by a process, thus the operating system
 can share these two regions among processes that are using the same objects
-(binaries or libraries).  Thus, once an operating system \emph{ensures} that a
+(binaries or libraries). Thus, once an operating system \emph{ensures} that a
 process can not write to code-regions and read-only data-regions or introduces a
 copy-on-write mechanism, it can map these once loaded regions into multiple
-virtual address spaces.  This enforcement is done in hardware, on IA-32 by
+virtual address spaces. This enforcement is done in hardware, on IA-32 by
 setting a flag in the page directory or a page table referencing the specific
 physical memory pages containing the region.
 
@@ -416,20 +416,20 @@ Newer CPUs provide \emph{page-level no-execute enforcements} (AMD's NX \emph{No
 eXecute bit}, Intel's EXB \emph{EXecute disable Bit}); equal segment-level
 enforcements exist for years but never have been used in mainstream as Linux and
 many other operating-systems use a flat memory-model (with only one big segment
-spanning the full virtual address space).  Once these page-level enforcements
-are used in systems, attacks that inject code into data-regions or the stack are
+spanning the full virtual address space). Once these page-level enforcements are
+used in systems, attacks that inject code into data-regions or the stack are
 rendered completely useless. However with access to the data-structures (page
 directory and page tables) containing the information, which pages are
 executable and which not, one can change this information before injecting code
-e.g. into an applications stack. 
+e.g\@. into an applications stack. 
 
 On Linux, programs and libraries are in \emph{Executable and Linker Format}
-(ELF).  This format is described in the manpage \texttt{elf(5)}. When a binary
-is mapped into a process's memory, it is mapped including the full ELF header
+(ELF). This format is described in the manpage \texttt{elf(5)}. When a binary is
+mapped into a process's memory, it is mapped including the full ELF header
 containing all information that is required to link all references between
 different objects; ELFs are always mapped at page-bounds. Due to this, all
 mapped ELFs (that includes executables and libraries) can be found by scanning
-all pages for the ELF Magic (0x7f E L F) at offset $0$ in the page.  Libraries,
+all pages for the ELF Magic (0x7f E L F) at offset $0$ in the page. Libraries,
 executables and other ELF objects can be distinguished by evaluating the
 \texttt{e\_type} field of the ELF header.
 
@@ -453,30 +453,30 @@ as all processes that will be affected have to be able to reach the shellcode.
 The intention is to overwrite the \texttt{printf} functions code with a
 \emph{relative}\footnote{An ELF may be mapped at different locations in
 different processes, if it is ``PIC'' or ``PIE'' (Position Independent
-Code/Executable) and the kernel supports this.  Thus, unless the ELF is only
+Code/Executable) and the kernel supports this. Thus, unless the ELF is only
 mapped in one process or the overwritten function is only used in one process,
 the jumps target has to be addressed relative to the current position.} jump to
-this injected code.  But as we need to overwrite some instructions inside the
+this injected code. But as we need to overwrite some instructions inside the
 function, we need to parse the functions code to separate each
 instruction\footnote{on IA-32, different machine instructions can have different
 length}, so that after our code is executed, it executes a copy of the
 overwritten instructions and jumps to a fully intact instruction right after the
 injected jump. After this has been done, the jump can be injected into the
 functions code. This last write has to be as atomic as possible, as a process
-may just be executing these bytes and thus get astray.  On IA-32, entry-points
-of functions are most likely aligned to 32-bit addresses\footnote{due to
-optimizations by the compiler}.  Firewire also provides an interface to write
-32-bit aligned 32-bit values (``quads'') atomically.  Unfortunately, a
+may just be executing these bytes and thus get astray. On IA-32, entry-points of
+functions are most likely aligned to 32-bit addresses\footnote{due to
+optimizations by the compiler}. Firewire also provides an interface to write
+32-bit aligned 32-bit values (``quads'') atomically. Unfortunately, a
 \emph{relative short} jump ($2$ bytes) can only jump within $\pm256$ bytes from
 the jump itself and \emph{relative long} and \emph{absolute} jumps are $5$ bytes
-wide ($1$ byte command + $4$ bytes address).  A short jump is most likely
+wide ($1$ byte command + $4$ bytes address). A short jump is most likely
 incapable of reaching the last page of the ELF and writing a long relative jump
 is not atomic.
 
 A lot of interesting methods to inject code into a running process have been
-developed; e.g.  \cite{phrack59.8:2002} gives an introduction into using
+developed; e.g\@. \cite{phrack59.8:2002} gives an introduction into using
 \emph{ptrace}, including injecting whole shared objects using the runtime linker
-\emph{libdl}.  The usability of this approach has not yet been analysed.
+\emph{libdl}. The usability of this approach has not yet been analysed.
 
 
 \subsubsection{Overwriting the stack and return addresses}
@@ -492,8 +492,8 @@ the stack to point to the injected code. This modification of the classic
 		single thread will be affected by the attack.
 
 	\item If the attack fails and the thread dies, only a \emph{single}
-		thread will fail on the target system, not e.g. \emph{all}
-		processes using the glibc or \emph{all} instances of $/bin/sh$.
+	thread will fail on the target system, not e.g\@. \emph{all} processes
+	using the glibc or \emph{all} instances of $/bin/sh$.
 
 	\item The process can read and write to the stack as well, thus we can
 		communicate with the injected shell-code in a rather easy way
@@ -530,7 +530,7 @@ The attack consists of the following steps:
 		32-bit aligned 32-bit values that contain a value that might be
 		a pointer into the main code area (\texttt{0x08**~****}, see
 		figure \ref{fig:linux_virtual_address_space}) with a pointer to
-		the injected code.  A more aggressive approach might also
+		the injected code. A more aggressive approach might also
 		overwrite return-values pointing into the library section
 		(\texttt{0xB7**~****}).
 
@@ -553,15 +553,15 @@ bindshell and a simple \texttt{printf} can be found in
 
 \label{communication_DMA} The royal league of shellcode-writing is a shellcode
 that spawns an interactive shell (thus the name ``shellcode'') and yet is as
-invisible on the target system as possible.  An interactive shell has to
+invisible on the target system as possible. An interactive shell has to
 communicate with its user, so typically a network-based bindshell is used for
 this attack. The downside is the visibility of the communication on the
 network-layer: an administrator can easily spot the network connection by either
 sniffing on the network or by asking the system what kind of sockets and files a
-process is using\footnote{e.g. by using \texttt{lsof -i} (LiSt Open Files)}. A
+process is using\footnote{e.g\@. by using \texttt{lsof -i} (LiSt Open Files)}. A
 network intrusion system (NIS) can easily spot bindshell connections in an
 automated way or firewalls could be configured in a way that a network
-connection is impossible. When using e.g. firewire to attack a host it is even
+connection is impossible. When using e.g\@. firewire to attack a host it is even
 possible that there is no network connection between the attacker and the victim
 at all.
 
@@ -574,9 +574,9 @@ The injected shellcode will fork a shell and communicate with stdin/stdout of
 the shell via two pipes. The shellcode then creates a second thread, then having
 one thread for each direction of \emph{master to shell} and \emph{shell to
 master}. If the master (attacker) wishes to send a command to the shell, it
-writes the command string into the \emph{FromMaster} ring-buffer via DMA.  Once
+writes the command string into the \emph{FromMaster} ring-buffer via DMA. Once
 the ReaderThread sees that the ring-buffer is not empty, it reads the data
-inside the buffer and writes it into the pipe to the shell.  The WriterThread
+inside the buffer and writes it into the pipe to the shell. The WriterThread
 will read data coming from the shell from the pipe and then write it into the
 \emph{ToMaster} ring-buffer, so the master can read it via DMA.
 

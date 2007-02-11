@@ -21,6 +21,8 @@ discussed.
 
 
 
+
+
 Once, access to the physical memory of a system is obtained, there are two
 obvious ways to extract useful information from it:
 
@@ -44,29 +46,21 @@ The latter uses an information structure that only changes between different
 architectures, as the architecture relies on it. Furthermore there is a well
 defined algorithm for using this information (implemented in hardware in the
 architecture, but well defined in the reference manuals for this architecture,
-so system designers can provide valid data to the hardware).
-
-On the other hand, the first approach will give much more information about the
-system than the second, as we obtain all information directly from the kernel
-structures, while using the second approach we only can enter virtual address
-spaces of processes.
+so system designers can provide valid data to the hardware). On the other hand,
+the first approach will give much more information about the system than the
+second, as we obtain all information directly from the kernel structures, while
+using the second approach we only can enter virtual address spaces of processes.
 
 In \cite{finding_digital_evidence_in_physical_memory:2006}, an approach is
 introduced that parses kernel-structs of windows and Linux kernels. In the
 following \emph{we} will use the second approach for most attacks, as this seems
-to be more robust and automatable.  As the above mentioned paper is about
+to be more robust and automatable. As the above mentioned paper is about
 \emph{finding an attacker} and not \emph{attacking}, the forensic personal does
 know about the architecture, the operating system and version and can build a
 copy of the system to test its tools, while an attacker only can guess the
 architecture and operating system and needs more robust tools for his attacks.
 (Obviously this is only a short-term argument, as an attacker can also write
-such tools for \emph{all} OS version and architecture combinations\ldots but the
-heck with this...).
-% FIXME ``the heck with this''... spida: ``for simplicities sake, I will do this
-% for only one one combination here, as this is intended to be only a proof of
-% concept''
-
-
+such tools for \emph{all} known OS version and architecture combinations).
 
 In \textbf{section \ref{addresstranslations}}, \texttt{liblinear}, an interface
 to access virtual address spaces, will be introduced. It incorporates a backend
