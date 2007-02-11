@@ -31,25 +31,94 @@
 
 #define NODE_OFFSET     0xffc0
 
+void usage(char* argv0)
+{{{
+	printf( "%s -f <filename> -n <nodeid> [-s]\n"
+		"\tdumps memory of IEEE1394-node <nodeid> to <filename>\n"
+		"\t-s : skip memory [0xc0000 , 0xfffff]\n"
+		"\t\t(dumping this could kill a windoze)\n",
+		argv0);
+}}}
+
 int main(int argc, char**argv)
 {
+	int nodeid = -1;
+	uint64_t guid = 0;
+	char *filename = NULL;
 	int dumpfd;
+	int do_skip = 0;
+	char c;
+	char *p;
+
 	physical_handle phy;
 	union physical_type_data phy_data;
 	addr_t pn;
 	char page[4096];
-	int i;
 	int last_read_failed;
+	int i;
+
+	while( -1 != (c = getopt(argc, argv, "g:n:f:s"))) {
+		switch (c) {
+			case 'g':
+				if(nodeid != -1)
+					printf("giving nodeid and GUID is insane. GUID will be used in any case.\n");
+				if(guid != 0)
+					printf("giving multiple GUIDs is insane. last will be used.\n");
+
+				sscanf(optarg, "%016llX", &guid);
+				printf("GUID set to %016llX\n", guid);
+				break;
+			case 'n':
+				// firewire node ID
+				if(nodeid != -1)
+					printf("giving multiple nodeids is insane. last will be used.\n");
+
+				nodeid = strtoll(optarg, &p, 10);
+				if((p&&(*p)) || (nodeid > 63) || (nodeid < 0)) {
+					nodeid = -1;
+					printf("invalid nodeid. nodeid should be >=0 and <64.\n");
+					usage(argv[0]);
+					return -2;
+				}
+				break;
+			case 'f':
+				// filename for dump
+				if(filename != NULL)
+					printf("giving multiple filenames is insane. last will be used.\n");
+
+				filename = optarg;
+				break;
+			case 's':
+				// skip memory [0xc0000 , 0xfffff]
+				do_skip = 1;
+				break;
+			default:
+				usage(argv[0]);
+				return -1;
+				break;
+		}
+	}
+
+	if( ( (guid == 0) && (nodeid == -1) ) || (filename == NULL) ) {
+		printf("missing parameters\n");
+		usage(argv[0]);
+		return -1;
+	}
+
+	// open dumpfile
+	dumpfd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0600);
+	if(dumpfd < 0) {
+		printf("failed to open \"%s\"\n", filename);
+		usage(argv[0]);
+		return -3;
+	}
+
 
 	// create and associate a physical source to firewire device
 	phy = physical_new_handle();
 	if(!phy) {
 		printf("physical handle is null\n");
 		return -2;
-	}
-	if(argc != 3) {
-		printf("%s: <nodeid of target> <dumpfile>\n", argv[0]);
-		return -1;
 	}
 	// get raw1394 handle
 	phy_data.ieee1394.raw1394handle = raw1394_new_handle();
@@ -58,17 +127,13 @@ int main(int argc, char**argv)
 		return -4;
 	}
 	// and associate
-	phy_data.ieee1394.raw1394target_nid = atoi(argv[1]) + NODE_OFFSET;
-	phy_data.ieee1394.raw1394target_guid = 0;
-	printf("using target %d\n", phy_data.ieee1394.raw1394target_nid - NODE_OFFSET);
+	phy_data.ieee1394.raw1394target_nid = nodeid + NODE_OFFSET;
+	phy_data.ieee1394.raw1394target_guid = guid;
 	printf("associating physical source with raw1394\n"); fflush(stdout);
 	if(physical_handle_associate(phy, physical_ieee1394, &phy_data, 4096)) {
 		printf("physical_handle_associate() failed\n");
 		return -3;
 	}
-
-	// open dumpfile
-	dumpfd = open(argv[2], O_WRONLY | O_CREAT | O_TRUNC, 0600);
 
 	last_read_failed = 0;
 	// dump the memory
