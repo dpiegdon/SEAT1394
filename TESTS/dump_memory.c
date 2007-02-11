@@ -38,6 +38,8 @@ int main(int argc, char**argv)
 	union physical_type_data phy_data;
 	addr_t pn;
 	char page[4096];
+	int i;
+	int last_read_failed;
 
 	// create and associate a physical source to firewire device
 	phy = physical_new_handle();
@@ -68,16 +70,39 @@ int main(int argc, char**argv)
 	// open dumpfile
 	dumpfd = open(argv[2], O_WRONLY | O_CREAT | O_TRUNC, 0600);
 
+	last_read_failed = 0;
 	// dump the memory
 	for( pn = 0; pn < 0xfffff; pn++ ) {
-		if(!(pn % 0x100)) {
-			printf("page 0x%05x\r", (uint32_t)pn);
-			fflush(stdout);
+		if(last_read_failed) {
+			// last read failed
+			if(physical_read_page(phy, pn, page)) {
+				if((pn % 0x10) == 0) {
+					printf("failed to read page 0x%05x\r", (uint32_t)pn);
+				}
+			} else {
+				printf("page 0x%05x ok again\n", (uint32_t)pn);
+				putchar('\n');
+				last_read_failed = 0;
+			}
+		} else {
+			// last read was ok
+			if((pn % 0x100) == 0) {
+				printf("page 0x%05x\r", (uint32_t)pn);
+				fflush(stdout);
+			}
+			if(physical_read_page(phy, pn, page)) {
+				last_read_failed = 1;
+				printf("\nfailed to read page 0x%05x\n", (uint32_t)pn);
+				for(i = 0; i < 4096; i++) {
+					if(i < 256)
+						page[i] = i;
+					else
+						page[i] = 0xFE;
+				}
+			}
 		}
-		if(physical_read_page(phy, pn, page)) {
-			printf("failed to read page 0x%05x\n", (uint32_t)pn);
-			break;
-		}
+
+
 		write(dumpfd, page, 4096);
 	}
 
