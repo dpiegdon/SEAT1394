@@ -1,4 +1,4 @@
-#   $Id: Makefile 331 2007-01-30 03:18:20Z lostrace $
+#   $Id$
 #   create pdf of paper
 # 
 #   Copyright (C) 2006,2007

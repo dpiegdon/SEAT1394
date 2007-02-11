@@ -1,6 +1,6 @@
 % vim: tw=80 ai fdl=99 fo+=a
 %
-% $Id: attacks.tex 349 2007-02-04 15:43:37Z lostrace $
+% $Id$
 %
 
 \section{Attacking}
@@ -38,7 +38,7 @@ For userspace applications on IA-32-Linux there is a simple way to identify a
 process's \emph{filename}, its \emph{arguments} and even its full set of
 \emph{environment variables}: This information is often required by a process
 and thus the kernel will provide it to the process by copying it to the bottom
-pages of the application's stack\footnote{i.e.  the stack-pages that are found
+pages of the application's stack\footnote{i.e\@. the stack-pages that are found
 first when seeking downward from virtual address \texttt{0xbfff~f000}}.
 
 We wrote a tool \texttt{remote-ps}, that uses a function \texttt{proc\_info()}
@@ -54,17 +54,17 @@ with their arguments.
 \subsubsection{Places to find secrets}
 
 Many applications keep confidential data in their memory, some of them even
-locking them into the main memory\footnote{e.g. via the \emph{mlock} function}
+locking them into the main memory\footnote{e.g\@. via the \emph{mlock} function}
 to prevent the operating system from swapping them to slower (permanent) media.
 While in general this is a good idea, as an attacker may reconstruct the data
-from e.g.~thrown-away harddisks, it increases the chance of an attacker that can
-obtain access to the memory of the system in question, as the confidential
+from e.g\@. thrown-away harddisks, it increases the chance of an attacker that
+can obtain access to the memory of the system in question, as the confidential
 material will be stored in memory completely and unfragmented.
 
 ``Secrets'' includes, among other information, \emph{authentication data},
-\emph{cryptographic key material}, \emph{random data} (e.g. to seed a
+\emph{cryptographic key material}, \emph{random data} (e.g\@. to seed a
 cryptographic algorithm) and sometimes even \emph{algorithms} (\emph{proprietary
-software}). Authentication data can be e.g.~passwords or private keys for
+software}). Authentication data can be e.g\@. passwords or private keys for
 signature algorithms. Cryptographic key material are keys for usage with
 cryptographic algorithms (like signature algorithms). The latter two will be of
 main interest in the remainder of this section.
@@ -92,8 +92,9 @@ As an example, the following applications are of interest:
 
 	\item OpenVPN, Cisco-VPN and other VPN-servers and clients
 
-	\item Instant Messaging Applications, e.g.~Psi, keeps the authentication
-	information and possibly the GnuPG keypair in memory.
+	\item Instant Messaging Applications, e.g\@. Psi, keeps the
+		authentication information and possibly the GnuPG keypair in
+		memory.
 
 	\item The computer BIOS password, ATA password or PGP-Wholedisk
 		password: the computer or its drives can be locked with a BIOS
@@ -120,11 +121,11 @@ authenticate via passwords, public/private keypairs and various other methods.
 The usage of public/private keypairs is wide-spread among people using
 \texttt{ssh} on a regular basis. These keypairs can either be a DSA or a RSA
 keypair, they are typically created with \texttt{ssh-keygen} and stored
-somewhere in \texttt{\$HOME/.ssh/}, e.g.~\texttt{/root/.ssh/id\_dsa} and
+somewhere in \texttt{\$HOME/.ssh/}, e.g\@. \texttt{/root/.ssh/id\_dsa} and
 \texttt{/root/.ssh/id\_dsa.pub}. Keypairs can and should be encrypted with a
 passphrase to prevent attackers from using them, if they were able to obtain
 them by some means. Thus to use a keypair it is required to enter this
-passphrase each time.  This can be disturbing during frequent usage, e.g.~when
+passphrase each time.  This can be disturbing during frequent usage, e.g\@. when
 using \texttt{ssh+svn} or \texttt{scp} with remote-tab-completion (\texttt{zsh}
 is capable of this).
 
@@ -159,7 +160,7 @@ To obtain a keypair from an agent via firewire, a staged attack is required:
 
 	\item Use the obtained environment to resolve the users home directory
 		(\texttt{\$HOME}) and create a path where keypairs most likely
-		reside in the file system (e.g.  ``\texttt{\$HOME/.ssh/}'') and
+		reside in the file system (e.g\@. ``\texttt{\$HOME/.ssh/}'') and
 		seek this string in the heap.  This approach will only find
 		keypairs that have been loaded with this
 		key-location.\footnote{Actually this field is the key's
@@ -419,7 +420,7 @@ enforcements are used in systems, attacks that inject code into data-regions or
 the stack are rendered completely useless. However with access to the
 data-structures (page directory and page tables) containing the information,
 which pages are executable and which not, it is trivial to remove the protection
-before injecting code e.g.~into an applications stack. 
+before injecting code e.g\@. into an applications stack. 
 
 On Linux, programs and libraries are in \emph{Executable and Linker Format}
 (ELF).  This format is described in the manpage \texttt{elf(5)}. When a binary
@@ -471,7 +472,7 @@ A short jump is most likely incapable of reaching the last page of the ELF and
 writing a long relative jump is not atomic.
 
 A lot of interesting methods to inject code into a running process have been
-developed; e.g.  \cite{phrack59.8:2002} gives an introduction into using
+developed; e.g\@. \cite{phrack59.8:2002} gives an introduction into using
 \emph{ptrace}, including injecting whole shared objects using the runtime linker
 \emph{libdl}.  The usability of this approach has not yet been analysed.
 
@@ -489,7 +490,7 @@ the stack to point to the injected code. This modification of the classic
 		single thread will be affected by the attack.
 
 	\item If the attack fails and the thread dies, only a \emph{single}
-		thread will fail on the target system, not e.g. \emph{all}
+		thread will fail on the target system, not e.g\@. \emph{all}
 		processes using the glibc or \emph{all} instances of $/bin/sh$.
 
 	\item The process can read and write to the stack as well, thus we can
@@ -557,10 +558,10 @@ network-based shell is used for attacking purposes. The downside of this
 technique is the visibility of the communication on the network-layer: an
 administrator can easily spot the network connection by either sniffing on the
 network or by asking the system what kind of sockets and files a process is
-using\footnote{e.g. by using \texttt{lsof -i} (LiSt Open Files)}. A network
+using\footnote{e.g\@. by using \texttt{lsof -i} (LiSt Open Files)}. A network
 intrusion system (NIS) can easily spot shell connections in an automated way or
 firewalls could be configured in a way that a network connection is impossible.
-But when using e.g.~firewire to attack a host there is usually no network
+But when using e.g\@. firewire to attack a host there is usually no network
 connection between the attacker and the victim at all.
 
 In our example attack, we will use a similar attack vector to inject a

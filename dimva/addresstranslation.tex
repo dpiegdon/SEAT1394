@@ -1,6 +1,6 @@
 % vim: tw=80 ai fdl=99 fo+=a
 %
-% $Id: addresstranslation.tex 349 2007-02-04 15:43:37Z lostrace $
+% $Id$
 %
 
 \section{Translating virtual to physical addresses}
@@ -12,7 +12,7 @@ Multitasking environments that fulfill modern requirements have to provide
 virtual address spaces for each running process or thread. For performance and
 security reasons this address translation from a processes virtual address to an
 address valid in physical memory is normally performed in hardware.  These
-mechanisms can include e.g.~segmentation and paging.
+mechanisms can include e.g\@. segmentation and paging.
 
 A normal process's memory is divisible into several blocks or \emph{segments}:
 the \emph{code segment} contains all the code that may be run; the \emph{data
@@ -31,12 +31,12 @@ Virtual addresses can be split into frame number and frame offset; the frame
 number is translated (mapped) via a translation table into a physical page
 number and the frame offset is used as an offset into this physical page. If a
 frame does not have a corresponding physical page, it is called to be unmapped.
-Unmapped pages can be non-existing pages or can e.g., be swapped to slower media
-like harddisks.
+Unmapped pages can be non-existing pages or can e.g\@., be swapped to slower
+media like harddisks.
 
 For a detailed description and discussion of these two important mechanisms, the
-reader may refer to a course on system programming,
-e.g.~\cite{rwth_syspro_scriptum:2002}.
+reader may refer to a course on system programming, e.g\@.
+\cite{rwth_syspro_scriptum:2002}.
 
 With \texttt{liblinear}, we provide a software solution for address translation.
 The provided interface is similar to \texttt{libphysical}; it needs a physical
@@ -59,7 +59,7 @@ needs to be enabled by setting a special flag in a control register of the CPU.)
 \label{linux_gdt} A Linux process runs in a simple 4GiB flat virtual address
 space; no segmentation is required. Thus, Linux will create (among others that
 are not of interest for us) four special segments during boot-up: for each
-privilege level (i.e. kernelspace and userspace), it will create segments for
+privilege level (i.e\@. kernelspace and userspace), it will create segments for
 both code and data. These four so called \emph{flat} segments will span the full
 virtual address space of 4GiB, thus effectively eliminating segmentation. The
 address of the \emph{global descriptor table}, holding the description of these
@@ -102,7 +102,7 @@ informations.  Also, PAE and PSE-36 are not yet implemented in
 (and implemented), as one can determine by the use of 4MiB-pages.
 
 For an extensive documentation of the IA-32 architecture one should refer to the
-\emph{Intel 64 and IA-32 Architectures Software Developer's Manual}
+\emph{Intel 64 and IA-32 Architectures Software Developer's Manual} \linebreak
 (\cite{IA32_SDM_1:2006,IA32_SDM_2a:2006,IA32_SDM_2b:2006,IA32_SDM_3a:2006,IA32_SDM_3b:2006}),
 especially \cite{IA32_SDM_3a:2006}.
 
@@ -149,24 +149,27 @@ process:
 \begin{itemize}
 
 	\item \emph{code and heap} will be starting around \texttt{0x0800~0000},
-	consecutively following with a minor number of unused frames in between
+		consecutively following with a minor number of unused frames in
+		between
 
 	\item \emph{libraries} and \emph{custom mappings} will be mapped below
-	\texttt{0xb800~0000}
+		\texttt{0xb800~0000}
 
-	\item the \emph{userspace stack} will be mapped below \texttt{0xc000~0000},
-	possibly directly starting from \texttt{0xbfff~ffff}
+	\item the \emph{userspace stack} will be mapped below
+		\texttt{0xc000~0000}, possibly directly starting from
+		\texttt{0xbfff~ffff}
 
-	\item starting from \texttt{0xc000~0000} up to approx.~\texttt{0xf800~0000}
-	the ``lowmem'' (approx. lower physical 900 MiB of physical RAM) will be mapped
+	\item starting from \texttt{0xc000~0000} up to approx\@.
+		\texttt{0xf800~0000} the ``lowmem'' (approx\@. lower physical
+		900 MiB of physical RAM) will be mapped
 
 	\item the \emph{kernelspace stack} will be located in this lowmem
 
 	\item several so far unidentified pages are mapped after
-	\texttt{0xf800~0000}
+		\texttt{0xf800~0000}
 
 	\item all \emph{unused frames} will have 4-byte entries consisting of
-	zeroes (\texttt{0x00~00~00~00})
+		zeroes (\texttt{0x0000~0000})
 
 \end{itemize}
 
@@ -225,7 +228,7 @@ reach $0$.
 \texttt{liblinear} uses the NCD to measure the distance between a known true
 pagedirectory and a page of unknown data to determine whether this page could be
 a pagedirectory. The NCD has been chosen, because it is a \emph{parameter-free}
-measurement, i.e. it does not depend on specific, known structures of the data
+measurement, i.e\@. it does not depend on specific, known structures of the data
 in question. As different architectures will have significantly different
 address translation schemes, even depending on the operating systems used, this
 choice should be adequate. The \texttt{complearn}-toolkit

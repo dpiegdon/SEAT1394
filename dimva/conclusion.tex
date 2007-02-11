@@ -1,6 +1,6 @@
 % vim: tw=80 ai fdl=99 fo+=a
 %
-% $Id: conclusion.tex 349 2007-02-04 15:43:37Z lostrace $
+% $Id$
 %
 
 \section{Conclusion}
@@ -16,13 +16,13 @@ DMA for others should be tested very carefully, as these schemes may be tricked
 by pretending to be a different, ``trusted'' device (see
 \cite{rux2k6firewire:2006}).
 
-Though most of the tools introduced are designed to attack a system,
+Though most of the tools introduced are designed to attack a system, \linebreak
 \texttt{libphysical} and \texttt{liblinear} can also be used for forensic
 purposes to analyse memory dumps (with the filedescriptor backend). The
 statement ``There is little experience in reconstructing logical/virtual memory
 from physical memory dumps'' from \cite{cansecwest_firewire:2005} is no longer
 true: \texttt{liblinear} can be used to access virtual address spaces of each
-process (independent of the operating system), e.g.~IDETECT (by Mariusz Burdach,
-\cite{finding_digital_evidence_in_physical_memory:2006}) can be used to analyse
-kernel data structures to obtain other information.
+process (independent of the operating system), e.g\@. IDETECT (by Mariusz
+Burdach, \cite{finding_digital_evidence_in_physical_memory:2006}) can be used to
+analyse kernel data structures to obtain other information.
 

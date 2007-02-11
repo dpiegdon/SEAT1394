@@ -1,6 +1,6 @@
 % vim: tw=80 ai fdl=99 fo+=a
 %
-% $Id: prospects.tex 349 2007-02-04 15:43:37Z lostrace $
+% $Id$
 %
 
 \section{Future prospects}
@@ -13,7 +13,7 @@ In this section we will show future work that can be done in this area.
 
 The Linux character device \texttt{/dev/kmem} gives a process read and write
 access to its virtual address space, including the kernel-space area.
-\texttt{/dev/kmem} has not only been used for its legitimate purpose (i.e.
+\texttt{/dev/kmem} has not only been used for its legitimate purpose (i.e\@.
 debugging the kernel) but also to inject code into the running kernel and
 install kernel-based rootkits. \cite{phrack58.7:2001} describes an attack using
 \texttt{/dev/kmem} to inject a new syscall-handler (a regularly used rootkit
@@ -45,9 +45,9 @@ injection in the future.
 
 As an attacker has complete access to a systems memory, it is possible to take
 over the system completely, reset it to a known state and boot a custom
-operating system on it (and e.g.~use firewire storage as the root-device for the
-new system). A special bootloader would be required to do this and it might also
-be necessary to reset the system and attached hardware in a special way,
+operating system on it (and e.g\@. use firewire storage as the root-device for
+the new system). A special bootloader would be required to do this and it might
+also be necessary to reset the system and attached hardware in a special way,
 depending on the operating system running on it before the approach.
 % FIXME: spida: "before the approach" <- baeh
 
