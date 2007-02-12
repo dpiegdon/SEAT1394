@@ -242,7 +242,7 @@ void do_analyse_process(linear_handle lin, char *bin)
 
 void usage(char* argv0)
 {{{
-	printf( "%s [-] <"TERM_YELLOW"-n nodeid"TERM_RESET"|"TERM_YELLOW"-f filename"TERM_RESET">\n"
+	printf( "%s <"TERM_YELLOW"-n nodeid"TERM_RESET"|"TERM_YELLOW"-f filename"TERM_RESET">\n"
 		"\tprint a process list of\n"
 		"\t\t* the host connected via firewire with the given nodeid\n"
 		"\t\t* the memory dump in the given file\n"

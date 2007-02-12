@@ -33,10 +33,11 @@
 
 void usage(char* argv0)
 {{{
-	printf( "%s -f <filename> -n|-g <nodeid|guid> [-s]\n"
+	printf( "%s -f <filename> -n|-g <nodeid|guid> [-s] [-c]\n"
 		"\tdumps memory of IEEE1394-node <nodeid> or <guid> to <filename>\n"
 		"\t-s : skip memory [0xc0000 , 0xfffff]\n"
-		"\t\t(dumping this could kill a windoze)\n",
+		"\t\t(dumping this could kill a windoze)\n"
+		"\t-c : continue if some pages fail to be dumped\n",
 		argv0);
 }}}
 
@@ -47,6 +48,7 @@ int main(int argc, char**argv)
 	char *filename = NULL;
 	int dumpfd;
 	int do_skip = 0;
+	int do_cont = 0;
 	char c;
 	char *p;
 
@@ -57,7 +59,7 @@ int main(int argc, char**argv)
 	int last_read_failed;
 	int i;
 
-	while( -1 != (c = getopt(argc, argv, "g:n:f:s"))) {
+	while( -1 != (c = getopt(argc, argv, "g:n:f:sc"))) {
 		switch (c) {
 			case 'g':
 				if(nodeid != -1)
@@ -91,6 +93,10 @@ int main(int argc, char**argv)
 			case 's':
 				// skip memory [0xc0000 , 0xfffff]
 				do_skip = 1;
+				break;
+			case 'c':
+				// continue if something fails
+				do_cont = 1;
 				break;
 			default:
 				usage(argv[0]);
@@ -139,8 +145,15 @@ int main(int argc, char**argv)
 	// dump the memory
 	for( pn = 0; pn < 0x100000; pn++ ) {
 		if(pn < 0x100  &&  pn >= 0xc0  &&  do_skip) {
-			if(pn == 0xc0)
+			if(pn == 0xc0) {
 				printf("skipping [0xc0000 , 0xfffff]\n");
+				for(i = 0; i < 4096; i++) {
+					if(i < 256)
+						page[i] = i;
+					else
+						page[i] = 0xFE;
+				}
+			}
 			continue;
 		}
 		if(last_read_failed) {
@@ -163,6 +176,8 @@ int main(int argc, char**argv)
 			if(physical_read_page(phy, pn, page)) {
 				last_read_failed = 1;
 				printf("\nfailed to read page 0x%05x\n", (uint32_t)pn);
+				if(!do_cont)
+					return 0;
 				for(i = 0; i < 4096; i++) {
 					if(i < 256)
 						page[i] = i;
