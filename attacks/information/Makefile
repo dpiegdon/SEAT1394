@@ -30,9 +30,11 @@ LDFLAGS+= -L$(PREFIX)/lib -s
 all:	remote-ps debug-sshkey snarf-sshkey
 
 clean:
-	-rm -f remote-ps snarf-sshkey snarf-sshkey-static debug-sshkey *.o
+	-rm -f dump-memory remote-ps snarf-sshkey snarf-sshkey-static debug-sshkey *.o
 
 
+dump-memory: LDFLAGS += -lphysical -llinear
+dump-memory: dump-memory.o
 
 remote-ps: LDFLAGS += -lphysical -llinear
 remote-ps: remote-ps.o proc_info.o
@@ -48,6 +50,7 @@ debug-sshkey: LDFLAGS += -lcrypto
 debug-sshkey: debug-sshkey.o sshkey-sanitychecks.o ssh-authfile.o
 
 
+dump-memory.o: dump-memory.c
 
 remote-ps.o: remote-ps.c
 
