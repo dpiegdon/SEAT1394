@@ -33,8 +33,8 @@
 
 void usage(char* argv0)
 {{{
-	printf( "%s -f <filename> -n <nodeid> [-s]\n"
-		"\tdumps memory of IEEE1394-node <nodeid> to <filename>\n"
+	printf( "%s -f <filename> -n|-g <nodeid|guid> [-s]\n"
+		"\tdumps memory of IEEE1394-node <nodeid> or <guid> to <filename>\n"
 		"\t-s : skip memory [0xc0000 , 0xfffff]\n"
 		"\t\t(dumping this could kill a windoze)\n",
 		argv0);
@@ -137,7 +137,12 @@ int main(int argc, char**argv)
 
 	last_read_failed = 0;
 	// dump the memory
-	for( pn = 0; pn < 0xfffff; pn++ ) {
+	for( pn = 0; pn < 0x100000; pn++ ) {
+		if(pn < 0x100  &&  pn >= 0xc0  &&  do_skip) {
+			if(pn == 0xc0)
+				printf("skipping [0xc0000 , 0xfffff]\n");
+			continue;
+		}
 		if(last_read_failed) {
 			// last read failed
 			if(physical_read_page(phy, pn, page)) {
