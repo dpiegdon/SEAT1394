@@ -27,7 +27,7 @@ PREFIX?=$(HOME)
 CFLAGS += -I$(PREFIX)/include -O9 -W -Wall -fPIC -finline-functions -ffast-math -funroll-all-loops -Wpointer-arith -DUSETERM
 LDFLAGS+= -L$(PREFIX)/lib -s
 
-all:	remote-ps debug-sshkey snarf-sshkey
+all:	dump-memory remote-ps debug-sshkey snarf-sshkey
 
 clean:
 	-rm -f dump-memory remote-ps snarf-sshkey snarf-sshkey-static debug-sshkey *.o

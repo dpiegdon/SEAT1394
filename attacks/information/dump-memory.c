@@ -1,4 +1,5 @@
 /*  $Id$
+ *  vim: fdm=marker
  *  memory dumper
  *
  *  Copyright (C) 2006,2007
@@ -37,12 +38,13 @@ void usage(char* argv0)
 		"\tdumps memory of IEEE1394-node <nodeid> or <guid> to <filename>\n"
 		"\t-s : skip memory [0xc0000 , 0xfffff]\n"
 		"\t\t(dumping this could kill a windoze)\n"
-		"\t-c : continue if some pages fail to be dumped\n",
+		"\t-c : continue if some pages fail to be dumped\n"
+		"\t\tin this case you will have to stop me with a signal.\n",
 		argv0);
 }}}
 
 int main(int argc, char**argv)
-{
+{{{
 	int nodeid = -1;
 	uint64_t guid = 0;
 	char *filename = NULL;
@@ -199,5 +201,5 @@ int main(int argc, char**argv)
 	close(dumpfd);
 
 	return 0;
-}
+}}}
 
