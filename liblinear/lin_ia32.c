@@ -77,11 +77,30 @@ static int pagedirtest_fast_linux3G1G(struct linear_handle_data* h, addr_t physi
 static float pagedirtest_prob_linux3G1G(struct linear_handle_data* h, void* page)
 {
 	float ncd = 2;
-	// test NCD against sample page
-	// for bzip2: blocksize, workfactor, bzverbosity
-	// 	defaults may be used when omitted
 	ncd = simple_ncd(page, h->phy->pagesize, lin_ia32_samplepagedir_linux3G1G, 4096);
+	if(ncd > 1.)
+		ncd = 1.;
+	return 1. - ncd;
+}
 
+static int pagedirtest_fast_windows2G2G(struct linear_handle_data* h, addr_t physical_pageno)
+{
+	uint32_t pde;
+	int res;
+
+	// check @0x800, PDE 0x200
+	res = physical_read(h->phy, physical_pageno * h->phy->pagesize + 0x200*sizeof(union pagedir_entry), &pde, sizeof(pde));
+	// FIXME this applies to windows XP, but really for all of them?
+	if(pde == 0x0003b163)
+		return 1;
+
+	return 0;
+}
+
+static float pagedirtest_prob_windows2G2G(struct linear_handle_data* h, void* page)
+{
+	float ncd = 2;
+	ncd = simple_ncd(page, h->phy->pagesize, lin_ia32_samplepagedir_windows2G2G, 4096);
 	if(ncd > 1.)
 		ncd = 1.;
 	return 1. - ncd;
@@ -129,16 +148,23 @@ int lin_ia32_finish(struct linear_handle_data* h)
 int lin_ia32_is_pagedir_fast(struct linear_handle_data* h, addr_t physical_pageno)
 {
 	return (
-			pagedirtest_fast_linux3G1G(h, physical_pageno)
+			   pagedirtest_fast_linux3G1G(h, physical_pageno)
+			|| pagedirtest_fast_windows2G2G(h, physical_pageno)
 	       );
 }
 
 float lin_ia32_is_pagedir_probability(struct linear_handle_data* h, void* page)
 {
-	return (
-			// MAX(...)
-			pagedirtest_prob_linux3G1G(h, page)
-	       );
+	float linux3G1G;
+	float windows2G2G;
+
+	linux3G1G = pagedirtest_prob_linux3G1G(h, page);
+	windows2G2G = pagedirtest_prob_windows2G2G(h, page);
+
+	if(linux3G1G < windows2G2G)
+		return windows2G2G;
+	else
+		return linux3G1G;
 }
 
 int lin_ia32_linear_to_physical(struct linear_handle_data* h, addr_t lin_adr, addr_t* physical_adr)
