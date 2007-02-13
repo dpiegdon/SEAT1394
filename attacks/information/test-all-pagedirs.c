@@ -159,6 +159,8 @@ int main(int argc, char**argv)
 	// search all pages in lowmem for pagedirs
 	// then, for each found, print process name
 	for( pn = 0; pn < 0x40000; pn++ ) {
+		if(!linear_is_pagedir_fast(lin, pn))
+			continue;
 		if((pn%0x100) == 0) {
 			printf("0x%05llx           \r", pn);
 			fflush(stdout);
@@ -177,7 +179,7 @@ int main(int argc, char**argv)
 			} else {
 				float prob;
 				prob = linear_is_pagedir_probability(lin, page);
-				if(prob < 0.1)
+				if(prob < 0.03)
 					printf("prob %f. too small.\r",prob);
 				else {
 					char filename[20];
