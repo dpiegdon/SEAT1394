@@ -144,9 +144,24 @@ void show_stack(linear_handle lin)
 		if(!continuous) {
 			c = getchar();
 			switch(c) {
+				case 'Q':
+					exit(0);
+					break;
+				case 'U':
+					getchar();
+					pn--;
+					while(linear_read_page(lin, pn, page))
+						pn--;
+					break;
 				case 'u':
 					getchar();
 					pn--;
+					break;
+				case 'D':
+					getchar();
+					pn++;
+					while(linear_read_page(lin, pn, page))
+						pn++;
 					break;
 				case 'd':
 					getchar();
@@ -312,6 +327,8 @@ int main(int argc, char**argv)
 				char **argv, **envv;
 				char *bin;
 
+				show_stack(lin);
+				/*
 				proc_info(lin, &argc, &argv, &envc, &envv, &bin);
 				if(bin) {
 					printf("found <\"%s\">\n", bin);
@@ -327,6 +344,7 @@ int main(int argc, char**argv)
 					if(argv)
 						free(argv);
 				}
+				*/
 			}
 		}
 	}
