@@ -28,6 +28,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
@@ -57,6 +58,34 @@ volatile int continuous = 0;
 void de_continue(int __attribute__ ((__unused__)) signal)
 {{{
 	continuous = 0;
+}}}
+
+void dump_page(FILE *f, uint32_t pn, char* page)
+{{{
+	uint32_t addr;
+	int i,j;
+	char c;
+	fprintf(f, "dump page %x\n", pn);
+
+	addr = pn * 4096;
+	for(i = 0; i<4096; i+=16) {
+		fprintf(f, "page 0x%05x, addr 0x%08x: ", pn, addr+i);
+		for(j = 0; j < 16; j++) {
+			fprintf(f, "%02hhx ", (page+i)[j]);
+			if((j+1)%4 == 0 && j)
+				fputc(' ', f);
+		}
+		fprintf(f, "  |  ");
+		for(j = 0; j < 16; j++) {
+			c = (page+i)[j];
+			if(c < 0x20)
+				c = '.';
+			if(c >= 0x7f)
+				c = '.';
+			fputc(c, f);
+		}
+		fprintf(f, "\n");
+	}
 }}}
 
 void dump_page_wide(FILE *f, uint32_t pn, char* page, char* diffpage)
@@ -104,13 +133,21 @@ void dump_page_wide(FILE *f, uint32_t pn, char* page, char* diffpage)
 
 void show_stack(linear_handle lin)
 {{{
+#define FILENAME_MAX_LEN 128
 	int c = 0;
+	int mapped = 0;
+	size_t i;
 	addr_t pn;
 	addr_t foo;
 	int valid_page;
 	char*page;
 	char page1[4096];
 	char page2[4096];
+
+	uint64_t runner;
+	int p;
+	char* filename;
+	FILE* file;
 
 	// seek stack-bottom
 	page = page1;
@@ -135,46 +172,129 @@ void show_stack(linear_handle lin)
 			page = page1;
 
 		if(0 == linear_read_page(lin, pn, page)) {
+			mapped = 1;
 			if(page == page1)
 				dump_page_wide(stdout, pn, page, page2);
 			else
 				dump_page_wide(stdout, pn, page, page1);
-		} else
-			printf("page 0x%0llx unmapped\n", pn);
+		} else {
+			mapped = 0;
+			printf("page 0x%0llx " TERM_YELLOW "unmapped" TERM_RESET "\n", pn);
+		}
 		if(!continuous) {
 			c = getchar();
 			switch(c) {
-				case 'Q':
-					exit(0);
+				case '?':
+					printf( "?        - print this help\n"
+						"g0xXXXXX - go to page 0xXXXXX\n"
+						"u        - pageno++\n"
+						"U        - pageno++, until mapped page is found\n"
+						"d        - pageno--\n"
+						"D        - pageno--, until mapped page is found\n"
+						"c        - coninuously dump this page (stop with CTRL-C\n"
+//						"xfile    - dump virtual address space to <file>, raw.\n"
+//						"           unmapped pages are filled with 'XXXX...'\n"
+						"Xfile    - dump virtual address space to <file>, hex-dump\n"
+						"pfile    - dump this page to <file>\n"
+						"q        - exit this virtual address space and search next\n"
+						"Q        - quit program\n"
+							);
 					break;
-				case 'U':
-					getchar();
-					pn--;
-					while(linear_read_page(lin, pn, page))
-						pn--;
+
+				case 'g':
+					scanf("0x%05llx", &pn);
 					break;
+
 				case 'u':
 					getchar();
-					pn--;
+					pn++;
 					break;
-				case 'D':
+				case 'U':
 					getchar();
 					pn++;
 					while(linear_read_page(lin, pn, page))
 						pn++;
 					break;
+
 				case 'd':
 					getchar();
-					pn++;
+					pn--;
 					break;
+				case 'D':
+					getchar();
+					pn--;
+					while(linear_read_page(lin, pn, page))
+						pn--;
+					break;
+
 				case 'c':
 					getchar();
 					continuous = 1;
 					c = 0xff;
 					break;
-				case 'g':
+
+				case 'X':
+					// hexdump all to file
+					//{{{
+					filename = NULL; i = FILENAME_MAX_LEN;
+					p = getline(&filename, &i, stdin);
+					while(p--)
+						if(filename[p] == '\n')
+							filename[p] = 0;
+					file = fopen(filename, "w");
+
+					if(!file)
+						printf("failed to open file \"%s\".\n", filename);
+					else {
+						for(runner = 0; runner <= 0xfffff; runner++) {
+							if(!(runner & 0xff))
+								printf("dumping page 0x%05llx\r", runner);
+
+							if(linear_read_page(lin, runner, page)) {
+								if(!(runner & 0xf))
+									fprintf(file, "page 0x%05llx is unmapped\n", runner);
+							} else {
+								dump_page(file, runner, page);
+							}
+						}
+						fclose(file);
+						printf("dumped to \"%s\".\n", filename);
+					}
+
+					free(filename);
 					getchar();
-					scanf("0x%06llx", &pn);
+					//}}}
+					break;
+
+				case 'p':
+					// dump page to file
+					//{{{
+					if(mapped) {
+						filename = NULL; i = FILENAME_MAX_LEN;
+						p = getline(&filename, &i, stdin);
+						while(p--)
+							if(filename[p] == '\n')
+								filename[p] = 0;
+						file = fopen(filename, "w");
+						if(!file)
+							printf("failed to open file \"%s\".\n", filename);
+						else {
+							fwrite(page, 4096, 1, file);
+							fclose(file);
+							printf("page dumped to \"%s\".\n", filename);
+						}
+						free(filename);
+					} else {
+						filename = NULL; i = FILENAME_MAX_LEN;
+						getline(&filename, &i, stdin);
+						free(filename);
+						printf("page is unmapped?\n");
+					}
+					//}}}
+					break;
+
+				case 'Q':
+					exit(0);
 					break;
 				case 0xa:
 					// nothing
@@ -184,6 +304,8 @@ void show_stack(linear_handle lin)
 					getchar();
 					break;
 			}
+			if(pn > 0xffffff)
+				pn = 0;
 		} else {
 			usleep(500000);
 		}
@@ -193,8 +315,12 @@ void show_stack(linear_handle lin)
 
 void usage(char* argv0)
 {{{
-	printf( "%s <"TERM_YELLOW"-n nodeid"TERM_RESET"|"TERM_YELLOW"-f filename"TERM_RESET"> -b <binary>\n"
-		"\ncontinually dump the stack of the first process matching the -b <binary>\n"
+	printf( "%s <"TERM_YELLOW"-n nodeid"TERM_RESET"|"TERM_YELLOW"-f filename"TERM_RESET"> -a|-b <binary>\n"
+		"\n"
+		"continually dump the stack of processes\n"
+		"\t\t-b <binary> : search for a process matching this binary\n"
+		"\t\t-a : in opposite to -b : try all found address spaces\n"
+		"\t\t-s : skip memory [0xc0000 , 0xfffff] (for windows target)\n"
 		"\t\t* the host connected via firewire with the given nodeid\n"
 		"\t\t* the memory dump in the given file\n",
 		argv0);
@@ -211,13 +337,15 @@ int main(int argc, char**argv)
 	float prob;
 	int c;
 	char *p;
-	char *seek_binary = NULL;
+	int match_binary = 1;
+	char *binary_name = NULL;
+	int do_skip = 0;
 
 	enum memsource memsource = SOURCE_UNDEFINED;
 	char *filename = NULL;
 	int nodeid = 0;
 
-	while( -1 != (c = getopt(argc, argv, "n:f:b:"))) {
+	while( -1 != (c = getopt(argc, argv, "san:f:b:"))) {
 		switch (c) {
 			case 'n':
 				// phys.source: ieee1394
@@ -234,8 +362,19 @@ int main(int argc, char**argv)
 				memsource = SOURCE_MEMDUMP;
 				filename = optarg;
 				break;
+			case 's':
+				// skip memory [0xc0000 , 0xfffff]
+				do_skip = 1;
+				break;
+			case 'a':
+				if(binary_name != NULL)
+					printf("giving both of -a and -b. will try ALL binaries\n");
+				match_binary = 0;
+				break;
 			case 'b':
-				seek_binary = optarg;
+				if(!match_binary)
+					printf("giving both of -a and -b. will try ALL binaries\n");
+				binary_name = optarg;
 				break;
 			default:
 				usage(argv[0]);
@@ -286,7 +425,7 @@ int main(int argc, char**argv)
 		return -2;
 	}
 
-	if(!seek_binary) {
+	if(!binary_name && match_binary) {
 		printf("missing binary to seek\n");
 		usage(argv[0]);
 		return -2;
@@ -304,6 +443,11 @@ int main(int argc, char**argv)
 	// search all pages in lowmem for pagedirs
 	// then, for each found, print process name
 	for( pn = 0; pn < 0x40000; pn++ ) {
+		if(pn < 0x100  &&  pn >= 0xc0  &&  do_skip) {
+			if(pn == 0xc0)
+				printf("skipping [0xc0000 , 0xfffff]\n");
+			continue;
+		}
 		if((pn%0x100) == 0) {
 			printf("0x%05llx\r", pn);
 			fflush(stdout);
@@ -327,24 +471,26 @@ int main(int argc, char**argv)
 				char **argv, **envv;
 				char *bin;
 
-				show_stack(lin);
-				/*
-				proc_info(lin, &argc, &argv, &envc, &envv, &bin);
-				if(bin) {
-					printf("found <\"%s\">\n", bin);
-					if(0 == strcmp(bin, seek_binary)) {
-						printf("\tmatching!\n");
+				if(match_binary) {
+					proc_info(lin, &argc, &argv, &envc, &envv, &bin);
+					if(bin) {
+						printf("found " TERM_YELLOW "<\"%s\">" TERM_RESET "\n", bin);
+						if(0 == strcmp(bin, binary_name)) {
+							printf("\tmatching!\n");
 
-						show_stack(lin);
+							show_stack(lin);
 
-						break;
+							// break;
+						}
+						if(envv)
+							free(envv);
+						if(argv)
+							free(argv);
 					}
-					if(envv)
-						free(envv);
-					if(argv)
-						free(argv);
+				} else {
+					printf(TERM_YELLOW "address space found" TERM_RESET "\n");
+					show_stack(lin);
 				}
-				*/
 			}
 		}
 	}
