@@ -1,0 +1,157 @@
+\documentclass{beamer}
+
+
+\mode<presentation>
+{
+  \usetheme[compress]{Ilmenau}
+	\useinnertheme{circles}
+	\usecolortheme{lostrace}
+  \setbeamercovered{transparent}
+  \setbeamertemplate{navigation symbols}{}
+}
+
+%\usepackage{epsfig,graphicx,epsf}
+\usepackage[ngerman]{babel}
+\usepackage{ucs}
+\usepackage[utf8x]{inputenc}
+\usepackage{times}
+\usepackage[T1]{fontenc}
+\usepackage{multimedia}
+
+\newenvironment{itemizeframe}[1]
+  {\begin{frame}{#1}\startitemizeframe}
+  {\stopitemizeframe\end{frame}}
+\newcommand\startitemizeframe{\begin{itemize}}
+\newcommand\stopitemizeframe{\end{itemize}}
+
+
+
+\title[hacking in physically addressable memory]
+{ { \small Seminar of Advanced Exploitation Techniques, WS 2006/2007} \\ \textbf{hacking in physically addressable memory}\\ a proof of concept}
+
+\author[losTrace A.K.A. David R. Piegdon <david.rasmus.piegdon@rwth-aachen.de>]
+{David~Rasmus~Piegdon \\ \ \\ \tiny Supervisor: Lexi Pimenidis}
+
+\institute[RWTH Aachen University of Technology]{
+	Lehrstuhl f\"ur Informatik IV, RWTH Aachen\\ {\tiny \ \\ http://www-i4.informatik.rwth-aachen.de \\} 
+}
+
+\date[2007-02-21]
+{February 21st 2006}
+
+\subject{Direct Memory Access hacking}
+
+%\pgfdeclareimage[height=0.4cm]{by-nc-sa}{../bilder/by-nc-sa}
+%\titlegraphic{\href{http://creativecommons.org/licenses/by-nc-sa/2.0/de/}{\pgfuseimage{by-nc-sa}}}
+
+\pgfdeclareimage[height=1.0cm]{i4-1394}{i4_ieee1394_stacked}
+\logo{\pgfuseimage{i4-1394}}
+
+%\pgfdeclareimage[height=3cm]{microkernel}{microkernel}
+%\pgfdeclareimage[height=6cm]{monolith}{monolith}
+%\pgfdeclareimage[height=19cm]{kernel-attackspace}{kernel-attackspace}
+
+
+\begin{document}
+
+\begin{frame}
+	\titlepage
+\end{frame}
+
+\begin{frame}
+	\frametitle{Gliederung}
+	\tableofcontents[hideallsubsections]
+\end{frame}
+
+\AtBeginSection{
+%	\begin{frame}
+%	  \frametitle{Gliederung}
+%	  \tableofcontents[hideallsubsections]
+%	  % Die Option [pausesections] könnte nützlich sein.
+%	\end{frame}
+	\begin{frame}<beamer>
+		\frametitle{Gliederung}
+		\tableofcontents[current,hideallsubsections]
+	\end{frame}
+}
+
+% "` "'
+% umlaute "a ...
+
+% \begin{exampleblock}	gruene box
+% \begin{alertblock}	rote box
+% \begin{Definition}	blaue box, titel "Definition"
+% \begin{Example}	gruene box, titel "Example"
+% \alert{...}		roter text
+% \structure{...}	blauer text
+
+\section{Introduction}
+
+	\subsection{physical addressable memory}
+
+		\begin{frame}{physical addressable memory}
+			"`hacking in physically addressable memory"'
+			\begin{itemize}
+				\item hacking: using a technique for something it has not been designed for.
+				\item physically addressable memory: direct memory access, "`DMA"'
+			\end{itemize}
+		\end{frame}
+
+		\begin{itemizeframe}{hacking}
+			\item I will show mostly \structure{attacks}
+			\item so actually I will be \structure{cracking} a systems security
+			\item<2-> \alert{exploiting et al is not hacking by definition}
+			\item<2-> \structure{hackers hate misuse of "`to hack"' by media}
+		\end{itemizeframe}
+
+		\begin{itemizeframe}{DMA}
+			\item DMA = Direct Memory Access
+			\item basic requirement for introduced approach
+			\item known for a long time: attacker has DMA -> \structure{0wn3d}
+				\begin{itemize}
+					\item 0wn3d by an iPod $[1]$
+					\item and others $[2,3]$
+				\end{itemize}
+			\item this is a \structure{proof of concept}
+		\end{itemizeframe}
+	
+		\begin{itemizeframe}{Proof of Concept}
+			\item<1-> Accessing phys. addr. memory
+			\item<2-> Finding virtual address spaces
+			\item<3-> \structure{Gathering information}
+			\item<4-> \structure{Injecting code}
+			\item<5-> Prospects
+		\end{itemizeframe}
+
+\section*{}
+
+	\begin{frame}
+		Fragen?
+	\end{frame}
+
+	\begin{itemizeframe}{Literatur}
+		\item[1] \emph{Michael Becher, Maximillian Dornseif, and Christian N.
+			Klein.} \structure{Firewire - all your memory are belong to us}, 2005.
+
+		\item[2] \emph{Adam Boileau.} Ruxcon 2006: Hit by a bus: Physical access attacks with
+			firewire, 2006.
+
+		\item[3] \emph{Mariusz Burdach.} Finding digital evidence in physical memory, 2006.
+	\end{itemizeframe}
+
+	\begin{itemizeframe}{Literatur}
+		\item[4] \emph{Rudi Cilibrasi and Paul M. B. Vit\'anyi.} Clustering by compression.
+			IEEE transactions on information theory, vol. 51, 2005.
+
+		\item[5] \emph{Otto Spaniol et al.} Systemprogrammierung, Skript zur Vorlesung an der RWTH
+			Aachen. Wissenschaftsverlag Mainz; Aachener Beitraege zur Informatik (ABI),
+			2002. ISBN 3-86073-470-9.
+			
+		\item[6] \emph{Intel Corp.} Intel 64 and IA-32 Architectures Software Developer’s Manual.
+
+		\item[7] \emph{Bruce Schneier.} Applied Cryptography (Second Edition). John Wiley \& Sons,
+			Inc, 1996. ISBN 0-471-11709-9.
+	\end{itemizeframe}
+
+\end{document}
+
