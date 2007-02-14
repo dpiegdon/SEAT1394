@@ -27,16 +27,19 @@ PREFIX?=$(HOME)
 CFLAGS += -I$(PREFIX)/include -O9 -W -Wall -fPIC -finline-functions -ffast-math -funroll-all-loops -Wpointer-arith -DUSETERM
 LDFLAGS+= -L$(PREFIX)/lib -s
 
-all:	dump-memory remote-ps debug-sshkey snarf-sshkey test-all-pagedirs
+all:	dump-memory remote-ps debug-sshkey snarf-sshkey test-all-pagedirs show-stack
 
 clean:
-	-rm -f dump-memory remote-ps snarf-sshkey snarf-sshkey-static debug-sshkey *.o test-all-pagedirs
+	-rm -f dump-memory remote-ps snarf-sshkey snarf-sshkey-static debug-sshkey *.o test-all-pagedirs show-stack
 
 test-all-pagedirs: test-all-pagedirs.c
 	gcc test-all-pagedirs.c -lphysical -llinear -L/home/lostrace/lib -I/home/lostrace/include -o test-all-pagedirs
 
 dump-memory: LDFLAGS += -lphysical -llinear
 dump-memory: dump-memory.o
+
+show-stack: LDFLAGS += -lphysical -llinear
+show-stack: show-stack.o proc_info.o
 
 remote-ps: LDFLAGS += -lphysical -llinear
 remote-ps: remote-ps.o proc_info.o
