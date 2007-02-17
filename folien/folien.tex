@@ -47,6 +47,8 @@
 \pgfdeclareimage[height=1.0cm]{i4-1394}{i4_ieee1394_stacked}
 \logo{\pgfuseimage{i4-1394}}
 
+\pgfdeclareimage[height=1.0cm]{logo-1394}{ieee1394-logo-big}
+
 %\pgfdeclareimage[height=3cm]{microkernel}{microkernel}
 %\pgfdeclareimage[height=6cm]{monolith}{monolith}
 %\pgfdeclareimage[height=19cm]{kernel-attackspace}{kernel-attackspace}
@@ -87,7 +89,7 @@
 
 \section{Introduction}
 
-	\subsection{physical addressable memory}
+	\subsection{}
 
 		\begin{frame}{physical addressable memory}
 			"`hacking in physically addressable memory"'
@@ -101,7 +103,7 @@
 			\item I will show mostly \structure{attacks}
 			\item so actually I will be \structure{cracking} a systems security
 			\item<2-> \alert{exploiting et al is not hacking by definition}
-			\item<2-> \structure{hackers hate misuse of "`to hack"' by media}
+			\item<2-> \structure{"`to hack"' is mostly misused by media}
 		\end{itemizeframe}
 
 		\begin{itemizeframe}{DMA}
@@ -112,21 +114,148 @@
 					\item 0wn3d by an iPod $[1]$
 					\item and others $[2,3]$
 				\end{itemize}
-			\item this is a \structure{proof of concept}
+			\item this is a \structure{proof of concept}, nothing more
 		\end{itemizeframe}
-	
-		\begin{itemizeframe}{Proof of Concept}
-			\item<1-> Accessing phys. addr. memory
-			\item<2-> Finding virtual address spaces
-			\item<3-> \structure{Gathering information}
-			\item<4-> \structure{Injecting code}
-			\item<5-> Prospects
+
+\section{Accessing memory}
+
+	\subsection{Methods}
+
+		\begin{frame} \frametitle{Methods}
+			Many ways to gain access to memory:
+			\begin{itemize}
+				\item special PCI cards (forensic, remote management cards)
+				\item special PCMCIA cards
+				\item FireWire (IEEE1394) DMA feature
+				\item anything with DMA
+				\item \texttt{/dev/mem} (linux)
+				\item memory dumps
+				\item Suspend2Disk images
+				\item Virtual machines
+				\item \ldots
+			\end{itemize}
+		\end{frame}
+
+		\begin{frame} \frametitle{DMA hardware}
+			hardware we may use is
+			\begin{itemize}
+				\item expensive
+				\item specially crafted
+				\item selfmade (?)
+				\item rare
+				\item not hot-pluggable (?)
+				\item \structure{one exception:} FireWire (IEEE1394)
+			\end{itemize}
+		\end{frame}
+
+		\begin{frame}
+			\alert{insert reference Joana Rutkovska here}
+
+			http://theinvisiblethings.blogspot.com/2007/01/beyond-cpu-cheating-hardware-based-ram.html
+		\end{frame}
+
+	\subsection{FireWire}
+
+		\begin{frame} \frametitle{FireWire overview}
+			\pgfuseimage{logo-1394} FireWire, iLink, IEEE1394
+			\begin{itemize}
+				\item Expansion Bus (like PCI or PCMCIA)
+				\item has DMA (if enabled by driver)
+				\item guaranteed bandwith
+				\item used alot for media-crunching ("`USB-BetaMax"')
+				\item wide-spread (even among laptops)
+				\item most people are not aware of abuse-factor
+			\end{itemize}
+		\end{frame}
+
+		\begin{itemizeframe}{FireWire DMA}
+			\item DMA only enabled if driver says so
+			\begin{itemize}
+				\item Linux, BSD, MacOSX: by default (can be disabled)
+				\item Windows: only for devices that "`deserve"' (more later)
+			\end{itemize}
+			\item if DMA -> full access, no restrictions
 		\end{itemizeframe}
+
+		\begin{frame} \frametitle{Windows DMA}
+			Devices that "`deserve"' DMA on windows:
+
+			SBP2 (storage) devices, like
+			\begin{itemize}
+				\item external disks
+				\item \structure{iPod} (has a disk)
+			\end{itemize}
+
+			\uncover<2->{The iPod can run Linux\ldots}
+		\end{frame}
+		
+		\begin{itemizeframe}{How to identify SBP2}
+			\item identify devices and features from their CSR \structure{config ROM}
+			\item config ROM contains
+			\begin{itemize}
+				\item GUID: 8 byte globally unique ID (like MAC address)
+				\item Identifier of driver
+				\item List of supported features
+				\item List of supported speeds
+				\item \ldots
+			\end{itemize}
+			\item<2-> CSR config ROM can be faked (see [2])
+			\item<3-> copy config ROM from iPod and install it on any system
+			\item<4-> magically Windows permits DMA
+		\end{itemizeframe}
+
+			
+
+
+
+
+\section{Virtual address spaces}
+
+	\begin{frame}
+		foo
+	\end{frame}
+
+\section{Gathering information}
+
+	\begin{frame}
+		foo
+	\end{frame}
+
+\section{Injecting code}
+
+	\begin{frame}
+		foo
+	\end{frame}
+
+
+\section{Prospects}
+
+	\begin{frame}
+		foo
+	\end{frame}
+
+\section{Conclusion}
+
+	\begin{frame}
+		foo
+	\end{frame}
 
 \section*{}
 
 	\begin{frame}
-		Fragen?
+		Questions?
+	\end{frame}
+
+	\begin{frame}
+		\frametitle{Thanks\ldots}
+		\begin{itemize}
+			\item Maximillian Dornseif, Christian N. Klein and Michael Becher (basic idea)
+			\item Lexi Pimenidis (supervisor)
+			\item Timo Boettcher and Alexander Neumann
+			\item Swantje Staar
+			\item Chaos Computer Club Cologne
+		\end{itemize}
+		Thank you!
 	\end{frame}
 
 	\begin{itemizeframe}{Literatur}
