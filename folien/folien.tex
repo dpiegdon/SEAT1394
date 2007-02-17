@@ -48,6 +48,7 @@
 \logo{\pgfuseimage{i4-1394}}
 
 \pgfdeclareimage[height=1.0cm]{logo-1394}{ieee1394-logo-big}
+\pgfdeclareimage[height=6.7cm]{ia32-vm}{ia32_segmentation_paging}
 
 %\pgfdeclareimage[height=3cm]{microkernel}{microkernel}
 %\pgfdeclareimage[height=6cm]{monolith}{monolith}
@@ -136,6 +137,14 @@
 			\end{itemize}
 		\end{frame}
 
+		\begin{itemizeframe}{generic problems}
+			\item swapping
+			\item multiple accessors at any time
+			\item caching
+		\end{itemizeframe}
+
+	\subsection{DMA hardware}
+
 		\begin{frame} \frametitle{DMA hardware}
 			hardware we may use is
 			\begin{itemize}
@@ -147,14 +156,6 @@
 				\item \structure{one exception:} FireWire (IEEE1394)
 			\end{itemize}
 		\end{frame}
-
-		\begin{frame}
-			\alert{insert reference Joana Rutkovska here}
-
-			http://theinvisiblethings.blogspot.com/2007/01/beyond-cpu-cheating-hardware-based-ram.html
-		\end{frame}
-
-	\subsection{FireWire}
 
 		\begin{frame} \frametitle{FireWire overview}
 			\pgfuseimage{logo-1394} FireWire, iLink, IEEE1394
@@ -189,7 +190,7 @@
 			\uncover<2->{The iPod can run Linux\ldots}
 		\end{frame}
 		
-		\begin{itemizeframe}{How to identify SBP2}
+		\begin{itemizeframe}{How to identify SBP2 devices}
 			\item identify devices and features from their CSR \structure{config ROM}
 			\item config ROM contains
 			\begin{itemize}
@@ -200,20 +201,131 @@
 				\item \ldots
 			\end{itemize}
 			\item<2-> CSR config ROM can be faked (see [2])
-			\item<3-> copy config ROM from iPod and install it on any system
+			\item<3-> copy config ROM from iPod and install it on any system ($\rightarrow$\texttt{1394csrtool})
 			\item<4-> magically Windows permits DMA
 		\end{itemizeframe}
 
-			
+		\begin{frame}
+			\alert{insert reference Joana Rutkovska here}
 
+			http://theinvisiblethings.blogspot.com/2007/01/beyond-cpu-cheating-hardware-based-ram.html
+		\end{frame}
+		
+	\subsection{DMA software}
 
+		\begin{itemizeframe}{\texttt{/dev/mem}}
+			\item gives access to physically addressed memory (in opposite to \texttt{/dev/kmem})
+			\item often needed by X-server
+			\item shall be obsoleted in future (X shall use DRI)
+			\item only gives access to \structure{lower 896MB} RAM (only these are mapped)
+		\end{itemizeframe}
 
+	\subsection{\texttt{libphysical}}
+
+		\begin{itemizeframe}{one interface to access them all}
+			\item one generic interface: \texttt{libphysical}
+			\item backends for anything\ldots
+			\item implemented so far:
+			\begin{itemize}
+				\item Filedescriptor (\texttt{/dev/mem}, memory dumps)
+				\item FireWire
+			\end{itemize}
+		\end{itemizeframe}
 
 \section{Virtual address spaces}
 
-	\begin{frame}
-		foo
-	\end{frame}
+	\begin{itemizeframe}{so what now?}
+		\item Once we got access\ldots
+			we can see a bunch of random memory
+
+		\item What's the use if we can not make any sence out of it?
+
+		\item<2-> How does OS manage memory?
+	\end{itemizeframe}
+
+	\subsection{Virtual address spaces}
+
+		\begin{itemizeframe}{Virtual Address Spaces}
+			\item Multitasking Operating System
+			\item one CPU runs \structure{several processes} at once
+			\item \structure{privilege separation} neccessary
+			\item normally done in \structure{hardware}
+			\item<2-> $\rightarrow$ \structure{each process has own address space}
+			\item<2-> $\rightarrow$ cannot access other processes or OS
+			\item<2-> $\rightarrow$ cannot circumvent protection
+		\end{itemizeframe}
+
+		\begin{frame} \frametitle{IA-32}
+			IA32 provides two techniques (that may be chained)
+			\begin{itemize}
+				\item \structure{Segmentation} (required)
+				\item \structure{Paging} (optional)
+			\end{itemize}
+			Linux only needs paging, so all segments span full 4GB of virtual memory
+		\end{frame}
+
+		\begin{frame} \frametitle{IA-32 virtual address translation}
+			\pgfuseimage{ia32-vm} ~~(from [6])
+		\end{frame}
+
+		\begin{itemizeframe}{done in hardware}
+			\item translation done in hardware (by CPU)
+			\item needs to know information
+			\item Global Descriptor Table (GDT)
+			\item Local Descriptor Table (LDT)
+			\item Page Directory (PD), Page Tables (PT)
+		\end{itemizeframe}
+
+		\begin{itemizeframe}{once we got these structures}
+			\item we know which page belongs where in which address space
+			\item Linux: GDT, LDT are irrelevant (flat segments)
+			\item only PD is required
+			\item PD references PTs
+			\item<2-> PD has recognisable patterns
+		\end{itemizeframe}
+	
+	\subsection{Finding Address Translation Tables}
+		
+		\begin{frame} \frametitle{finding ATTs}
+			Address Translation Tables (including PDs)\ldots
+			\begin{itemize}
+				\item depend on \structure{architecture}
+				\item depend on \structure{operating system}
+				\item have recognisable patterns
+			\end{itemize}
+			\uncover<2->{
+				$\rightarrow$ create signature for (arch, OS). so far:
+				\begin{itemize}
+					\item (i386, Linux 2.4 and 2.6)
+					\item (i386, Windows XP)
+				\end{itemize}
+			}
+		\end{frame}
+
+		\begin{itemizeframe}{finding them is rather simple}
+			\item[1] sieve by really simple pattern (e.g. 4 bytes)
+			\item[2] for each possible do statistical analysis:
+			\begin{itemize}
+				\item Nearest Compression Distance (NCD) to known true ATT
+			\end{itemize}
+			\item[3] if possibility high enough, its an ATT.
+		\end{itemizeframe}
+
+		\begin{itemizeframe}{Nearest Compression Distance}
+			\item \structure{N}earest \structure{I}nformation \structure{D}istance:
+			\begin{itemize}
+				\item minimal amount of changes required between two information
+				\item uses \structure{Kolmogorov Complexity} (size of minimal representation of information)
+				\item incalculable
+			\end{itemize}
+			\uncover<2->{
+				\item Kolm.compl. can be \structure{approximated} by \structure{compressor}
+				\item \structure{N}earest \structure{C}ompression \structure{D}istance:
+				\begin{itemize}
+					\item asdf
+				\end{itemize}
+			}
+		\end{itemizeframe}
 
 \section{Gathering information}
 
