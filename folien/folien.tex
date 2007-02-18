@@ -1,3 +1,6 @@
+%
+% vim: foldlevel=1
+%
 \documentclass{beamer}
 
 
@@ -49,6 +52,7 @@
 
 \pgfdeclareimage[height=1.0cm]{logo-1394}{ieee1394-logo-big}
 \pgfdeclareimage[height=6.7cm]{ia32-vm}{ia32_segmentation_paging}
+\pgfdeclareimage[height=6.0cm]{linux-ia32-vmlayout}{linux_virtual_address_space}
 
 %\pgfdeclareimage[height=3cm]{microkernel}{microkernel}
 %\pgfdeclareimage[height=6cm]{monolith}{monolith}
@@ -93,10 +97,10 @@
 	\subsection{}
 
 		\begin{frame}{physical addressable memory}
-			"`hacking in physically addressable memory"'
+			``hacking in physically addressable memory''
 			\begin{itemize}
-				\item hacking: using a technique for something it has not been designed for.
-				\item physically addressable memory: direct memory access, "`DMA"'
+				\item hacking: using a technique for something it has not been designed for
+				\item physically addressable memory: direct memory access, ``DMA''
 			\end{itemize}
 		\end{frame}
 
@@ -104,7 +108,7 @@
 			\item I will show mostly \structure{attacks}
 			\item so actually I will be \structure{cracking} a systems security
 			\item<2-> \alert{exploiting et al is not hacking by definition}
-			\item<2-> \structure{"`to hack"' is mostly misused by media}
+			\item<2-> \structure{``to hack'' is mostly misused by media}
 		\end{itemizeframe}
 
 		\begin{itemizeframe}{DMA}
@@ -137,10 +141,10 @@
 			\end{itemize}
 		\end{frame}
 
-		\begin{itemizeframe}{generic problems}
+		\begin{itemizeframe}{generic problems of DMA attacks}
 			\item swapping
 			\item multiple accessors at any time
-			\item caching
+			\item caching (?)
 		\end{itemizeframe}
 
 	\subsection{DMA hardware}
@@ -150,20 +154,20 @@
 			\begin{itemize}
 				\item expensive
 				\item specially crafted
-				\item selfmade (?)
+				\item selfmade (some)
 				\item rare
-				\item not hot-pluggable (?)
+				\item not hot-pluggable (depends)
 				\item \structure{one exception:} FireWire (IEEE1394)
 			\end{itemize}
 		\end{frame}
 
 		\begin{frame} \frametitle{FireWire overview}
-			\pgfuseimage{logo-1394} FireWire, iLink, IEEE1394
+			\pgfuseimage{logo-1394} FireWire a.k.a. iLink a.k.a. IEEE1394
 			\begin{itemize}
 				\item Expansion Bus (like PCI or PCMCIA)
 				\item has DMA (if enabled by driver)
-				\item guaranteed bandwith
-				\item used alot for media-crunching ("`USB-BetaMax"')
+				\item guaranteed bandwith feature
+				\item used alot for media-crunching
 				\item wide-spread (even among laptops)
 				\item most people are not aware of abuse-factor
 			\end{itemize}
@@ -173,13 +177,13 @@
 			\item DMA only enabled if driver says so
 			\begin{itemize}
 				\item Linux, BSD, MacOSX: by default (can be disabled)
-				\item Windows: only for devices that "`deserve"' (more later)
+				\item Windows: only for devices that ``deserve'' it (more later)
 			\end{itemize}
 			\item if DMA -> full access, no restrictions
 		\end{itemizeframe}
 
 		\begin{frame} \frametitle{Windows DMA}
-			Devices that "`deserve"' DMA on windows:
+			Devices that ``deserve'' DMA on windows:
 
 			SBP2 (storage) devices, like
 			\begin{itemize}
@@ -202,7 +206,7 @@
 			\end{itemize}
 			\item<2-> CSR config ROM can be faked (see [2])
 			\item<3-> copy config ROM from iPod and install it on any system ($\rightarrow$\texttt{1394csrtool})
-			\item<4-> magically Windows permits DMA
+			\item<4-> magically Windows permits DMA for \alert{any} device
 		\end{itemizeframe}
 
 		\begin{frame}
@@ -238,22 +242,42 @@
 		\item Once we got access\ldots
 			we can see a bunch of random memory
 
-		\item What's the use if we can not make any sence out of it?
-
-		\item<2-> How does OS manage memory?
+		\item \structure{How does OS manage memory?}
 	\end{itemizeframe}
+
+	\begin{frame}
+		We could parse kernel data-structures (if we find them\ldots). they change for
+		\begin{itemize}
+			\item hardware architecture
+			\item operating system
+			\item OS version
+			\item may not be documented (windows)
+		\end{itemize}
+		\uncover<2->{Or we could do something else\ldots}
+	\end{frame}
 
 	\subsection{Virtual address spaces}
 
-		\begin{itemizeframe}{Virtual Address Spaces}
-			\item Multitasking Operating System
-			\item one CPU runs \structure{several processes} at once
-			\item \structure{privilege separation} neccessary
-			\item normally done in \structure{hardware}
-			\item<2-> $\rightarrow$ \structure{each process has own address space}
-			\item<2-> $\rightarrow$ cannot access other processes or OS
-			\item<2-> $\rightarrow$ cannot circumvent protection
-		\end{itemizeframe}
+		\begin{frame}{Virtual Address Spaces}
+			\begin{itemize}
+				\item Multitasking Operating System
+				\item system runs \structure{several processes} ``at once''
+				\item \structure{privilege separation} required
+				\item normally done in \structure{hardware}
+			\end{itemize}
+			\uncover<2->{
+				$\rightarrow$ \structure{each process has own virtual address space}
+
+				$\rightarrow$ cannot access other processes memory or operating systems memory
+
+				$\rightarrow$ cannot circumvent protection mechanism
+			}
+		\end{frame}
+
+
+		\begin{frame} \frametitle{IA-32 Linux VM Layout}
+			\pgfuseimage{linux-ia32-vmlayout}
+		\end{frame}
 
 		\begin{frame} \frametitle{IA-32}
 			IA32 provides two techniques (that may be chained)
@@ -261,28 +285,34 @@
 				\item \structure{Segmentation} (required)
 				\item \structure{Paging} (optional)
 			\end{itemize}
-			Linux only needs paging, so all segments span full 4GB of virtual memory
+			Linux only uses paging, all segments span full 4GB of virtual memory
 		\end{frame}
 
-		\begin{frame} \frametitle{IA-32 virtual address translation}
+		\begin{frame} \frametitle{IA-32 virtual (``logical'') address translation}
 			\pgfuseimage{ia32-vm} ~~(from [6])
 		\end{frame}
 
 		\begin{itemizeframe}{done in hardware}
 			\item translation done in hardware (by CPU)
-			\item needs to know information
-			\item Global Descriptor Table (GDT)
-			\item Local Descriptor Table (LDT)
-			\item Page Directory (PD), Page Tables (PT)
+			\item hardware needs to know how to do it:
+			\begin{itemize}
+				\item Global Descriptor Table (GDT)
+				\item Local Descriptor Table (LDT)
+				\item Page Directory (PD), Page Tables (PT)
+			\end{itemize}
 		\end{itemizeframe}
 
-		\begin{itemizeframe}{once we got these structures}
-			\item we know which page belongs where in which address space
-			\item Linux: GDT, LDT are irrelevant (flat segments)
-			\item only PD is required
-			\item PD references PTs
-			\item<2-> PD has recognisable patterns
-		\end{itemizeframe}
+		\begin{frame}
+			Once we got these structures,
+			we know which page belongs where in which address space
+			\begin{itemize}
+				\item Linux: GDT, LDT are irrelevant (flat segments)
+				\item only PD is required
+				\item PD references PTs
+				\item<2-> PD may have recognisable patterns (has for linux and windows)
+				\item<2-> one PD per process
+			\end{itemize}
+		\end{frame}
 	
 	\subsection{Finding Address Translation Tables}
 		
@@ -291,7 +321,7 @@
 			\begin{itemize}
 				\item depend on \structure{architecture}
 				\item depend on \structure{operating system}
-				\item have recognisable patterns
+				\item may have recognisable patterns
 			\end{itemize}
 			\uncover<2->{
 				$\rightarrow$ create signature for (arch, OS). so far:
@@ -302,36 +332,57 @@
 			}
 		\end{frame}
 
-		\begin{itemizeframe}{finding them is rather simple}
-			\item[1] sieve by really simple pattern (e.g. 4 bytes)
+		\begin{itemizeframe}{finding ATTs, details}
+			\item[1] sieve all pages by simple, static pattern (e.g. 4 bytes)
 			\item[2] for each possible do statistical analysis:
 			\begin{itemize}
 				\item Nearest Compression Distance (NCD) to known true ATT
 			\end{itemize}
-			\item[3] if possibility high enough, its an ATT.
+			\item[3] if possibility high enough, it is an ATT.
 		\end{itemizeframe}
 
 		\begin{itemizeframe}{Nearest Compression Distance}
 			\item \structure{N}earest \structure{I}nformation \structure{D}istance:
 			\begin{itemize}
 				\item minimal amount of changes required between two information
-				\item uses \structure{Kolmogorov Complexity} (size of minimal representation of information)
+				\item uses \structure{Kolmogorov Complexity} (KC) (size of minimal representation of information)
 				\item incalculable
 			\end{itemize}
 			\uncover<2->{
-				\item Kolm.compl. can be \structure{approximated} by \structure{compressor}
-				\item \structure{N}earest \structure{C}ompression \structure{D}istance:
+				\item KC can be \structure{approximated} by \structure{compressor} \\
+					$\rightarrow$ \structure{N}earest \structure{C}ompression \structure{D}istance:
 				\begin{itemize}
-					\item asdf
+					\item calculable
+					\item very versatile
+					\item e.g. create relational trees of gene-sequences [4]
 				\end{itemize}
 			}
 		\end{itemizeframe}
 
+		\begin{frame}
+			Once a PD is found, we can do the translation by hand.
+			\begin{itemize}
+				\item well-defined algorithm for architecture, e.g. for IA-32: [6]
+				\item implementation in software in \texttt{liblinear}
+			\end{itemize}
+		\end{frame}
+
 \section{Gathering information}
 
 	\begin{frame}
-		foo
+		So far
+		\begin{itemize}
+			\item we can access physical memory sources in a generic way (\texttt{libphysical})
+			\item we can find and access virtual address spaces of processes (\texttt{liblinear})
+		\end{itemize}
+		Now we want to \structure{identify processes} we found.
 	\end{frame}
+
+	\subsection{Identifying Processes}
+	
+		\begin{frame}
+
+		\end{frame}
 
 \section{Injecting code}
 

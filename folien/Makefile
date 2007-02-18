@@ -7,7 +7,7 @@ final:	folien.pdf
 	pdfopt folien.pdf folien-opt.pdf
 	mv folien-opt.pdf folien.pdf
 
-folien.pdf: folien.tex beamercolorthemelostrace.sty
+folien.pdf: folien.tex beamercolorthemelostrace.sty *.png
 	pdflatex folien.tex
 	pdflatex folien.tex
 
@@ -28,7 +28,7 @@ autoreload:
 autoupdate: folien.pdf autowindow
 	while true; do										\
 		sleep 1; 									\
-		for FILE in *.tex *.bib *.fig *.obj; do						\
+		for FILE in *.tex *.bib *.fig *.obj *.png; do					\
 			if [ -e folien.pdf -a folien.pdf -ot "$$FILE" ]; then			\
 				make folien.pdf < /dev/null;					\
 				if ps aux | grep xpdf | grep -v grep; then			\
