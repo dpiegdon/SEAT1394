@@ -175,7 +175,10 @@ int lin_ia32_linear_to_physical(struct linear_handle_data* h, addr_t lin_adr, ad
 	union physical_page_mapping padr;
 
 	// physical address space can be no more than 4GB
-	// (FIXME: there are physical workarounds like PAE and PSE to increase to 16GB)
+	// (FIXME: there are physical workarounds like PAE36 and PSE36 to increase to 16GB
+	// 	though the 4MB-page feature of PSE36 is implemented, we only can address
+	//	4GB of phys. memory. ->CPUID feature flag "PSE-36" should be zero.
+	//	PAE36 is not supported at all)
 	padr.adr = (lin_adr & 0xffffffff);
 
 	// get matching PDE
