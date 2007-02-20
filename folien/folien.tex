@@ -101,27 +101,27 @@
 		\begin{frame}{physical addressable memory}
 			``hacking in physically addressable memory''
 			\begin{itemize}
-				\item hacking: using a technique for something it has not been designed for
-				\item physically addressable memory: direct memory access, ``DMA''
+				\item Hacking: using a technique for something it has not been designed for
+				\item Physically addressable memory: direct memory access, ``DMA''
 			\end{itemize}
 		\end{frame}
 
 		\begin{itemizeframe}{hacking}
 			\item I will show mostly \structure{attacks}
-			\item so actually I will be \structure{cracking} a systems security
-			\item<2-> \alert{exploiting et al is not hacking by definition}
+			\item So actually I will be \structure{cracking} a systems security
+			\item<2-> \alert{Exploiting et al is not hacking by definition}
 			\item<2-> \structure{``to hack'' is mostly misused by media}
 		\end{itemizeframe}
 
 		\begin{itemizeframe}{DMA}
 			\item DMA = Direct Memory Access
-			\item basic requirement for introduced approach
-			\item known for a long time: attacker has DMA -> \structure{0wn3d}
+			\item Basic requirement for introduced approach
+			\item Known for a long time: attacker has DMA -> \structure{0wn3d}
 				\begin{itemize}
 					\item 0wn3d by an iPod $[1]$
 					\item and others $[2,3]$
 				\end{itemize}
-			\item this is a \structure{proof of concept}, nothing more
+			\item This is a \structure{proof of concept}, nothing more.
 		\end{itemizeframe}
 
 \section{Accessing memory}
@@ -135,7 +135,7 @@
 				\item special PCMCIA cards
 				\item FireWire (IEEE1394) DMA feature
 				\item anything with DMA
-				\item \texttt{/dev/mem} (linux)
+				\item \texttt{/dev/mem} (Linux)
 				\item memory dumps
 				\item Suspend2Disk images
 				\item Virtual machines
@@ -143,16 +143,16 @@
 			\end{itemize}
 		\end{frame}
 
-		\begin{itemizeframe}{generic problems of DMA attacks}
-			\item swapping
-			\item multiple accessors at any time
-			\item caching (?)
+		\begin{itemizeframe}{Generic problems of DMA attacks}
+			\item Swapping
+			\item Multiple accessors at any time
+			\item Caching (?)
 		\end{itemizeframe}
 
 	\subsection{DMA hardware}
 
 		\begin{frame} \frametitle{DMA hardware}
-			hardware we may use is
+			Hardware we may use is
 			\begin{itemize}
 				\item expensive
 				\item specially crafted
@@ -167,11 +167,11 @@
 			\pgfuseimage{logo-1394} FireWire a.k.a. iLink a.k.a. IEEE1394
 			\begin{itemize}
 				\item Expansion Bus (like PCI or PCMCIA)
-				\item has DMA (if enabled by driver)
-				\item guaranteed bandwith feature
-				\item used alot for media-crunching
-				\item wide-spread (even among laptops)
-				\item most people are not aware of abuse-factor
+				\item Has DMA (if enabled by driver)
+				\item Guaranteed bandwith feature
+				\item Used alot for media-crunching
+				\item Wide-spread (even among laptops)
+				\item Most people are not aware of abuse-factor
 			\end{itemize}
 		\end{frame}
 
@@ -181,11 +181,11 @@
 				\item Linux, BSD, MacOSX: by default (can be disabled)
 				\item Windows: only for devices that ``deserve'' it (more later)
 			\end{itemize}
-			\item if DMA -> full access, no restrictions
+			\item If DMA -> full access, no restrictions
 		\end{itemizeframe}
 
 		\begin{frame} \frametitle{Windows DMA}
-			Devices that ``deserve'' DMA on windows:
+			Devices that ``deserve'' DMA on Windows:
 
 			SBP2 (storage) devices, like
 			\begin{itemize}
@@ -197,8 +197,8 @@
 		\end{frame}
 		
 		\begin{itemizeframe}{How to identify SBP2 devices}
-			\item identify devices and features from their CSR \structure{config ROM}
-			\item config ROM contains
+			\item Identify devices and features from their CSR \structure{config ROM}
+			\item Config ROM contains
 			\begin{itemize}
 				\item GUID: 8 byte globally unique ID (like MAC address)
 				\item Identifier of driver
@@ -207,8 +207,8 @@
 				\item \ldots
 			\end{itemize}
 			\item<2-> CSR config ROM can be faked (see [2])
-			\item<3-> copy config ROM from iPod and install it on any system ($\rightarrow$\texttt{1394csrtool})
-			\item<4-> magically Windows permits DMA for \alert{any} device
+			\item<3-> Copy config ROM from iPod and install it on any system ($\rightarrow$\texttt{1394csrtool})
+			\item<4-> Magically Windows permits DMA for \alert{any} device
 		\end{itemizeframe}
 
 		\begin{frame}
@@ -220,18 +220,18 @@
 	\subsection{DMA software}
 
 		\begin{itemizeframe}{\texttt{/dev/mem}}
-			\item gives access to physically addressed memory (in opposite to \texttt{/dev/kmem})
-			\item often needed by X-server
-			\item shall be obsoleted in future (X shall use DRI)
-			\item only gives access to \structure{lower 896MB} RAM (only these are mapped)
+			\item Gives access to physically addressed memory (in opposite to \texttt{/dev/kmem})
+			\item Often needed by X-server
+			\item Shall be obsoleted in future (X shall use DRI)
+			\item Only gives access to \structure{lower 896MB} RAM (only these are mapped)
 		\end{itemizeframe}
 
 	\subsection{\texttt{libphysical}}
 
-		\begin{itemizeframe}{one interface to access them all}
-			\item one generic interface: \texttt{libphysical}
-			\item backends for anything\ldots
-			\item implemented so far:
+		\begin{itemizeframe}{One interface to access them all}
+			\item One generic interface: \texttt{libphysical}
+			\item Backends for anything\ldots
+			\item Implemented so far:
 			\begin{itemize}
 				\item Filedescriptor (\texttt{/dev/mem}, memory dumps)
 				\item FireWire
@@ -248,12 +248,12 @@
 	\end{itemizeframe}
 
 	\begin{frame}
-		We could parse kernel data-structures (if we find them\ldots). But they are different for different
+		Could parse kernel data-structures (if found). But they are different for different
 		\begin{itemize}
 			\item hardware architecture
 			\item operating system
 			\item OS version
-			\item and may not be documented (windows)
+			\item and may not be documented (Windows)
 		\end{itemize}
 		\uncover<2->{Or we could do something else\ldots}
 	\end{frame}
@@ -263,16 +263,16 @@
 		\begin{frame}{Virtual Address Spaces}
 			\begin{itemize}
 				\item Multitasking Operating System
-				\item system runs \structure{several processes} ``at once''
-				\item \structure{privilege separation} required
-				\item normally done in \structure{hardware}
+				\item System runs \structure{several processes} ``at once''
+				\item \structure{Privilege separation} required (see [5])
+				\item Normally done in \structure{hardware}
 			\end{itemize}
 			\uncover<2->{
-				$\rightarrow$ \structure{each process has own virtual address space}
+				$\rightarrow$ \structure{Each process has own virtual address space}
 
-				$\rightarrow$ cannot access other processes memory or operating systems memory
+				$\rightarrow$ Cannot access other processes memory or operating systems memory
 
-				$\rightarrow$ cannot circumvent protection mechanism
+				$\rightarrow$ Cannot circumvent protection mechanism
 			}
 		\end{frame}
 
@@ -294,9 +294,9 @@
 			\pgfuseimage{ia32-vm} ~~(from [6])
 		\end{frame}
 
-		\begin{itemizeframe}{done in hardware}
-			\item translation done in hardware (by CPU)
-			\item hardware needs to know how to do it:
+		\begin{itemizeframe}{Done in hardware}
+			\item Translation done in hardware (by CPU)
+			\item Hardware needs to know how to do it:
 			\begin{itemize}
 				\item Global Descriptor Table (GDT)
 				\item Local Descriptor Table (LDT)
@@ -311,14 +311,14 @@
 				\item Linux: GDT, LDT are irrelevant (flat segments)
 				\item only PD is required
 				\item PD references PTs
-				\item<2-> PD may have recognisable patterns (has for linux and windows)
+				\item<2-> PD may have recognisable patterns (has for Linux and Windows)
 				\item<2-> one PD per process
 			\end{itemize}
 		\end{frame}
 	
 	\subsection{Finding Address Translation Tables}
 		
-		\begin{frame} \frametitle{finding ATTs}
+		\begin{frame} \frametitle{Finding ATTs}
 			Address Translation Tables (including PDs)\ldots
 			\begin{itemize}
 				\item depend on \structure{architecture}
@@ -334,39 +334,39 @@
 			}
 		\end{frame}
 
-		\begin{itemizeframe}{finding ATTs, details}
-			\item[1] sieve all pages by simple, static pattern (e.g. 4 bytes)
-			\item[2] for each possible do statistical analysis:
+		\begin{itemizeframe}{Finding ATTs, details}
+			\item[1] Sieve all pages by simple, static pattern (e.g. 4 bytes)
+			\item[2] For each possible do statistical analysis:
 			\begin{itemize}
 				\item Nearest Compression Distance (NCD) to known true ATT
 			\end{itemize}
-			\item[3] if possibility high enough, test integrity of data \\ (for IA-32: try to load referenced PTs)
-			\item[4] if ok, its (most probably) an ATT
+			\item[3] If possibility high enough, test integrity of data \\ (for IA-32: try to load referenced PTs)
+			\item[4] If ok, its (most probably) an ATT
 		\end{itemizeframe}
 
 		\begin{itemizeframe}{Nearest Compression Distance}
 			\item \structure{N}earest \structure{I}nformation \structure{D}istance:
 			\begin{itemize}
-				\item minimal amount of changes required between two information
-				\item uses \structure{Kolmogorov Complexity} (KC) (size of minimal representation of information)
-				\item incalculable
+				\item Minimal amount of changes required between two information
+				\item Uses \structure{Kolmogorov Complexity} (KC) (size of minimal representation of information)
+				\item Incalculable
 			\end{itemize}
 			\uncover<2->{
 				\item KC can be \structure{approximated} by \structure{compressor} \\
 					$\rightarrow$ \structure{N}earest \structure{C}ompression \structure{D}istance:
 				\begin{itemize}
-					\item calculable
-					\item very versatile
+					\item Calculable
+					\item Very versatile
 					\item e.g. create relational trees of gene-sequences [4]
 				\end{itemize}
 			}
 		\end{itemizeframe}
 
 		\begin{frame}
-			Once a PD is found, we can do the translation by hand.
+			Once a PD is found, we can do the translation by hand:
 			\begin{itemize}
-				\item well-defined algorithm for architecture, e.g. for IA-32: [6]
-				\item implementation in software in \texttt{liblinear}. So far:
+				\item Well-defined algorithm for architecture, e.g. for IA-32: [6]
+				\item Implementation in software in \texttt{liblinear}. So far:
 				\begin{itemize}
 					\item IA-32 Protected Mode, without PAE36 \\ (Linux with $\leq 4$GB RAM)
 				\end{itemize}
@@ -378,8 +378,8 @@
 	\begin{frame}
 		So far
 		\begin{itemize}
-			\item we can access physical memory sources in a generic way (\texttt{libphysical})
-			\item we can find and access virtual address spaces of processes (\texttt{liblinear})
+			\item We can \structure{access physical memory sources} in a generic way (\texttt{libphysical})
+			\item We can find and \structure{access virtual address spaces} of processes (\texttt{liblinear})
 		\end{itemize}
 		Now we want to \structure{identify processes} we found.
 	\end{frame}
@@ -399,7 +399,7 @@
 		\end{frame}
 
 		\begin{itemizeframe}{}
-			\item (argv, envv) are somewhere in the address space
+			\item \texttt{argv}, \texttt{envv} are somewhere in the address space
 			\item<2-> They are on the stack, on first mapped pages below page \texttt{0xc0000}
 			\item<2-> NUL-separated vector with
 			\begin{itemize}
@@ -512,7 +512,7 @@
 				\item[3] Follow \texttt{key}
 				\item[4] Follow \texttt{key->RSA} and \texttt{key->DSA}
 				\item[5] A lot of \texttt{BIGNUM}s (OpenSSL arbitrary precision integer implementation).
-					 \textcolor{blue}{Copy them, test integrity}.
+					 \structure{Copy relevant, test integrity} (see [7,8]).
 				\item[6] 0wn3d
 			\end{itemize}
 			\scriptsize (yes, there are better methods to find the keys, but this is just a proof of concept)
@@ -634,7 +634,7 @@
 		\end{frame}
 		
 		\begin{itemizeframe}{}
-			\item Payload small (536 Bytes)
+			\item Payload small (536 Bytes, yet big for shellcode)
 			\item Independent of attackers arch, OS
 			\item Only DMA required
 			\item If overwrites ENV, ARG: possibly visible via
@@ -668,7 +668,11 @@
 \section*{}
 
 	\begin{frame}
-		Questions? \\ Thank you for listening!
+		Questions?
+		
+		Thank you for listening!
+		
+		All tools release at \textcolor{blue}{http://david.piegdon.de/products.html}
 	\end{frame}
 
 	\begin{frame}
@@ -683,17 +687,17 @@
 		Thank you!
 	\end{frame}
 
-	\begin{itemizeframe}{Literatur}
+	\begin{itemizeframe}{References (FireWire, DMA Attacks)}
 		\item[1] \emph{Michael Becher, Maximillian Dornseif, and Christian N.
-			Klein.} \structure{Firewire - all your memory are belong to us}, 2005.
+			Klein.} \structure{Firewire - all your memory are belong to us}. 2005.
 
-		\item[2] \emph{Adam Boileau.} Ruxcon 2006: Hit by a bus: Physical access attacks with
-			firewire, 2006.
+		\item[2] \emph{Adam Boileau.} Hit by a bus: Physical access attacks with
+			firewire. Ruxcon 2006.
 
-		\item[3] \emph{Mariusz Burdach.} Finding digital evidence in physical memory, 2006.
+		\item[3] \emph{Mariusz Burdach.} Finding digital evidence in physical memory. 2006.
 	\end{itemizeframe}
 
-	\begin{itemizeframe}{Literatur}
+	\begin{itemizeframe}{References}
 		\item[4] \emph{Rudi Cilibrasi and Paul M. B. Vit\'anyi.} Clustering by compression.
 			IEEE transactions on information theory, vol. 51, 2005.
 
@@ -702,9 +706,13 @@
 			2002. ISBN 3-86073-470-9.
 			
 		\item[6] \emph{Intel Corp.} Intel 64 and IA-32 Architectures Software Developer’s Manual.
+	\end{itemizeframe}
 
+	\begin{itemizeframe}{References}
 		\item[7] \emph{Bruce Schneier.} Applied Cryptography (Second Edition). John Wiley \& Sons,
 			Inc, 1996. ISBN 0-471-11709-9.
+		\item[8] \emph{John Viega and Matt Messier and Pravir Chandra.} Network Security with
+			OpenSSL. O'Reilly, 2002. ISBN 0-596-00270-X.
 	\end{itemizeframe}
 
 \end{document}
