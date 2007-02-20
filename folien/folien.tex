@@ -470,7 +470,7 @@
 					\item agent keeps key decrypted, locked in memory
 					\item has timeout-function to wipe keys from memory
 					\item stalled in \texttt{read()}-syscall on socket
-					\item \alert{no timer} to check for timeout
+					\item \alert{no timer-signal} to check for timeout
 					\item checks timer only on query
 				\end{itemize}
 			}
@@ -518,6 +518,8 @@
 			\scriptsize (yes, there are better methods to find the keys, but this is just a proof of concept)
 		\end{frame}
 
+	\subsection{resume}
+
 		\begin{itemizeframe}{Resume}
 			\item So far: only \structure{read} memory.
 			\item Works with memory dumps
@@ -550,7 +552,7 @@
 		\end{itemizeframe}
 
 		\begin{itemizeframe}{Inject into stack}
-			\item Easy to find
+			\item Stack is easy to find
 			\item Affect one process at a time (one stack per thread)
 			\item Inject into zero-padded pages containing ENV and ARG.
 			\item Possibly overwrite these (if little space):
@@ -558,23 +560,30 @@
 				\item ENV, ARG are rarely parsed
 				\item typically only during init
 			\end{itemize}
+			\item If overwrites ENV, ARG: possibly visible via
+			\begin{itemize}
+				\item \texttt{/proc/\$PID/environ}
+				\item \texttt{/proc/\$PID/cmdline}
+			\end{itemize}
 		\end{itemizeframe}
 
 	\subsection{Executing the code}
 
-		\begin{itemizeframe}{Executing injected code}
-			\item Use program-flow
-			\item Typical process calls subroutines
-			\item Stackframes on stack, return-address
-			\item overwrite return-addresses
-		\end{itemizeframe}
+		\begin{frame}{Executing injected code}
+			Use program-flow:
+			\begin{itemize}
+				\item Typical process calls subroutines
+				\item Stackframes on stack, including return-address
+			\end{itemize}
+			$\rightarrow$ Overwrite return-addresses
+		\end{frame}
 
 		\begin{itemizeframe}{Protection Mechanisms}
-			\item Stackoverflow checksums:
+			\item Stackoverflow protection checksums:
 			\begin{itemize}
 				\item Can manipulate checksum as well
 			\end{itemize}
-			\item Page-level no-execute enforcements {\small (Intels EXB, AMDs NX)}
+			\item Page-level no-execute enforcements {\small (Intels EXB, AMDs NX)}:
 			\begin{itemize}
 				\item Manipulate Page Directory to allow execution of stack
 			\end{itemize}
@@ -637,14 +646,10 @@
 			\item Payload small (536 Bytes, yet big for shellcode)
 			\item Independent of attackers arch, OS
 			\item Only DMA required
-			\item If overwrites ENV, ARG: possibly visible via
-				\begin{itemize}
-					\item \texttt{/proc/\$PID/environ}
-					\item \texttt{/proc/\$PID/cmdline}
-				\end{itemize}
 		\end{itemizeframe}
 
-\section{Prospects}
+
+\section{Prospects, Conclusion}
 
 	\begin{itemizeframe}{Prospects}
 		\item Kernelspace Modifications:
@@ -656,8 +661,6 @@
 		\item Bootstrapping custom operating systems
 	\end{itemizeframe}
 
-\section{Conclusion}
-
 	\begin{itemizeframe}{Conclusion}
 		\item DMA attacks are mature
 		\item Access to memory $\rightarrow$ 0wn3d!
@@ -665,14 +668,21 @@
 		\item Some of the tools (\texttt{libphysical}, \texttt{liblinear}) can also be used for forensics
 	\end{itemizeframe}
 
+\AtBeginSection{ }
+
 \section*{}
 
 	\begin{frame}
-		Questions?
-		
-		Thank you for listening!
-		
-		All tools release at \textcolor{blue}{http://david.piegdon.de/products.html}
+		\begin{center}
+			\Large
+			Questions? \\[1.5ex]
+			
+			Thank you for your attention! \\[1.5ex]
+			
+			\small
+			All tools will be released at \\
+			\textcolor{blue}{http://david.piegdon.de/products.html}
+		\end{center}
 	\end{frame}
 
 	\begin{frame}
