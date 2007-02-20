@@ -14,6 +14,7 @@
 }
 
 %\usepackage{epsfig,graphicx,epsf}
+\usepackage{pgfbaseimage}
 \usepackage[ngerman]{babel}
 \usepackage{ucs}
 \usepackage[utf8x]{inputenc}
@@ -48,13 +49,13 @@
 %\pgfdeclareimage[height=0.4cm]{by-nc-sa}{../bilder/by-nc-sa}
 %\titlegraphic{\href{http://creativecommons.org/licenses/by-nc-sa/2.0/de/}{\pgfuseimage{by-nc-sa}}}
 
-\pgfdeclareimage[height=1.0cm]{i4-1394}{i4_ieee1394_stacked}
+\pgfdeclareimage[interpolate=true,height=1.0cm]{i4-1394}{i4_ieee1394_stacked}
 \logo{\pgfuseimage{i4-1394}}
 
-\pgfdeclareimage[height=1.0cm]{logo-1394}{ieee1394-logo-big}
-\pgfdeclareimage[height=6.7cm]{ia32-vm}{ia32_segmentation_paging}
-\pgfdeclareimage[height=6.0cm]{linux-ia32-vmlayout}{linux_virtual_address_space}
-\pgfdeclareimage[width=10.0cm]{beachhead}{functionality_beachhead}
+\pgfdeclareimage[interpolate=true,height=1.0cm]{logo-1394}{ieee1394-logo-big}
+\pgfdeclareimage[interpolate=true,height=6.7cm]{ia32-vm}{ia32_segmentation_paging}
+\pgfdeclareimage[interpolate=true,height=6.0cm]{linux-ia32-vmlayout}{linux_virtual_address_space}
+\pgfdeclareimage[interpolate=true,width=10.0cm]{beachhead}{functionality_beachhead}
 
 %\pgfdeclareimage[height=3cm]{microkernel}{microkernel}
 %\pgfdeclareimage[height=6cm]{monolith}{monolith}
@@ -579,11 +580,11 @@
 		\end{frame}
 
 		\begin{itemizeframe}{Protection Mechanisms}
-			\item Stackoverflow protection checksums:
+			\item Stackoverflow protection checksums
 			\begin{itemize}
 				\item Can manipulate checksum as well
 			\end{itemize}
-			\item Page-level no-execute enforcements {\small (Intels EXB, AMDs NX)}:
+			\item Page-level no-execute enforcements {\small (Intels EXB, AMDs NX)}
 			\begin{itemize}
 				\item Manipulate Page Directory to allow execution of stack
 			\end{itemize}
