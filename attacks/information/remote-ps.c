@@ -368,11 +368,14 @@ int main(int argc, char**argv)
 		}
 		if((c = linear_is_pagedir_fast(lin, pn))) {
 			if(c < 0) {
-				printf("\n\n" TERM_RED "failed to read page 0x%05llx. aborting." TERM_RESET "\n", pn);
+				printf("\n\n" TERM_RED "failed to test page 0x%05llx. aborting." TERM_RESET "\n", pn);
 				break;
 			}
 			// load page
-			physical_read_page(phy, pn, page);
+			if(physical_read_page(phy, pn, page)) {
+				printf("\n\n" TERM_RED "failed to read page 0x%05llx. aborting." TERM_RESET "\n", pn);
+				break;
+			}
 			prob = linear_is_pagedir_probability(lin, page);
 			if(prob > 0.01) {
 				printf("0x%05llx [~%0.3f] ", pn, prob);
@@ -438,7 +441,13 @@ int main(int argc, char**argv)
 
 	// release handles
 	linear_handle_release(lin);
-	raw1394_destroy_handle(phy_data.ieee1394.raw1394handle);
+
+	if( memsource == SOURCE_IEEE1394 ) {
+		raw1394_destroy_handle(phy_data.ieee1394.raw1394handle);
+	} else if( memsource == SOURCE_MEMDUMP ) {
+		close(phy_data.filedescriptor.fd);
+	}
+
 	physical_handle_release(phy);
 	
 	return 0;
