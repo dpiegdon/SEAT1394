@@ -53,7 +53,7 @@
 #define NODE_OFFSET 0xffc0
 
 // blocksize is auto-adjusted down to 4 in case of errors
-#define BLOCKSIZE_MAX_VAL 256
+#define BLOCKSIZE_MAX_VAL 4
 #define BLOCKSIZE_MIN_VAL 4
 static size_t blocksize = BLOCKSIZE_MAX_VAL;
 static bus_reset_handler_t old_reset_handler = NULL;
