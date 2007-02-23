@@ -42,15 +42,8 @@ enum memsource {
 	SOURCE_IEEE1394
 };
 
-struct addr_list {
-	struct addr_list *next;
-	addr_t adr;
-	int count;
-};
-
 char pagedir[4096];
 int dump_process = 0;
-static struct addr_list *addr_list_head = NULL;
 
 #define NODE_OFFSET     0xffc0
 
@@ -96,15 +89,10 @@ int main(int argc, char**argv)
 
 	addr_t pn;
 	char page[4096];
-	float prob;
 	int c;
-	char *p;
 
 	enum memsource memsource = SOURCE_UNDEFINED;
 	char *filename = NULL;
-	int nodeid = 0;
-	int analyse_process = 0;
-	int print_environment = 0;
 
 	while( -1 != (c = getopt(argc, argv, "f:"))) {
 		switch (c) {

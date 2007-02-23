@@ -32,9 +32,6 @@ all:	dump-memory remote-ps debug-sshkey snarf-sshkey test-all-pagedirs show-stac
 clean:
 	-rm -f dump-memory remote-ps snarf-sshkey snarf-sshkey-static debug-sshkey *.o test-all-pagedirs show-stack
 
-test-all-pagedirs: test-all-pagedirs.c
-	gcc test-all-pagedirs.c -lphysical -llinear -L/home/lostrace/lib -I/home/lostrace/include -o test-all-pagedirs
-
 dump-memory: LDFLAGS += -lphysical -llinear
 dump-memory: dump-memory.o
 
@@ -54,6 +51,9 @@ snarf-sshkey-static: snarf-sshkey.o sshkey-sanitychecks.o proc_info.o ssh-authfi
 debug-sshkey: LDFLAGS += -lcrypto
 debug-sshkey: debug-sshkey.o sshkey-sanitychecks.o ssh-authfile.o
 
+test-all-pagedirs: LDFLAGS += -lphysical -llinear
+test-all-pagedirs: test-all-pagedirs.o
+
 
 dump-memory.o: dump-memory.c
 
@@ -68,4 +68,6 @@ snarf-sshkey.o: snarf-sshkey.c ssh-authfile.h term.h
 debug-sshkey.o: debug-sshkey.c ssh-authfile.h term.h
 
 ssh-authfile.o: ssh-authfile.h ssh-authfile.c
+
+test-all-pagedirs.o: test-all-pagedirs.c
 
