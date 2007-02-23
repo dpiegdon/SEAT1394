@@ -110,7 +110,7 @@ static int reset_iterator(physical_handle h, void *data)
 	// search the GUID on the bus, save its nodeid. if not found,
 	// initiate a RAW1394_LONG_RESET and do the same.
 	while(nodeid_from_guid(RAWHANDLE, h->data.ieee1394.raw1394target_guid, (void*)&nid)) {
-		fprintf(stderr,"could not find node %016llX. please check ieee1394 connection.\n", h->data.ieee1394.raw1394target_guid);
+		fprintf(stderr,"could not find GUID %016llX. please check ieee1394 connection.\n", h->data.ieee1394.raw1394target_guid);
 		//raw1394_reset_bus_new(RAWHANDLE, RAW1394_LONG_RESET);
 		sleep(2);
 	}
