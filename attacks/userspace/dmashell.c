@@ -354,9 +354,14 @@ void use_shell(linear_handle lin, uint32_t base)
 		if(rfrm_reader_pos != rfrm_writer_pos + 1) {
 			// buffer is not full. let's try to obtain data from stdin
 			if(1 == read(STDIN_FILENO, rfrm_buffer, 1)) {
-				GET_mark;
+				if(GET_mark) {
+					printf(TERM_YELLOW "(dmashell)" TERM_RESET "failed to read MARK. terminated? aborting...\n");
+					child_is_dead = 1;
+					continue;
+				}
+
 				if(mark_value != MARK_CHANGED) {
-					printf(TERM_YELLOW "(dmashell)" TERM_RESET " oops... invalid MARK from shellcode. terminated? aborting...\n");
+					printf(TERM_YELLOW "(dmashell)" TERM_RESET " invalid MARK from shellcode. terminated? aborting...\n");
 					child_is_dead = 1;
 					continue;
 				}
@@ -407,6 +412,7 @@ void use_shell(linear_handle lin, uint32_t base)
 		if(!child_is_dead)
 			GET_child_is_dead;
 	}
+
 	// only send an ACK if the mark is still ok
 	if(mark_value == MARK_CHANGED)
 		ACK_child_is_dead;
