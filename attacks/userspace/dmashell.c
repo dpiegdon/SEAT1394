@@ -337,7 +337,7 @@ void use_shell(linear_handle lin, uint32_t base)
 #define GET_child_is_dead linear_read_in_page(lin, base + CHILD_IS_DEAD, &child_is_dead, 1)
 #define ACK_child_is_dead linear_write_in_page(lin, base + CHILD_IS_DEAD, &child_is_dead, 1)
 #define DO_terminate_child linear_write_in_page(lin, base + TERMINATE_CHILD, &true_value, 1)
-#define GET_mark linear_read_in_page(lin, base - MARKER_LEN + MARK_OFFSET, &mark_value, 4);
+#define GET_mark linear_read_in_page(lin, base - MARKER_LEN + MARK_OFFSET, &mark_value, 4)
 
 	set_nonblocking_stdin();
 	// set STDIN to non-blocking.
