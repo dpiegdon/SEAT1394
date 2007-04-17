@@ -115,70 +115,56 @@ firewire bus, a node is randomly selected to be the master and manages this bus.
 Most of these nodes have the ability to be bus master.
 
 DMA is implemented in hardware by the OHCI chip set; it is used to release the
-CPU from I/O operations. Mechanisms of preventing unwanted access exist, but
-many drivers do not activate these methods by default. In the case of windows,
-the operating system can be tricked into giving DMA to any device (see section
-\ref{windows-dma}).
-%Up to 64 devices may be plugged into one bus. Each one will choose a bus-unique
-%node ID $[0..63]$; the bus master will have the highest node ID. All node IDs
-%will be sequential, starting with 0. 
+CPU from I/O operations. OHCI filters provide a mechanism to prevent unwanted
+access by specific devices identified by their node ID or by all devices (which
+negates most of the advantages of firewire), but as the node ID can change with
+every bus reset, these filters are rudimental. And even though these rudimental
+filters exist, many drivers do not use them.
+
+With every bus reset, these filters need to be reconfigured by the operating
+system, but there are no ways to securely identify or authenticate known trusted
+devices by means of hardware - a secure software-based authentication protocol
+would be required (but none are known to us).
+
+The only thing that may be used to identify ``dumb''\footnote{read as ``unable
+to do cryptographic operations''} trusted devices like external storage
+controllers or video equipment (which are the major clients of DMA) is the
+globally unique \emph{GUID} that a device has branded into its config ROM - but
+this GUID may be overwritten until the next hardware reset and thus faked by an
+attackers firewire controller. Windows XP on the other hand does use
+\emph{device class descriptions} stored in the config ROM of firewire devices to
+allow or deny DMA by means of OHCI filters (e.g.  storage devices may use DMA
+while other PCs may not). Adam Boileau,``TMASKY'' and others have shown in
+\cite{rux2k6firewire:2006} that, by pretending to be a device like an iPod,
+which ``deserves'' DMA (in terms of marketdroid\footnote{see jargon-files,
+\href{http://catb.org/esr/jargon/html/M/marketroid.html}
+{http://catb.org/esr/jargon/html/M/marketroid.html}}-logik), it is possible to
+circumvent this ``protection'' and to trick Windows into giving an attacker DMA.
+This attack is as simple as reading an iPod's config ROM from its CSR and using
+\texttt{libraw1394}'s \texttt{raw1394\_update\_config\_rom()} to use the copy.
+Adam Boileau has implemented a simple script to do this. We have written our own
+tool in C using \texttt{libraw1394}, which can be downloaded on request.
+
+
 Access to memory of a node will require a 10 bit field for the bus ID, a 6 bit
 field for the node ID and a 48 bit address field.  On Linux,
 \texttt{libraw1394}\footnote{\texttt{libraw1394}:
 \href{http://www.linux1394.org/}{http://www.linux1394.org/}} provides an easy
-and portable interface to access the memory of a node. %Ideally, the full
-%physical memory is accessible via the 48 bit address field, mapped in this
-%address space starting from \texttt{0x0}; around \texttt{0xffff~f000~0000}
-%several control state registers (CSRs) are located that provide information
-%about the given target node and the capabilities of the firewire device.
+and portable interface to access the memory of a node.  Using
+\texttt{libraw1394} under Linux, it is possible to read different block sizes of
+data via firewire on the remote computer. Our experiments showed that different
+hardware allows bigger blocks to be read at different addresses: 4~byte blocks
+should always work; 1024~byte blocks may be read with some hardware, if the
+address resolves to the physical memory. Control state registers are likely to
+be readable only in 4~byte blocks.
 
-%To disable the DMA-feature of firewire completely, load the \emph{ohci1394}
-%module with option \emph{phys\_dma=0} on Linux or set the security mode in
-%open-firmware to something different than ``none'' for apples powerbooks and
-%ibooks. 
 
 For more information on the underlying hardware or protocols, please refer to
 \cite{OHCIspecs:2000,fwire_sys_arch:2222} or the
 \texttt{libraw1394}\footnotemark[\value{footnote}] documentation.
 
 
-%\subsection{DMA over IEEE1394}
 
-%Firewire can be used to gain full access to a computer's memory, with nothing
-%more than simply plugging a cable into a computers firewire port. Besides a set
-%of possibly generated messages in the system's logfile, no traces will remain
-%on the target computer.
-
-% FIXME blocksize 32bit, align 32 bit :: ist dann problem immer noch da? /FIXME
-
-Using \texttt{libraw1394} under Linux, it is possible to read different block
-sizes of data via firewire on the remote computer. Our experiments showed that
-different hardware allows bigger blocks to be read at different addresses:
-4~byte blocks should always work; 1024~byte blocks may be read with some
-hardware, if the address resolves to the physical memory. Control state
-registers are likely to be readable only in 4~byte blocks.
-
-%A possible problem is that accessing the memory of a running system \emph{may}
-%generate non maskable interrupts (NMI) on the target system and even leave the
-%operating system\footnote{E.g\@. some instances of Linux kernel 2.6.17.} in a
-%non-usable state.  There are also some laptops and workstations with on-board
-%controllers being disturbed by this, sometimes resulting in crashes.  Computers
-%with PCI extension card, though, just worked fine during all tests. It is
-%possible that the deeply incorporated on-board controllers interfere with the
-%CPU accessing the main memory. This needs to be investigated in future work.
-
-\label{windows-dma} Windows XP does use OHCI features to implement protection
-mechanisms to prevent arbitrary external devices from reading any memory
-location.  Adam Boileau,``TMASKY'' and others have shown in
-\cite{rux2k6firewire:2006} that, by pretending to be a device like an iPod,
-which ``deserves'' DMA (in terms of marketdroid\footnote{see jargon-files,
-\href{http://catb.org/esr/jargon/html/M/marketroid.html}
-{http://catb.org/esr/jargon/html/M/marketroid.html}}-logik), it is possible to
-circumvent this ``protection'' and to trick Windows into giving an attacker DMA.
-This attack is as simple as reading an iPod's config rom from its CSR and using
-\texttt{libraw1394}'s \texttt{raw1394\_update\_config\_rom()} to use the copy.
-Adam Boileau has implemented a simple script to do this. We have written our own
-tool in C using \texttt{libraw1394}, which can be downloaded on request.
 
 
 \subsection{Filedescriptor: \texttt{/dev/mem}, memory dumps}
