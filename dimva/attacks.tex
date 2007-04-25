@@ -569,11 +569,10 @@ inside the buffer and writes it into the pipe to the shell.  The WriterThread
 will read data coming from the shell from the pipe and then write it into the
 \emph{ToMaster} ring-buffer, so the master can read it via DMA.
 
-The shellcode of the beachhead
-%(\texttt{attacks/userspace/shellcodes/dmashellcode.s}) 
-is introduced in appendix \ref{beachhead_pseudocode} in pseudo-code. 
-%The program to inject the shellcode and communicate with it is
-%\texttt{attacks/userspace/dmashell.c}.
+%The shellcode of the beachhead
+%(\texttt{attacks/userspace/shellcodes/dmashellcode.s}) is introduced in
+%appendix \ref{beachhead_pseudocode} in pseudo-code.  The program to inject the
+%shellcode and communicate with it is \texttt{attacks/userspace/dmashell.c}.
 
 \begin{figure}[htb] \begin{center}
 
