@@ -8,6 +8,10 @@
 \label{addresstranslations} 
 \label{address_translation} 
 
+While we discussed in the last section methods to gain access to a computer's
+memory and their limitations, we will discuss in this section a method for
+structured access to these sources.
+
 Multitasking environments that fulfill modern requirements have to provide
 virtual address spaces for each running process or thread. For performance and
 security reasons this address translation from a processes virtual address to an
@@ -34,9 +38,9 @@ frame does not have a corresponding physical page, it is called to be unmapped.
 Unmapped pages can be non-existing pages or can e.g\@., be swapped to slower
 media like harddisks.
 
-For a detailed description and discussion of these two important mechanisms, the
-reader may refer to a course on system programming, e.g\@.
-\cite{rwth_syspro_scriptum:2002}.
+%For a detailed description and discussion of these two important mechanisms,
+%the reader may refer to a course on system programming, e.g\@.
+%\cite{rwth_syspro_scriptum:2002}.
 
 With \texttt{liblinear}, we provide a software solution for address translation.
 The provided interface is similar to \texttt{libphysical}; it needs a physical
@@ -116,7 +120,7 @@ find address translation tables to make sense out of the vast, unsorted number
 of pages. Typically, translation tables are not marked as such and as we can not
 access the processor or the operating system to ask, where these are, we have to
 search them. The following methods have proven themselves when being combined:
-for all pages: make a simple test if a page \emph{could} be a pagedirectory
+for all pages we make a simple test if a page \emph{could} be a pagedirectory
 (\ref{ATTguess}) and if so, analyse this page in detail (\ref{ATTstatistics}).
 
 

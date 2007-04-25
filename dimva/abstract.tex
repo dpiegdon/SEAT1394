@@ -9,12 +9,12 @@ This paper introduces new advances in gaining unauthorised access to a computer
 by accessing its physical memory via various means. We will show a unified
 approach for using IEEE1394, also known as firewire, file descriptors and other
 methods to read from and write into a victim's memory. Thereafter we will show
-the power of this ability in several example attacks: stealing private SSH keys
-and how to inject arbitrary code in order to obtain an interactive shell on the
-victim's computer.
+the power of this ability in several example attacks: stealing private SSH keys,
+and injecting arbitrary code in order to obtain interactive access with
+administrator privileges on the victim's computer.
 
-All of these advances are based on data structures that are required by the CPU
-to provide virtual address spaces for each process running on the system.  These
+These advances are based on data structures that are required by the CPU to
+provide virtual address spaces for each process running on the system.  These
 data structures are searched and parsed in order to reassemble pages scattered
 in physical memory, thus being able to read and write in each processes virtual
 address space.

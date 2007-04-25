@@ -5,39 +5,39 @@
 
 \section{Introduction}
 
-Any modern operating system never grants processes and users access to
+All modern operating systems do not grant processes and users access to
 physically addressed memory, as this addressing mode circumvents any protection
 methods provided by virtual addressing to separate processes from each other and
 the operating system. Only the operating system may use physical addressing to
 prepare address spaces for each running process, manage these, access special
 memory of extension cards and alike, or even only during bootstrapping as Linux
 does. Having access to a computer's memory is equal to have the same rights and
-possibilities as the computer's operating system. Thus access to it should
-require system administrator rights or physical access to the hardware of the
-underlying system.  Therefore it is crucial for a system's security to prevent
-attackers from gaining direct access to a computer's memory.
+possibilities as the operating system. Thus access to it should require system
+administrator rights or physical access to the hardware of the underlying
+system.  Therefore it is crucial for a system's security to prevent attackers
+from gaining direct access to a computer's memory.
 
-Up to recently, protecting access to a computer's memory was equal to prohibit
-physical attacks to the hardware, given that the operating system had no
-vulnerabilities. Thus, reading and writing to a computer's memory was only
+Up to recently, protecting access to a computer's memory was equal to defend
+against physical attacks on the hardware, given that the operating system had no
+vulnerabilities.  Thus, reading and writing to a computer's memory was only
 possible by booting custom operating system, opening the case and attacking the
 hardware directly, stealing the whole system, installing specially crafted
 PCMCIA cards, or the like.  
 
 However, IEEE1394, also known as ``firewire'' and so called in the rest of the
 paper, does not require to boot a custom operating system, to open the case,
-steal parts of the hardware, install any hardware (except plugging in the
-firewire device) or specially crafted hardware.  Access via firewire is as easy
-as plugging in a firewire device, like the iPod, letting it do its job and
+steal parts of the hardware, install new hardware (except plugging in the
+firewire cable) or specially crafted hardware.  Access via firewire is as easy
+as plugging in a firewire device, like e.g.~an iPod, letting it do its job and
 unplugging it.
 
-In this paper we will introduce several advances in hacking via firewire. As a
-foundation for the attacks, we introduce two libraries that are used as a step
-stone for further work. These libraries are used to access virtual address
-spaces of any process on the victim's host. They also provide have a simple,
-generic interface for all kinds of physical memory sources. As an example, we
-implemented backends for IEEE1394 and filedescriptors so far, but other sources
-can be trivially added.
+In this paper we will introduce several advances in attacking computers via
+firewire.  As a foundation for the attacks, we introduce two libraries that are
+used as a step stone for further work. These libraries are used to access
+virtual address spaces of any process on the victim's host. They also provide a
+simple, generic interface for all kinds of physical memory sources. As an
+example, we implemented backends for IEEE1394 and filedescriptors so far, but
+other sources can be trivially added.
 
 Once, access to the physical memory of a system is obtained, there are two
 obvious ways to extract useful information from it: 
@@ -63,18 +63,18 @@ defined algorithm for using this information (implemented in hardware in the
 architecture, but well defined in the reference manuals for this architecture,
 so system designers can provide valid data to the hardware). On the other hand,
 the second approach does not give as much information about the system as the
-first, since we obtained there all information directly from the kernel
+first, since the first obtains all information directly from the kernel
 structures, while using the second approach we only can enter virtual address
-spaces of processes. In the following we will use the second approach for most
-attacks, as it is more robust.
+spaces of processes. However, in the following we will use the second approach
+for most attacks, as it is more robust.
 
 In \cite{finding_digital_evidence_in_physical_memory:2006}, an approach is
 introduced that parses kernel-structures of Windows and Linux kernels. Since the
-paper is about \emph{finding an attacker} and not \emph{attacking a system}, the
-forensic personal does know about the architecture, the operating system and
-version and can build a copy of the system to test its tools, while an attacker
-is usually left with guessing the architecture and operating system and needs
-more robust tools for his attacks.%  (Obviously this is only a short-term
+paper is about \emph{finding an attacker} and not \emph{attacking a system}, it
+can be savely assumed that the architecture, the operating system and its
+version are known. An attacker, on the other hand, is usually left with guessing
+the architecture and operating system and needs more robust tools for his
+attacks.% (Obviously this is only a short-term
 %argument, as an attacker can also write such tools for \emph{all} OS version
 %and architecture combinations\ldots but the heck with this...).  FIXME ``the
 %heck with this''... spida: ``for simplicities sake, I will do this for only one
@@ -83,8 +83,8 @@ more robust tools for his attacks.%  (Obviously this is only a short-term
 Latest state of the art was shown in \cite{cansecwest_firewire:2005}, where
 Dornseif et al.~demonstrated how to connect to a remote computer over an
 IEEE1394 connection and changed the user of all running processes to the super
-user "`root"'. However, their work left the victim's machine in a fragile state,
-often prone to crashing, and without direct privilege gain for the attacker.
+user ``root''. However, their work left the victim's machine in a fragile state,
+often prone to crashing, and without direct gain for the attacker.
 
 Other advances in memory analysis have been introduced in
 \cite{finding_digital_evidence_in_physical_memory:2006}, where kernel-structures
@@ -96,12 +96,12 @@ Our contributions in to this area are twofold:
 \begin{itemize} 
 
 \item We demonstrate how to access the memory of a remote machine in a
-structured manner, making information retrieval as easy as reading the local
-memory.
+structured and portable manner, making information retrieval as easy as reading
+local memory.
 
 \item With the help of our tool-set we demonstrate that it is not only possible
-to change some data in the remote machine, but also to execute code and obtain
-interactive access, possibly with superuser privileges.
+to read or change data in the remote machine, but also to execute code and
+obtain interactive access, possibly with superuser privileges.
 
 \end{itemize}
 

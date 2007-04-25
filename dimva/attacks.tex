@@ -139,8 +139,7 @@ its socket), but the agent is stalled in a \emph{read} system call until this
 query and thus can not wipe the key\footnote{This bug has been fixed upon
 request in \texttt{openssh-4.5p1} or earlier}.  That makes it possible to obtain
 long overdue keys from \texttt{ssh-agent}s, although their owners believed them
-to be safe. A simple timer could have prevented this\footnote{We hereby strongly
-encourage the developers to implement such a timer!}. But even with such a timer
+to be safe. A simple timer could have prevented this. But even with such a timer
 enabled it would be possible to acquire the key during its lifetime.
 
 To obtain a keypair from an agent via firewire, a staged attack is required:

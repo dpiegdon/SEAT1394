@@ -8,29 +8,29 @@
 \label{memsources}
 
 This section presents a simple, generic interface for all kinds of physical
-memory sources. We implemented a simple interface, where backends for new memory
-sources may be plugged in. This interface is called \texttt{libphysical} and
-currently includes backends for IEEE1394 and file descriptors.
+memory sources. The implementation is modular, so that backends for new memory
+sources may be plugged in with only little extra effort. This interface is
+called \texttt{libphysical} and currently includes backends for IEEE1394 and
+file descriptors.
 
 Modern computer hardware provides many protection and memory management
-mechanisms in hardware. This includes hardware to provide a virtual address
-space for each process, protection mechanisms to restrict a process to its own
-resources only, paging to extend memory to harddisks and fragment available
-memory, caching to access frequently used memory faster, and more. Obviously,
-all these features are architecture and operating-system dependent. An
-interested reader may read documentation on system programming (e.g\@.
-\cite{rwth_syspro_scriptum:2002} or \cite{IA32_SDM_3a:2006,IA32_SDM_3b:2006}) to
-obtain further information.
+mechanisms in hardware. This includes mechanisms implemented in hardware to
+provide a virtual address space for each process, and to restrict a process to
+its own resources only; paging to extend memory to harddisks and fragment
+available memory; caching to access frequently used memory faster, and more.
+Obviously, all these features are architecture and operating-system dependent.
+An interested reader may read documentation on system programming
+(e.g.~\cite{IA32_SDM_3a:2006,IA32_SDM_3b:2006}) to obtain further information.
 
-Assume a process with its virtual address space and its corresponding set of
-pages. Each page in this virtual address space may be:
+Consider a process with its virtual address space and its corresponding set of
+pages.  Each page in this virtual address space may be:
 
 \begin{itemize}
 
-	\item a real, physical memory page that is mapped into the virtual 
-		address space, possibly cached in the CPU's cache,
+	\item a physical memory page that is mapped into the virtual address space,
+	possibly cached in the CPU's cache,
 
-	\item a used page that is swapped to other media, like a harddisk
+	\item a page that is swapped to other media, like a harddisk
 
 	\item (depending on the operating system) a mapped buffer or file
 
@@ -44,51 +44,53 @@ process will generate a page fault and the operating system then may map the
 demanded page.  Access to completely unused pages, via this mechanism, will
 create the well known segmentation fault.
 
-When access to physically addressed memory is obtained, that is a set of pages,
-each page may be a page of memory of a random process, a buffer page of a
-process, a page used by the operating system (kernel code, kernel data, kernel
-stack, IO buffer, \dots), an unused page or a page used to give the CPU
-information on how to handle virtual addresses, as this is done in hardware.
-The latter pages will be called address translation tables; for more information
-on these, see section \ref{address_translation}.
+When access to physically addressed memory is obtained, each page that an
+attacker can access may be either a page of memory of a random process, a buffer
+page of a process, a page used by the operating system (kernel code, kernel
+data, kernel stack, IO buffer, \dots), an unused page or a page used to give the
+CPU information on how to handle virtual addresses, as this is done in hardware.
+The latter pages will be called address translation tables (for more information
+on these, see section \ref{address_translation}).
 
 \subsection{Swapping, Multiple Accessors, Caching, Address Translation}
 
 %Virtual pages of a process may be swapped, buffers may only be created on
 %demand, and pages may be cached in other memory.
 
-As physical memory only gives access to pages that are mapped from this
-physical memory, we will be unable to access swapped pages and buffers that
-have not been mapped. There is no simple solution to access this data; it is
-required to call special operating system routines to do this; but access to
-physical memory does not include access to the CPU by itself, and these routines
-may be different from operating system to operating system.
+Access to physical memory only gives, per definition, access to pages that are
+mapped from this physical memory. Thus this kind of access will be unable to
+read or write swapped pages and buffers that have not been mapped. There is no
+simple solution to circumvent this restriction; it is required to call special
+operating system routines to do this. However, access to physical memory does
+not include access to the CPU by itself, and these routines may be different
+from operating system to operating system.
 
 Depending on the method used to access the memory, a parallel accessor may be
 using the same memory at the same time. E.g\@. when using firewire (see
 \ref{phys1394}) to read a page of a currently running task, this task may
-access, thus read or write this page at the same time. For instance, if both CPU
+access, i.e.~read or write, this page at the same time. For instance, if the CPU
 and another accessor write at the same moment to the same address location, it
-depends on timing and caching, which write access will be performed first and
-thus override the other one; as an external accessor we have no way of knowing,
-when the systems CPU accesses a page and if it is cached, thus leaving us with
-no simple means to determine the success of a writing operation.  Also, reading
-and writing at the same time may be impossible via the given method; thus many
-atomic commands used for process synchronization, like ``test and set'', will
-not exist.  Caching may also prevent these.
+depends on unpredictable timing and caching, which write access will be
+performed first and thus is overridden by the other one; as an external accessor
+we have no information, when the system's CPU accesses a page and whether it is
+cached, thus leaving us with no simple means to determine the success of a
+writing operation.  Also, reading and writing at the same time may be impossible
+via the given method; thus many atomic commands used for process
+synchronization, like ``test and set'', do not exist.  
 
-If a page is cached in another, faster memory, a copy of it will typically
-reside in physical memory. In most cases we will not know if a page is cached or
-not; on IA-32 however the address translation tables contain a flag for each
-page telling the CPU if it may be cached or not. Depending on the way used to
-access the memory, it may circumvent the cache or not have access to it at all.
-When accessing a page, changes made by a task running in parallel may not be
-visible immediately and changes made by us may be invisible to a parallel task
-or maybe even overwritten by the cache at any time. Special care needs to be
-taken to minimize this risk. When writing to pages, pages should be chosen that
-are not cached or unlikely to be cached while writing; when reading pages, it
-must be taken into consideration that the data may change at any time or may
-have changed yet.
+Caching may also prevent certain actions from external accessors: if a page is
+cached in another, faster memory, a copy of it will typically reside in physical
+memory.  In the general case it is difficult to know if a page is cached or not;
+on IA-32 however the address translation tables contain a flag for each page
+telling the CPU if it may be cached or not.  Depending on the way used to access
+the memory, it may circumvent the cache or not have access to it at all.  When
+accessing a page, changes made by a task running in parallel may not be visible
+immediately and changes made by us may be invisible to a parallel task or maybe
+even overwritten by the cache at any time.  Special care needs to be taken to
+minimize this risk.  When writing to pages, pages should be chosen that are not
+cached or unlikely to be cached while writing; when reading pages, it must be
+taken into consideration that the data may change at any time or may have
+changed at the time of reading.
 
 On systems using paging, physical memory will mostly be a concatenation of
 ``random'' pages, each one either used by some process or the operating system.
@@ -129,9 +131,9 @@ would be required (but none are known to us).
 The only thing that may be used to identify ``dumb''\footnote{read as ``unable
 to do cryptographic operations''} trusted devices like external storage
 controllers or video equipment (which are the major clients of DMA) is the
-globally unique \emph{GUID} that a device has branded into its config ROM - but
-this GUID may be overwritten until the next hardware reset and thus faked by an
-attackers firewire controller. Windows XP on the other hand does use
+globally unique \emph{GUID} that a device has branded into its config ROM -
+however this GUID may be overwritten until the next hardware reset and thus
+faked by an attackers firewire controller. Windows XP on the other hand does use
 \emph{device class descriptions} stored in the config ROM of firewire devices to
 allow or deny DMA by means of OHCI filters (e.g.  storage devices may use DMA
 while other PCs may not). Adam Boileau,``TMASKY'' and others have shown in
