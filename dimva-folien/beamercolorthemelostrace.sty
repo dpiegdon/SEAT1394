@@ -1,0 +1,61 @@
+\ProvidesPackageRCS $Header: /cvsroot/latex-beamer/latex-beamer/themes/color/beamercolorthemecrane.sty,v 1.8 2004/10/28 17:15:51 tantau Exp $
+
+% Copyright 2003 by Till Tantau <tantau@users.sourceforge.net>.
+% Modified by Corinna Habets <ch@corinna-habets.de> August 2006 for koeln.ccc.de
+%
+% This program can be redistributed and/or modified under the terms
+% of the GNU Public License, version 2.
+
+\mode<presentation>
+
+\definecolor{black}{RGB}{0,0,0}
+\definecolor{darkred}{RGB}{128,0,00}
+
+\definecolor{LTyellow}{RGB}{255,187,0}
+\definecolor{i4orange}{RGB}{255,127,0}
+\definecolor{i4blue}{RGB}{0,127,255}
+
+\definecolor{LTlightblue}{RGB}{161,185,207}
+\definecolor{darkgrey}{RGB}{80,80,80}
+\definecolor{grey}{RGB}{192,192,192}
+
+\definecolor{white}{RGB}{255,255,255}
+\definecolor{black}{RGB}{0,0,0}
+
+%\definecolor{red}{RGB}{255,0,0}
+%\definecolor{green}{RGB}{0,255,0}
+%\definecolor{blue}{RGB}{0,0,255}
+
+
+
+\setbeamercolor{structure}{fg=i4blue}
+
+\setbeamercolor{palette primary}{fg=i4blue,bg=darkgray} %nicht gesehen
+\setbeamercolor{palette secondary}{fg=darkgrey,bg=i4orange} %zweitoberster und zweitunterster
+\setbeamercolor{palette tertiary}{fg=black,bg=LTyellow} % oberster und unterster
+\setbeamercolor{palette quaternary}{fg=darkgrey,bg=white} %breiter
+
+\setbeamercolor{titlelike}{fg=darkgrey,bg=white}
+
+\setbeamercolor{block title}{fg=darkgrey}
+\setbeamercolor{block title alerted}{use=alerted text,fg=i4blue,bg=alerted text.fg!75!bg}
+\setbeamercolor{block title example}{use=example text,fg=i4blue,bg=example text.fg!75!bg}
+
+\setbeamercolor{block body}{parent=normal text,use=block title,bg=block title.bg!25!bg}
+\setbeamercolor{block body alerted}{parent=normal text,use=block title alerted,bg=block title alerted.bg!25!bg}
+\setbeamercolor{block body example}{parent=normal text,use=block title example,bg=block title example.bg!25!bg}
+
+\setbeamercolor{block title example}{use=example text,fg=i4blue,bg=example text.fg!75!bg}
+
+%\setbeamercolor{sidebar}{bg=i4orange!70}
+  
+%\setbeamercolor{palette sidebar primary}{fg=i4blue}
+%\setbeamercolor{palette sidebar secondary}{fg=i4blue!75}
+%\setbeamercolor{palette sidebar tertiary}{fg=i4blue!75}
+%\setbeamercolor{palette sidebar quaternary}{fg=i4blue}
+
+%\setbeamercolor*{separation line}{}
+%\setbeamercolor*{fine separation line}{}
+
+\mode
+<all>

@@ -1,0 +1,731 @@
+%
+% vim: foldlevel=1
+%
+\documentclass{beamer}
+
+
+\mode<presentation>
+{
+  \usetheme[compress]{Ilmenau}
+	\useinnertheme{circles}
+	\usecolortheme{lostrace}
+  \setbeamercovered{transparent}
+  \setbeamertemplate{navigation symbols}{}
+}
+
+%\usepackage{epsfig,graphicx,epsf}
+\usepackage{pgfbaseimage}
+%\usepackage[ngerman]{babel}
+%\usepackage{ucs}
+%\usepackage[utf8x]{inputenc}
+\usepackage{times}
+\usepackage[T1]{fontenc}
+\usepackage{multimedia}
+\usepackage{listings}
+
+\newenvironment{itemizeframe}[1]
+  {\begin{frame}{#1}\startitemizeframe}
+  {\stopitemizeframe\end{frame}}
+\newcommand\startitemizeframe{\begin{itemize}}
+\newcommand\stopitemizeframe{\end{itemize}}
+
+
+
+\title[hacking in physically addressable memory]
+{ { \small Seminar of Advanced Exploitation Techniques, WS 2006/2007} \\ \textbf{hacking in physically addressable memory}\\ a proof of concept}
+
+\author[losTrace A.K.A. David R. Piegdon <david.rasmus.piegdon@rwth-aachen.de>]
+{David~Rasmus~Piegdon \\ \ \\ \tiny Supervisor: Lexi Pimenidis}
+
+\institute[RWTH Aachen University of Technology]{
+	Lehrstuhl f\"ur Informatik IV, RWTH Aachen\\ {\tiny \ \\ http://www-i4.informatik.rwth-aachen.de \\} 
+}
+
+\date[2007-02-21]
+{February 21st 2006}
+
+\subject{Direct Memory Access hacking}
+
+%\pgfdeclareimage[height=0.4cm]{by-nc-sa}{../bilder/by-nc-sa}
+%\titlegraphic{\href{http://creativecommons.org/licenses/by-nc-sa/2.0/de/}{\pgfuseimage{by-nc-sa}}}
+
+\pgfdeclareimage[interpolate=true,height=1.0cm]{i4-1394}{i4_ieee1394_stacked}
+\logo{\pgfuseimage{i4-1394}}
+
+\pgfdeclareimage[interpolate=true,height=1.0cm]{logo-1394}{ieee1394-logo-big}
+\pgfdeclareimage[interpolate=true,height=6.7cm]{ia32-vm}{ia32_segmentation_paging}
+\pgfdeclareimage[interpolate=true,height=6.0cm]{linux-ia32-vmlayout}{linux_virtual_address_space}
+\pgfdeclareimage[interpolate=true,width=10.0cm]{beachhead}{functionality_beachhead}
+
+%\pgfdeclareimage[height=3cm]{microkernel}{microkernel}
+%\pgfdeclareimage[height=6cm]{monolith}{monolith}
+%\pgfdeclareimage[height=19cm]{kernel-attackspace}{kernel-attackspace}
+
+
+\begin{document}
+
+\begin{frame}
+	\titlepage
+\end{frame}
+
+\begin{frame}
+	\frametitle{Table of Contents}
+	\tableofcontents[hideallsubsections]
+\end{frame}
+
+\AtBeginSection{
+%	\begin{frame}
+%	  \frametitle{Table of Contents}
+%	  \tableofcontents[hideallsubsections]
+%	  % Die Option [pausesections] könnte nützlich sein.
+%	\end{frame}
+	\begin{frame}<beamer>
+		\frametitle{Table of Contents}
+		\tableofcontents[current,hideallsubsections]
+	\end{frame}
+}
+
+% "` "'
+% umlaute "a ...
+
+% \begin{exampleblock}	gruene box
+% \begin{alertblock}	rote box
+% \begin{Definition}	blaue box, titel "Definition"
+% \begin{Example}	gruene box, titel "Example"
+% \alert{...}		roter text
+% \structure{...}	blauer text
+
+\section{Introduction}
+
+	\subsection{}
+
+		\begin{frame}{physical addressable memory}
+			``hacking in physically addressable memory''
+			\begin{itemize}
+				\item Hacking: using a technique for something it has not been designed for
+				\item Physically addressable memory: direct memory access, ``DMA''
+			\end{itemize}
+		\end{frame}
+
+		\begin{itemizeframe}{hacking}
+			\item I will show mostly \structure{attacks}
+			\item So actually I will be \structure{cracking} a systems security
+			\item<2-> \alert{Exploiting et al is not hacking by definition}
+			\item<2-> \structure{``to hack'' is mostly misused by media}
+		\end{itemizeframe}
+
+		\begin{itemizeframe}{DMA}
+			\item DMA = Direct Memory Access
+			\item Basic requirement for introduced approach
+			\item Known for a long time: attacker has DMA -> \structure{0wn3d}
+				\begin{itemize}
+					\item 0wn3d by an iPod $[1]$
+					\item and others $[2,3]$
+				\end{itemize}
+			\item This is a \structure{proof of concept}
+		\end{itemizeframe}
+
+\section{Accessing memory}
+
+	\subsection{Methods}
+
+		\begin{frame} \frametitle{Methods}
+			Many ways to gain access to memory:
+			\begin{itemize}
+				\item special PCI cards (forensic, remote management cards)
+				\item special PCMCIA cards
+				\item FireWire (IEEE1394) DMA feature
+				\item anything with DMA
+				\item \texttt{/dev/mem} (Linux)
+				\item memory dumps
+				\item Suspend2Disk images
+				\item Virtual machines
+				\item \ldots
+			\end{itemize}
+		\end{frame}
+
+		\begin{itemizeframe}{Generic problems of DMA attacks}
+			\item Swapping
+			\item Multiple accessors at any time
+			\item Caching (?)
+		\end{itemizeframe}
+
+	\subsection{DMA hardware}
+
+		\begin{frame} \frametitle{DMA hardware}
+			Hardware we may use is
+			\begin{itemize}
+				\item expensive
+				\item specially crafted
+				\item selfmade (some)
+				\item rare
+				\item not hot-pluggable (depends)
+				\item \structure{one exception:} FireWire (IEEE1394)
+			\end{itemize}
+		\end{frame}
+
+		\begin{frame} \frametitle{FireWire overview}
+			\pgfuseimage{logo-1394} FireWire a.k.a. iLink a.k.a. IEEE1394
+			\begin{itemize}
+				\item Hot-pluggable
+				\item Wide-spread (even among laptops)
+				\item Expansion Bus (like PCI or PCMCIA)
+				\item Has DMA (if enabled by driver)
+				\item Guaranteed bandwith feature
+				\item Used alot for media-crunching
+				\item Most people are not aware of abuse-factor
+			\end{itemize}
+		\end{frame}
+
+		\begin{itemizeframe}{FireWire DMA}
+			\item DMA only enabled if driver says so
+			\begin{itemize}
+				\item Linux, BSD, MacOSX: by default (can be disabled)
+				\item Windows: only for devices that ``deserve'' it (more later)
+			\end{itemize}
+			\item If DMA -> full access, no restrictions
+		\end{itemizeframe}
+
+		\begin{frame} \frametitle{Windows DMA}
+			Devices that ``deserve'' DMA on Windows:
+
+			SBP2 (storage) devices, like
+			\begin{itemize}
+				\item external disks
+				\item \structure{iPod} (has a disk)
+			\end{itemize}
+
+			\uncover<2->{The iPod can run Linux\ldots}
+		\end{frame}
+		
+		\begin{itemizeframe}{How to identify SBP2 devices}
+			\item Identify devices and features from their CSR \structure{config ROM}
+			\item Config ROM contains
+			\begin{itemize}
+				\item GUID: 8 byte globally unique ID (like MAC address)
+				\item Identifier of driver
+				\item List of supported features
+				\item List of supported speeds
+				\item \ldots
+			\end{itemize}
+			\item<2-> CSR config ROM can be faked (see [2])
+			\item<3-> Copy config ROM from iPod and install it on any system ($\rightarrow$\texttt{1394csrtool})
+			\item<4-> Magically Windows permits DMA for \alert{any} device
+		\end{itemizeframe}
+
+		\begin{frame}
+			Joana Rutkowska will introduce methods to ``Cheat Hardware Based RAM Forensics'' on Black Hat DC in March
+
+			(see \textcolor{blue}{http://theinvisiblethings.blogspot.com/2007/01/beyond-cpu-cheating-hardware-based-ram.html})
+		\end{frame}
+		
+	\subsection{DMA software}
+
+		\begin{itemizeframe}{\texttt{/dev/mem}}
+			\item Gives access to physically addressed memory (in opposite to \texttt{/dev/kmem})
+			\item Often needed by X-server
+			\item Shall be obsoleted in future (X shall use DRI)
+			\item Only gives access to \structure{lower 896MB} RAM (only these are mapped)
+		\end{itemizeframe}
+
+	\subsection{\texttt{libphysical}}
+
+		\begin{itemizeframe}{One interface to access them all}
+			\item One generic interface: \texttt{libphysical}
+			\item Backends for anything\ldots
+			\item Implemented so far:
+			\begin{itemize}
+				\item Filedescriptor (\texttt{/dev/mem}, memory dumps)
+				\item FireWire
+			\end{itemize}
+		\end{itemizeframe}
+
+\section{Virtual address spaces}
+
+	\begin{itemizeframe}{so what now?}
+		\item Once we got access\ldots
+			we can see a bunch of random memory
+
+		\item \structure{How does OS manage memory?}
+	\end{itemizeframe}
+
+	\begin{frame}
+		Could parse kernel data-structures (if found). But they are different for different
+		\begin{itemize}
+			\item hardware architecture
+			\item operating system
+			\item OS version
+			\item and may not be documented (Windows)
+		\end{itemize}
+		\uncover<2->{Or we could do something else\ldots}
+	\end{frame}
+
+	\subsection{Virtual address spaces}
+
+		\begin{frame}{Virtual Address Spaces}
+			\begin{itemize}
+				\item Multitasking Operating System
+				\item System runs \structure{several processes} ``at once''
+				\item \structure{Privilege separation} required (see [5])
+				\item Normally done in \structure{hardware}
+			\end{itemize}
+			\uncover<2->{
+				$\rightarrow$ \structure{Each process has own virtual address space}
+
+				$\rightarrow$ Cannot access other processes memory or operating systems memory
+
+				$\rightarrow$ Cannot circumvent protection mechanism
+			}
+		\end{frame}
+
+
+		\begin{frame} \frametitle{IA-32 Linux VM Layout}
+			\pgfuseimage{linux-ia32-vmlayout}
+		\end{frame}
+
+		\begin{frame} \frametitle{IA-32}
+			IA-32 provides two techniques (that may be chained)
+			\begin{itemize}
+				\item \structure{Segmentation} (required)
+				\item \structure{Paging} (optional)
+			\end{itemize}
+			Linux only uses paging, all segments span full 4GB of virtual memory
+		\end{frame}
+
+		\begin{frame} \frametitle{IA-32 virtual (``logical'') address translation}
+			\pgfuseimage{ia32-vm} ~~(from [6])
+		\end{frame}
+
+		\begin{itemizeframe}{Done in hardware}
+			\item Translation done in hardware (by CPU)
+			\item Hardware needs to know how to do it:
+			\begin{itemize}
+				\item Global Descriptor Table (GDT)
+				\item Local Descriptor Table (LDT)
+				\item Page Directory (PD), Page Tables (PT)
+			\end{itemize}
+		\end{itemizeframe}
+
+		\begin{frame}
+			Once we got these structures,
+			we know which page belongs where in which address space
+			\begin{itemize}
+				\item Linux: GDT, LDT are irrelevant (flat segments)
+				\item only PD is required
+				\item PD references PTs
+				\item<2-> PD may have recognisable patterns (has for Linux and Windows)
+				\item<2-> one PD per process
+			\end{itemize}
+		\end{frame}
+	
+	\subsection{Finding Address Translation Tables}
+		
+		\begin{frame} \frametitle{Finding ATTs}
+			Address Translation Tables (including PDs)\ldots
+			\begin{itemize}
+				\item depend on \structure{architecture}
+				\item depend on \structure{operating system}
+				\item may have recognisable patterns
+			\end{itemize}
+			\uncover<2->{
+				$\rightarrow$ create signature for (arch, OS). so far:
+				\begin{itemize}
+					\item (i386, Linux 2.4 and 2.6)
+					\item (i386, Windows XP)
+				\end{itemize}
+			}
+		\end{frame}
+
+		\begin{itemizeframe}{Finding ATTs, details}
+			\item[1] Sieve all pages by simple, static pattern (e.g. 4 bytes)
+			\item[2] For each possible do statistical analysis:
+			\begin{itemize}
+				\item Nearest Compression Distance (NCD) to known true ATT
+			\end{itemize}
+			\item[3] If possibility high enough, test integrity of data \\ (for IA-32: try to load referenced PTs)
+			\item[4] If ok, its (most probably) an ATT
+		\end{itemizeframe}
+
+		\begin{itemizeframe}{Nearest Compression Distance}
+			\item \structure{N}earest \structure{I}nformation \structure{D}istance:
+			\begin{itemize}
+				\item Minimal amount of changes required between two information
+				\item Uses \structure{Kolmogorov Complexity} (KC) (size of minimal representation of information)
+				\item Incalculable
+			\end{itemize}
+			\uncover<2->{
+				\item KC can be \structure{approximated} by \structure{compressor} \\
+					$\rightarrow$ \structure{N}earest \structure{C}ompression \structure{D}istance:
+				\begin{itemize}
+					\item Calculable
+					\item Very versatile
+					\item e.g. create relational trees of gene-sequences [4]
+				\end{itemize}
+			}
+		\end{itemizeframe}
+
+		\begin{frame}
+			Once a PD is found, we can do the translation by hand:
+			\begin{itemize}
+				\item Well-defined algorithm for architecture, e.g. for IA-32: [6]
+				\item Implementation in software in \texttt{liblinear}. So far:
+				\begin{itemize}
+					\item IA-32 Protected Mode, without PAE36 \\ (Linux with $\leq 4$GB RAM)
+				\end{itemize}
+			\end{itemize}
+		\end{frame}
+
+\section{Gathering information}
+
+	\begin{frame}
+		So far
+		\begin{itemize}
+			\item We can \structure{access physical memory sources} in a generic way (\texttt{libphysical})
+			\item We can find and \structure{access virtual address spaces} of processes (\texttt{liblinear})
+		\end{itemize}
+		Now we want to \structure{identify processes} we found.
+	\end{frame}
+
+	\subsection{Identifying Processes}
+	
+		\begin{frame}[fragile]
+			\begin{verbatim}
+				#include <stdio.h>
+
+				int main(int argc, char**argv)
+				{
+					printf("my name is %s\n", argv[0]);
+					return 0;
+				}
+			\end{verbatim}
+		\end{frame}
+
+		\begin{itemizeframe}{}
+			\item \texttt{argv}, \texttt{envv} are somewhere in the address space
+			\item<2-> They are on the stack, on first mapped pages below page \texttt{0xc0000}
+			\item<2-> NUL-separated vector with
+			\begin{itemize}
+				\item<2-> Path of binary
+				\item<2-> Environment
+				\item<2-> Arguments
+			\end{itemize}
+		\end{itemizeframe}
+
+		\begin{frame}[fragile]
+			\scriptsize
+			\begin{semiverbatim}
+			# OLDPWD=/home/lostrace PWD=/home/lostrace/documents/rwth/SEAT\ \\
+			\ \ /attacks/userspace SHLVL=1 _=./victim \ \\
+			\ \ ./victim {-}{-}arg=foo bar {-}{-}baz
+
+			0xbfc5ff70  00 00 \textcolor{green}{00 00} 2e 2f 76 69  |..\textcolor{green}{..}./vi|    ARGV[]:
+			0xbfc5ff78  63 74 69 6d \textcolor{red}{00} 2d 2d 61  |ctim\textcolor{red}{.}{-}{-}a|      [0] = bfc5ff74
+			0xbfc5ff80  72 67 3d 66 6f 6f \textcolor{red}{00} 62  |rg=foo\textcolor{red}{.}b|      [1] = bfc5ff7d
+			0xbfc5ff88  61 72 \textcolor{red}{00} 2d 2d 62 61 7a  |ar\textcolor{red}{.}{-}{-}baz|      [2] = bfc5ff87
+			0xbfc5ff90  \textcolor{red}{00} 4f 4c 44 50 57 44 3d  |\textcolor{red}{.}OLDPWD=|      [3] = bfc5ff8b
+			0xbfc5ff98  2f 68 6f 6d 65 2f 6c 6f  |/home/lo|      [4] = NULL
+			0xbfc5ffa0  73 74 72 61 63 65 \textcolor{red}{00} 50  |strace\textcolor{red}{.}P|
+			0xbfc5ffa8  57 44 3d 2f 68 6f 6d 65  |WD=/home|
+			0xbfc5ffb0  2f 6c 6f 73 74 72 61 63  |/lostrac|
+			0xbfc5ffb8  65 2f 64 6f 63 75 6d 65  |e/docume|
+			0xbfc5ffc0  6e 74 73 2f 72 77 74 68  |nts/rwth|
+			0xbfc5ffc8  2f 53 45 41 54 2f 61 74  |/SEAT/at|
+			0xbfc5ffd0  74 61 63 6b 73 2f 75 73  |tacks/us|
+			0xbfc5ffd8  65 72 73 70 61 63 65 \textcolor{red}{00}  |erspace\textcolor{red}{.}|
+			0xbfc5ffe0  53 48 4c 56 4c 3d 31 \textcolor{red}{00}  |SHLVL=1\textcolor{red}{.}|
+			0xbfc5ffe8  5f 3d 2e 2f 76 69 63 74  |_=./vict|
+			0xbfc5fff0  69 6d \textcolor{red}{00} 2e 2f 76 69 63  |im\textcolor{red}{.}./vic|
+			0xbfc5fff8  74 69 6d \textcolor{green}{00 00 00 00 00}  |tim\textcolor{green}{.....}|
+			\end{semiverbatim}
+		\end{frame}
+
+		\begin{itemizeframe}{Stack arguments}
+			\item Find page, parse structure back-to-front:
+			\item Last 5 bytes are always \texttt{NUL}
+			\item Previous string is always binary
+			\item \alert{Problem}: difference between argument and environment?
+			\item Solution: find \texttt{argv[0]} on stack and use userspaces \texttt{argv[]}
+		\end{itemizeframe}
+
+		\begin{itemizeframe}{Finding Specific Processes}
+			\item[1] Find all virtual address spaces
+			\item[2] For each: look if binary matches searched binary, e.g.:
+			\begin{itemize}
+				\item \texttt{/usr/lib/mozilla-firefox/firefox-bin}
+				\item \texttt{/usr/bin/gpg}
+				\item \texttt{/usr/bin/psi}
+				\item \texttt{/usr/bin/openssl}
+				\item \texttt{/usr/bin/ssh-agent}
+			\end{itemize}
+			\item[3] If matches, steal a cookie or\ldots \uncover<2->{a ssh-private key}
+		\end{itemizeframe}
+
+	\subsection{Secrets}
+
+		\begin{frame} \frametitle{Stealing SSH private keys}
+			\structure{Let's get dangerous!}
+
+			\uncover<2->{
+				Steal SSH private key from \texttt{ssh-agent}:
+
+				\begin{itemize}
+					\item agent keeps key decrypted, locked in memory
+					\item has timeout-function to wipe keys from memory
+					\item stalled in \texttt{read()}-syscall on socket
+					\item \alert{no timer-signal} to check for timeout
+					\item checks timer only on query
+				\end{itemize}
+			}
+		\end{frame}
+
+		\begin{frame}[fragile] \frametitle{finding SSH Private keys}
+			\begin{itemize}
+				\item Where (in filesystem) do you keep your keys?
+				\item \texttt{\$HOME/.ssh/*}
+				\item \texttt{comment} $:=$ path of key
+			\end{itemize}
+			\begin{semiverbatim}
+				[foo@bar:~]> ssh-add -l
+				1024 00:11:...:ee:ff \textcolor{blue}{/home/foo/.ssh/id_rsa} (RSA)
+			\end{semiverbatim}
+		\end{frame}
+
+		\begin{frame}[fragile]
+			\begin{semiverbatim}
+				typedef \textcolor{green}{struct identity} \{
+				\ \ 	Key *key;
+				\ \ 	char *\textcolor{blue}{comment};
+				\ \ 	u_int death;
+				\} Identity;
+
+				\textcolor{green}{struct Key} \{
+				\ \ 	int      type;
+				\ \ 	int      flags;
+				\ \ 	RSA     *rsa;
+				\ \ 	DSA     *dsa;
+				\};
+			\end{semiverbatim}
+		\end{frame}
+
+		\begin{frame} \frametitle{finding SSH Private keys [2]}
+			\begin{itemize}
+				\item[1] Find \texttt{comment}-string in heap
+				\item[2] Find PTR to \texttt{comment} (\texttt{struct identity}) in heap
+				\item[3] Follow \texttt{key}
+				\item[4] Follow \texttt{key->RSA} and \texttt{key->DSA}
+				\item[5] A lot of \texttt{BIGNUM}s (OpenSSL arbitrary precision integer implementation).
+					 \structure{Copy relevant, test integrity} (see [7,8]).
+				\item[6] 0wn3d
+			\end{itemize}
+			\scriptsize (yes, there are better methods to find the keys, but this is just a proof of concept)
+		\end{frame}
+
+	\subsection{resume}
+
+		\begin{itemizeframe}{Resume}
+			\item So far: only \structure{read} memory.
+			\item Works with memory dumps
+			\item No time to prepare an attack?
+			\item $\rightarrow$ Just dump memory and do it later
+		\end{itemizeframe}
+
+\section{Injecting code}
+
+	\begin{itemizeframe}{Attacking by Writing}
+%		\item The pen is mightier than the sword.
+		\item No more sword to be feared than the learned pen.
+		\item Even the virtual one.
+	\end{itemizeframe}
+
+	\subsection{Injecting the code}
+
+		\begin{itemizeframe}{Inject where?}
+			\item Cannot allocate extra memory
+			\item Cannot overflow a buffer (no IO with process)
+			\item Need to overwrite \structure{code}, \structure{data} or \structure{stack}
+			\item Data: where IS data? is data mapped into multiple processes?
+		\end{itemizeframe}
+			
+		\begin{itemizeframe}{Inject into code}
+			\item Shared objects, binaries: mapped into multiple processes
+			\item $\rightarrow$ Affect multiple processes at same time
+			\item Needs to be PIC\footnote{Position Independent Code} (mapped at different locations)
+			\item Is there room to inject code?
+		\end{itemizeframe}
+
+		\begin{itemizeframe}{Inject into stack}
+			\item Stack is easy to find
+			\item Affect one process at a time (one stack per thread)
+			\item Inject into zero-padded pages containing ENV and ARG.
+			\item Possibly overwrite these (if little space):
+			\begin{itemize}
+				\item ENV, ARG are rarely parsed
+				\item typically only during init
+			\end{itemize}
+			\item If overwrites ENV, ARG: possibly visible via
+			\begin{itemize}
+				\item \texttt{/proc/\$PID/environ}
+				\item \texttt{/proc/\$PID/cmdline}
+			\end{itemize}
+		\end{itemizeframe}
+
+	\subsection{Executing the code}
+
+		\begin{frame}{Executing injected code}
+			Use program-flow:
+			\begin{itemize}
+				\item Typical process calls subroutines
+				\item Stackframes on stack, including return-address
+			\end{itemize}
+			$\rightarrow$ Overwrite return-addresses
+		\end{frame}
+
+		\begin{itemizeframe}{Protection Mechanisms}
+			\item Stackoverflow protection checksums
+			\begin{itemize}
+				\item Can manipulate checksum as well
+			\end{itemize}
+			\item Page-level no-execute enforcements {\small (Intels EXB, AMDs NX)}
+			\begin{itemize}
+				\item Manipulate Page Directory to allow execution of stack
+			\end{itemize}
+		\end{itemizeframe}
+
+	\subsection{Communicating with shellcode}
+
+		\begin{frame} \frametitle{Rootshell?}
+			\begin{itemize}
+				\item Royal leage of code-injection: \structure{interactive (root-)shell}
+			\end{itemize}
+			$\rightarrow$ Inject bindshell
+			\begin{itemize}
+				\item Network connection required
+				\item Can be found simply:
+				\begin{itemize}
+					\item \texttt{lsof -i -n}
+					\item Network sniffer
+					\item IDS, NIDS
+				\end{itemize}
+			\end{itemize}
+		\end{frame}
+
+		\begin{frame} \frametitle{Rootshell!}
+			$\rightarrow$ Inject Shellcode doing IEEE1394-stuff
+			\begin{itemize}
+				\item Big, complex payload (IEEE1394 handling)
+				\item Attack via IEEE1394?
+			\end{itemize}
+			$\rightarrow$ Inject Syscall-Proxy
+			\begin{itemize}
+				\item Victim, self need to be same architecture, OS, syscall interface
+				\item I attacked IA-32 from PPC\ldots
+			\end{itemize}
+		\end{frame}
+
+		\begin{frame} \frametitle{DMA-Shell}
+			\begin{itemize}
+				\item Only thing that is for sure: DMA
+			\end{itemize}
+			$\rightarrow$ Communication via DMA
+		\end{frame}
+		
+%		\begin{itemizeframe}{Beachhead}
+%			\item Communicate via two Ringbuffers
+%			\item Special shellcode (``beachhead'') creates pipes,
+%			\item Forks and child executes shell
+%			\item Parent creates second thread
+%			\item Two threads, two ringbuffers, two pipes:
+%			\item Ringbuffer $\rightarrow$ Reader-Thread $\rightarrow$ Pipe $\rightarrow$ Shell
+%			\item Ringbuffer $\leftarrow$ Writer-Thread $\leftarrow$ Pipe $\leftarrow$ Shell
+%		\end{itemizeframe}
+
+		\begin{frame}
+			Special ``Beachhead'' Shellcode: \\
+			\pgfuseimage{beachhead}
+		\end{frame}
+		
+		\begin{itemizeframe}{}
+			\item Payload small (536 Bytes, yet big for shellcode)
+			\item Independent of attackers arch, OS
+			\item Only DMA required
+		\end{itemizeframe}
+
+
+\section{Prospects, Conclusion}
+
+	\begin{itemizeframe}{Prospects}
+		\item Kernelspace Modifications:
+		\begin{itemize} 
+			\item Shellcode that injects LKM?
+			\item \texttt{/dev/kmem} already emulated by \texttt{liblinear}
+			\item Live kernel patching?
+		\end{itemize}
+		\item Bootstrapping custom operating systems
+	\end{itemizeframe}
+
+	\begin{itemizeframe}{Conclusion}
+		\item DMA attacks are mature
+		\item Access to memory $\rightarrow$ 0wn3d!
+		\item Keep your firewire-ports secured
+		\item Some of the tools (\texttt{libphysical}, \texttt{liblinear}) can also be used for forensics
+	\end{itemizeframe}
+
+\AtBeginSection{ }
+
+\section*{}
+
+	\begin{frame}
+		\begin{center}
+			\Large
+			Questions? \\[1.5ex]
+			
+			Thank you for your attention! \\[1.5ex]
+			
+			\small
+			All tools will be released at \\
+			\textcolor{blue}{http://david.piegdon.de/products.html}
+		\end{center}
+	\end{frame}
+
+	\begin{frame}
+		\frametitle{Thanks\ldots}
+		\begin{itemize}
+			\item Maximillian Dornseif, Christian N. Klein and Michael Becher (basic idea)
+			\item Lexi Pimenidis (supervisor)
+			\item Timo Boettcher and Alexander Neumann (help)
+			\item Swantje Staar (help with english)
+			\item Chaos Computer Club Cologne (in general)
+		\end{itemize}
+		Thank you!
+	\end{frame}
+
+	\begin{itemizeframe}{References (FireWire, DMA Attacks)}
+		\item[1] \emph{Michael Becher, Maximillian Dornseif, and Christian N.
+			Klein.} \structure{Firewire - all your memory are belong to us}. 2005.
+
+		\item[2] \emph{Adam Boileau.} Hit by a bus: Physical access attacks with
+			firewire. Ruxcon 2006.
+
+		\item[3] \emph{Mariusz Burdach.} Finding digital evidence in physical memory. 2006.
+	\end{itemizeframe}
+
+	\begin{itemizeframe}{References}
+		\item[4] \emph{Rudi Cilibrasi and Paul M. B. Vit\'anyi.} Clustering by compression.
+			IEEE transactions on information theory, vol. 51, 2005.
+
+		\item[5] \emph{Otto Spaniol et al.} Systemprogrammierung, Skript zur Vorlesung an der RWTH
+			Aachen. Wissenschaftsverlag Mainz; Aachener Beitraege zur Informatik (ABI),
+			2002. ISBN 3-86073-470-9.
+			
+		\item[6] \emph{Intel Corp.} Intel 64 and IA-32 Architectures Software Developer’s Manual.
+	\end{itemizeframe}
+
+	\begin{itemizeframe}{References}
+		\item[7] \emph{Bruce Schneier.} Applied Cryptography (Second Edition). John Wiley \& Sons,
+			Inc, 1996. ISBN 0-471-11709-9.
+		\item[8] \emph{John Viega and Matt Messier and Pravir Chandra.} Network Security with
+			OpenSSL. O'Reilly, 2002. ISBN 0-596-00270-X.
+	\end{itemizeframe}
+
+\end{document}
+
