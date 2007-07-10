@@ -31,18 +31,18 @@
 
 
 
-\title[hacking in physically addressable memory]
-{ { \small Seminar of Advanced Exploitation Techniques, WS 2006/2007} \\ \textbf{hacking in physically addressable memory}\\ a proof of concept}
+\title[Targeting Physically Addressable Memory]
+{ { \small Seminar of Advanced Exploitation Techniques, WS 2006/2007} \\ \textbf{Targeting Physically Addressable Memory}}
 
-\author[losTrace A.K.A. David R. Piegdon <david.rasmus.piegdon@rwth-aachen.de>]
-{David~Rasmus~Piegdon \\ \ \\ \tiny Supervisor: Lexi Pimenidis}
+\author[David R. Piegdon and Lexi Pimenidis]
+{David~Rasmus~Piegdon \\ {\tiny <david.rasmus.piegdon@rwth-aachen.de>} \\ Lexi Pimenidis \\ {\tiny <lexi@i4.informatik.rwth-aachen.de>}}
 
 \institute[RWTH Aachen University of Technology]{
 	Lehrstuhl f\"ur Informatik IV, RWTH Aachen\\ {\tiny \ \\ http://www-i4.informatik.rwth-aachen.de \\} 
 }
 
-\date[2007-02-21]
-{February 21st 2006}
+\date[2007-07-13]
+{July 13th 2007}
 
 \subject{Direct Memory Access hacking}
 
@@ -99,25 +99,10 @@
 
 	\subsection{}
 
-		\begin{frame}{physical addressable memory}
-			``hacking in physically addressable memory''
-			\begin{itemize}
-				\item Hacking: using a technique for something it has not been designed for
-				\item Physically addressable memory: direct memory access, ``DMA''
-			\end{itemize}
-		\end{frame}
-
-		\begin{itemizeframe}{hacking}
-			\item I will show mostly \structure{attacks}
-			\item So actually I will be \structure{cracking} a systems security
-			\item<2-> \alert{Exploiting et al is not hacking by definition}
-			\item<2-> \structure{``to hack'' is mostly misused by media}
-		\end{itemizeframe}
-
 		\begin{itemizeframe}{DMA}
 			\item DMA = Direct Memory Access
 			\item Basic requirement for introduced approach
-			\item Known for a long time: attacker has DMA -> \structure{0wn3d}
+			\item Known for a long time: attacker has DMA -> \structure{security=0}
 				\begin{itemize}
 					\item 0wn3d by an iPod $[1]$
 					\item and others $[2,3]$
@@ -147,7 +132,7 @@
 		\begin{itemizeframe}{Generic problems of DMA attacks}
 			\item Swapping
 			\item Multiple accessors at any time
-			\item Caching (?)
+			\item Caching
 		\end{itemizeframe}
 
 	\subsection{DMA hardware}
@@ -193,30 +178,11 @@
 			\begin{itemize}
 				\item external disks
 				\item \structure{iPod} (has a disk)
+
+				\item<2-> The iPod can run Linux\ldots
+				\item<3-> SBP2 signature can be faked (via CSR config ROM) [2]
+				\item<3-> Copy config ROM from iPod and install it on any system ($\rightarrow$\texttt{1394csrtool})
 			\end{itemize}
-
-			\uncover<2->{The iPod can run Linux\ldots}
-		\end{frame}
-		
-		\begin{itemizeframe}{How to identify SBP2 devices}
-			\item Identify devices and features from their CSR \structure{config ROM}
-			\item Config ROM contains
-			\begin{itemize}
-				\item GUID: 8 byte globally unique ID (like MAC address)
-				\item Identifier of driver
-				\item List of supported features
-				\item List of supported speeds
-				\item \ldots
-			\end{itemize}
-			\item<2-> CSR config ROM can be faked (see [2])
-			\item<3-> Copy config ROM from iPod and install it on any system ($\rightarrow$\texttt{1394csrtool})
-			\item<4-> Magically Windows permits DMA for \alert{any} device
-		\end{itemizeframe}
-
-		\begin{frame}
-			Joana Rutkowska will introduce methods to ``Cheat Hardware Based RAM Forensics'' on Black Hat DC in March
-
-			(see \textcolor{blue}{http://theinvisiblethings.blogspot.com/2007/01/beyond-cpu-cheating-hardware-based-ram.html})
 		\end{frame}
 		
 	\subsection{DMA software}
@@ -240,6 +206,19 @@
 			\end{itemize}
 		\end{itemizeframe}
 
+	\subsection{Countermeasures}
+		
+		\begin{frame} \frametitle{Countermeasures against DMA}
+			Several approaches to hide parts of memory from DMA access:
+
+			\begin{itemize}
+				\item Keep malware (code/data) only in CPU cache
+				\item Redirect CPU via MTTR/IORR registers [9]
+				\item Redirect DMA via NorthBridge [9]
+			\end{itemize}
+
+		\end{frame}
+
 \section{Virtual address spaces}
 
 	\begin{itemizeframe}{so what now?}
@@ -257,12 +236,12 @@
 			\item OS version
 			\item and may not be documented (Windows)
 		\end{itemize}
-		\uncover<2->{Or we could do something else\ldots}
 	\end{frame}
 
 	\subsection{Virtual address spaces}
 
 		\begin{frame}{Virtual Address Spaces}
+			Or we could do something else\ldots
 			\begin{itemize}
 				\item Multitasking Operating System
 				\item System runs \structure{several processes} ``at once''
@@ -279,32 +258,28 @@
 		\end{frame}
 
 
-		\begin{frame} \frametitle{IA-32 Linux VM Layout}
-			\pgfuseimage{linux-ia32-vmlayout}
-		\end{frame}
-
 		\begin{frame} \frametitle{IA-32}
-			IA-32 provides two techniques (that may be chained)
 			\begin{itemize}
-				\item \structure{Segmentation} (required)
-				\item \structure{Paging} (optional)
+				\item IA-32 provides two techniques (that may be chained)
+				\begin{itemize}
+					\item \structure{Segmentation} (required)
+					\item \structure{Paging} (optional)
+				\end{itemize}
+				\item Linux only uses paging, all segments span full 4GB of virtual memory
+
+				\item Translation done in hardware (by CPU)
+				\item Hardware needs to know how to do it:
+				\begin{itemize}
+					\item Global Descriptor Table (GDT)
+					\item Local Descriptor Table (LDT)
+					\item Page Directory (PD), Page Tables (PT)
+				\end{itemize}
 			\end{itemize}
-			Linux only uses paging, all segments span full 4GB of virtual memory
 		\end{frame}
 
 		\begin{frame} \frametitle{IA-32 virtual (``logical'') address translation}
 			\pgfuseimage{ia32-vm} ~~(from [6])
 		\end{frame}
-
-		\begin{itemizeframe}{Done in hardware}
-			\item Translation done in hardware (by CPU)
-			\item Hardware needs to know how to do it:
-			\begin{itemize}
-				\item Global Descriptor Table (GDT)
-				\item Local Descriptor Table (LDT)
-				\item Page Directory (PD), Page Tables (PT)
-			\end{itemize}
-		\end{itemizeframe}
 
 		\begin{frame}
 			Once we got these structures,
@@ -472,7 +447,7 @@
 					\item agent keeps key decrypted, locked in memory
 					\item has timeout-function to wipe keys from memory
 					\item stalled in \texttt{read()}-syscall on socket
-					\item \alert{no timer-signal} to check for timeout
+					\item \alert{no timer} to check for timeout (Fixed by now)
 					\item checks timer only on query
 				\end{itemize}
 			}
@@ -515,7 +490,7 @@
 				\item[4] Follow \texttt{key->RSA} and \texttt{key->DSA}
 				\item[5] A lot of \texttt{BIGNUM}s (OpenSSL arbitrary precision integer implementation).
 					 \structure{Copy relevant, test integrity} (see [7,8]).
-				\item[6] 0wn3d
+				\item[6] Done.
 			\end{itemize}
 			\scriptsize (yes, there are better methods to find the keys, but this is just a proof of concept)
 		\end{frame}
@@ -665,7 +640,7 @@
 
 	\begin{itemizeframe}{Conclusion}
 		\item DMA attacks are mature
-		\item Access to memory $\rightarrow$ 0wn3d!
+		\item Access to memory $\rightarrow$ security=0
 		\item Keep your firewire-ports secured
 		\item Some of the tools (\texttt{libphysical}, \texttt{liblinear}) can also be used for forensics
 	\end{itemizeframe}
@@ -691,7 +666,6 @@
 		\frametitle{Thanks\ldots}
 		\begin{itemize}
 			\item Maximillian Dornseif, Christian N. Klein and Michael Becher (basic idea)
-			\item Lexi Pimenidis (supervisor)
 			\item Timo Boettcher and Alexander Neumann (help)
 			\item Swantje Staar (help with english)
 			\item Chaos Computer Club Cologne (in general)
@@ -725,6 +699,7 @@
 			Inc, 1996. ISBN 0-471-11709-9.
 		\item[8] \emph{John Viega and Matt Messier and Pravir Chandra.} Network Security with
 			OpenSSL. O'Reilly, 2002. ISBN 0-596-00270-X.
+		\item[9] \emph{Joana Rutkowska.} Beyond The CPU: Defeating Hardware Based RAM Acquisition Tools (Part I: AMD case)
 	\end{itemizeframe}
 
 \end{document}
