@@ -137,17 +137,17 @@
 
 	\subsection{DMA hardware}
 
-		\begin{frame} \frametitle{DMA hardware}
-			Hardware we may use is
-			\begin{itemize}
-				\item expensive
-				\item specially crafted
-				\item selfmade (some)
-				\item rare
-				\item not hot-pluggable (depends)
-				\item \structure{one exception:} FireWire (IEEE1394)
-			\end{itemize}
-		\end{frame}
+%		\begin{frame} \frametitle{DMA hardware}
+%			Hardware we may use is
+%			\begin{itemize}
+%				\item expensive
+%				\item specially crafted
+%				\item selfmade (some)
+%				\item rare
+%				\item not hot-pluggable (depends)
+%				\item \structure{one exception:} FireWire (IEEE1394)
+%			\end{itemize}
+%		\end{frame}
 
 		\begin{frame} \frametitle{FireWire overview}
 			\pgfuseimage{logo-1394} FireWire a.k.a. iLink a.k.a. IEEE1394
@@ -156,8 +156,8 @@
 				\item Wide-spread (even among laptops)
 				\item Expansion Bus (like PCI or PCMCIA)
 				\item Has DMA (if enabled by driver)
-				\item Guaranteed bandwith feature
-				\item Used alot for media-crunching
+%				\item Guaranteed bandwith feature
+%				\item Used alot for media-crunching
 				\item Most people are not aware of abuse-factor
 			\end{itemize}
 		\end{frame}
@@ -177,11 +177,10 @@
 			SBP2 (storage) devices, like
 			\begin{itemize}
 				\item external disks
-				\item \structure{iPod} (has a disk)
+				\item \structure{iPod} (has a disk, can run Linux)
 
-				\item<2-> The iPod can run Linux\ldots
-				\item<3-> SBP2 signature can be faked (via CSR config ROM) [2]
-				\item<3-> Copy config ROM from iPod and install it on any system ($\rightarrow$\texttt{1394csrtool})
+				\item<2-> SBP2 signature can be faked (via CSR config ROM) [2]
+				\item<2-> Copy config ROM from iPod and install it on any system ($\rightarrow$\texttt{1394csrtool})
 			\end{itemize}
 		\end{frame}
 		
@@ -209,7 +208,7 @@
 	\subsection{Countermeasures}
 		
 		\begin{frame} \frametitle{Countermeasures against DMA}
-			Several approaches to hide parts of memory from DMA access:
+			Several approaches to hide parts of memory from DMA:
 
 			\begin{itemize}
 				\item Keep malware (code/data) only in CPU cache
@@ -369,22 +368,20 @@
 
 				int main(int argc, char**argv)
 				{
-					printf("my name is %s\n", argv[0]);
-					return 0;
+				    printf("my name is %s\n", argv[0]);
+				    return 0;
 				}
 			\end{verbatim}
-		\end{frame}
-
-		\begin{itemizeframe}{}
-			\item \texttt{argv}, \texttt{envv} are somewhere in the address space
-			\item<2-> They are on the stack, on first mapped pages below page \texttt{0xc0000}
-			\item<2-> NUL-separated vector with
 			\begin{itemize}
-				\item<2-> Path of binary
-				\item<2-> Environment
-				\item<2-> Arguments
+				\item \texttt{argv}, \texttt{envv} are on the stack (first mapped pages below page \texttt{0xc0000})
+				\item NUL-separated vector with
+				\begin{itemize}
+					\item Path of binary
+					\item Environment
+					\item Arguments
+				\end{itemize}
 			\end{itemize}
-		\end{itemizeframe}
+		\end{frame}
 
 		\begin{frame}[fragile]
 			\scriptsize
@@ -414,22 +411,12 @@
 			\end{semiverbatim}
 		\end{frame}
 
-		\begin{itemizeframe}{Stack arguments}
-			\item Find page, parse structure back-to-front:
-			\item Last 5 bytes are always \texttt{NUL}
-			\item Previous string is always binary
-			\item \alert{Problem}: difference between argument and environment?
-			\item Solution: find \texttt{argv[0]} on stack and use userspaces \texttt{argv[]}
-		\end{itemizeframe}
-
 		\begin{itemizeframe}{Finding Specific Processes}
 			\item[1] Find all virtual address spaces
-			\item[2] For each: look if binary matches searched binary, e.g.:
+			\item[2] For each: look if binary matches searched binary
 			\begin{itemize}
 				\item \texttt{/usr/lib/mozilla-firefox/firefox-bin}
 				\item \texttt{/usr/bin/gpg}
-				\item \texttt{/usr/bin/psi}
-				\item \texttt{/usr/bin/openssl}
 				\item \texttt{/usr/bin/ssh-agent}
 			\end{itemize}
 			\item[3] If matches, steal a cookie or\ldots \uncover<2->{a ssh-private key}
@@ -448,28 +435,17 @@
 					\item has timeout-function to wipe keys from memory
 					\item stalled in \texttt{read()}-syscall on socket
 					\item \alert{no timer} to check for timeout (Fixed by now)
-					\item checks timer only on query
+					\item checks timer only on query (Fixed by now)
 				\end{itemize}
 			}
-		\end{frame}
-
-		\begin{frame}[fragile] \frametitle{finding SSH Private keys}
-			\begin{itemize}
-				\item Where (in filesystem) do you keep your keys?
-				\item \texttt{\$HOME/.ssh/*}
-				\item \texttt{comment} $:=$ path of key
-			\end{itemize}
-			\begin{semiverbatim}
-				[foo@bar:~]> ssh-add -l
-				1024 00:11:...:ee:ff \textcolor{blue}{/home/foo/.ssh/id_rsa} (RSA)
-			\end{semiverbatim}
 		\end{frame}
 
 		\begin{frame}[fragile]
 			\begin{semiverbatim}
 				typedef \textcolor{green}{struct identity} \{
 				\ \ 	Key *key;
-				\ \ 	char *\textcolor{blue}{comment};
+				\ \ 	char *\textcolor{blue}{comment};  
+				\ \           \structure{(key filename: ``\$HOME/.ssh/id\_rsa)''}
 				\ \ 	u_int death;
 				\} Identity;
 
@@ -486,11 +462,9 @@
 			\begin{itemize}
 				\item[1] Find \texttt{comment}-string in heap
 				\item[2] Find PTR to \texttt{comment} (\texttt{struct identity}) in heap
-				\item[3] Follow \texttt{key}
-				\item[4] Follow \texttt{key->RSA} and \texttt{key->DSA}
-				\item[5] A lot of \texttt{BIGNUM}s (OpenSSL arbitrary precision integer implementation).
-					 \structure{Copy relevant, test integrity} (see [7,8]).
-				\item[6] Done.
+				\item[3] Follow \texttt{key}, \texttt{key->RSA} and \texttt{key->DSA}
+				\item[4] Copy relevant (a lot of arbitrary precision integers), test integrity (see [7,8])
+				\item[5] Done.
 			\end{itemize}
 			\scriptsize (yes, there are better methods to find the keys, but this is just a proof of concept)
 		\end{frame}
@@ -657,7 +631,7 @@
 			Thank you for your attention! \\[1.5ex]
 			
 			\small
-			All tools will be released at \\
+			All tools have been released at \\
 			\textcolor{blue}{http://david.piegdon.de/products.html}
 		\end{center}
 	\end{frame}
