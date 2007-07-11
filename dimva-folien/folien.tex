@@ -506,19 +506,19 @@
 
 \section{Injecting code}
 
-	\begin{itemizeframe}{Attacking by Writing}
+%	\begin{itemizeframe}{Attacking by Writing}
 %		\item The pen is mightier than the sword.
-		\item No more sword to be feared than the learned pen.
-		\item Even the virtual one.
-	\end{itemizeframe}
+%		\item No more sword to be feared than the learned pen.
+%		\item Even the virtual one.
+%	\end{itemizeframe}
 
 	\subsection{Injecting the code}
 
 		\begin{itemizeframe}{Inject where?}
 			\item Cannot allocate extra memory
-			\item Cannot overflow a buffer (no IO with process)
+			\item Cannot overflow a buffer (no I/O with process)
 			\item Need to overwrite \structure{code}, \structure{data} or \structure{stack}
-			\item Data: where IS data? is data mapped into multiple processes?
+			\item Data: can not be easily identified; data may be mapped into multiple processes
 		\end{itemizeframe}
 			
 		\begin{itemizeframe}{Inject into code}
@@ -555,16 +555,16 @@
 			$\rightarrow$ Overwrite return-addresses
 		\end{frame}
 
-		\begin{itemizeframe}{Protection Mechanisms}
-			\item Stackoverflow protection checksums
-			\begin{itemize}
-				\item Can manipulate checksum as well
-			\end{itemize}
-			\item Page-level no-execute enforcements {\small (Intels EXB, AMDs NX)}
-			\begin{itemize}
-				\item Manipulate Page Directory to allow execution of stack
-			\end{itemize}
-		\end{itemizeframe}
+%		\begin{itemizeframe}{Protection Mechanisms}
+%			\item Stackoverflow protection checksums
+%			\begin{itemize}
+%				\item Can manipulate checksum as well
+%			\end{itemize}
+%			\item Page-level no-execute enforcements {\small (Intels EXB, AMDs NX)}
+%			\begin{itemize}
+%				\item Manipulate Page Directory to allow execution of stack
+%			\end{itemize}
+%		\end{itemizeframe}
 
 	\subsection{Communicating with shellcode}
 
