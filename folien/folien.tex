@@ -340,14 +340,14 @@
 			\item[1] Sieve all pages by simple, static pattern (e.g. 4 bytes)
 			\item[2] For each possible do statistical analysis:
 			\begin{itemize}
-				\item Nearest Compression Distance (NCD) to known true ATT
+				\item Normalized Compression Distance (NCD) to known true ATT
 			\end{itemize}
 			\item[3] If possibility high enough, test integrity of data \\ (for IA-32: try to load referenced PTs)
 			\item[4] If ok, its (most probably) an ATT
 		\end{itemizeframe}
 
-		\begin{itemizeframe}{Nearest Compression Distance}
-			\item \structure{N}earest \structure{I}nformation \structure{D}istance:
+		\begin{itemizeframe}{Normalized Compression Distance}
+			\item \structure{N}ormalized \structure{I}nformation \structure{D}istance:
 			\begin{itemize}
 				\item Minimal amount of changes required between two information
 				\item Uses \structure{Kolmogorov Complexity} (KC) (size of minimal representation of information)
@@ -355,7 +355,7 @@
 			\end{itemize}
 			\uncover<2->{
 				\item KC can be \structure{approximated} by \structure{compressor} \\
-					$\rightarrow$ \structure{N}earest \structure{C}ompression \structure{D}istance:
+					$\rightarrow$ \structure{N}ormalized \structure{C}ompression \structure{D}istance:
 				\begin{itemize}
 					\item Calculable
 					\item Very versatile
