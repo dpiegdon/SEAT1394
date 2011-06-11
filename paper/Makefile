@@ -28,6 +28,8 @@ TEXTS = $(shell echo *.tex)
 
 BIBS = $(shell echo *.bib)
 
+AUTO_MARKER := seat1394auto
+
 
 
 all: final
@@ -42,10 +44,10 @@ clean:
 	-rm *.pdf *.dvi *.ps					> /dev/null 2>&1
 
 autowindow: paper.pdf
-	xpdf -remote SEAT1394 paper.pdf&
+	xpdf -remote $(AUTO_MARKER) -fullscreen paper.pdf&
 
 autoreload:
-	xpdf -remote SEAT1394 -reload;
+	xpdf -remote $(AUTO_MARKER) -reload;
 	
 autoupdate: paper.pdf autowindow
 	while true; do										\
